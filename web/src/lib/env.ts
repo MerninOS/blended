@@ -3,6 +3,8 @@ import "server-only";
 // All Shopify/secret config is read server-side only. When the store isn't
 // configured the app runs in demo mode on the design's fixture data.
 const v = (k: string) => process.env[k]?.trim() || undefined;
+/** "example.com/" → "https://example.com" (localhost keeps http). */
+const origin = (u: string) => (/^https?:\/\//i.test(u) ? u : `${/^(localhost|127\.0\.0\.1)(:|$)/.test(u) ? "http" : "https"}://${u}`).replace(/\/+$/, "");
 
 export const env = {
   storeDomain: v("SHOPIFY_STORE_DOMAIN"),                 // "blended.myshopify.com"
@@ -14,7 +16,7 @@ export const env = {
   webhookSecret: v("SHOPIFY_WEBHOOK_SECRET") || v("SHOPIFY_CLIENT_SECRET"),
   customerClientId: v("SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID"),
   customerClientSecret: v("SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET"), // optional: confidential client
-  appUrl: (v("APP_URL") || v("NEXT_PUBLIC_SITE_URL") || (v("VERCEL_PROJECT_PRODUCTION_URL") ? `https://${v("VERCEL_PROJECT_PRODUCTION_URL")}` : "http://localhost:3000")).replace(/\/$/, ""),
+  appUrl: origin(v("APP_URL") || v("NEXT_PUBLIC_SITE_URL") || v("VERCEL_PROJECT_PRODUCTION_URL") || "localhost:3000"),
   sessionSecret: v("SESSION_SECRET"),
   adminPassword: v("ADMIN_PASSWORD"),
   stockCollection: v("SHOPIFY_STOCK_COLLECTION") || "our-coffees",
