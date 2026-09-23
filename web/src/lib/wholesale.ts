@@ -7,7 +7,7 @@ import type { WholesaleOrderRequest } from "@/lib/domain/requests";
 import {
   G_PER_LB, PL_BAGS, greenUsageG, PL_FILL, PL_LABEL_SIZES, PL_MIN, PL_PACK, indexLots, plQuote, roastName, round2, wholesaleSel,
 } from "@/lib/domain/coffee";
-import { BLEND_PROP, CheckoutError, assertGreenStock, checkBlend, clampRoast, cleanName, recipeOf } from "@/lib/checkout";
+import { BLEND_PROP, CheckoutError, assertGreenStock, waitForDraftReady, checkBlend, clampRoast, cleanName, recipeOf } from "@/lib/checkout";
 import { env } from "@/lib/env";
 import { admin, assertNoUserErrors, gql } from "@/lib/shopify/client";
 
@@ -121,6 +121,7 @@ export async function placeWholesaleOrder(r: WholesaleOrderRequest, p: ReturnTyp
   const c = await admin<{ draftOrderCreate: { draftOrder: { id: string; name: string; invoiceUrl: string } | null; userErrors: { message: string }[] } }>(CREATE, { variables: { input } });
   assertNoUserErrors(c.draftOrderCreate, "Could not create the order");
   const draft = c.draftOrderCreate.draftOrder!;
+  await waitForDraftReady(draft.id);
   if (r.payMethod === "card") return { url: draft.invoiceUrl, orderName: draft.name };
   const done = await admin<{ draftOrderComplete: { draftOrder: { order: { name: string } | null } | null; userErrors: { message: string }[] } }>(COMPLETE, { variables: { id: draft.id } });
   assertNoUserErrors(done.draftOrderComplete, "Could not place the order");

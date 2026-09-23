@@ -128,6 +128,23 @@ const DRAFT_UPDATE = gql`
 `;
 type DraftRes = { id: string; name: string; invoiceUrl: string; status?: string };
 
+const DRAFT_READY = gql`
+  query DraftReady($id: ID!) { draftOrder(id: $id) { id ready } }
+`;
+/**
+ * Shopify calculates a new or edited draft order in the background, and its
+ * invoice (hosted checkout) says "not available yet" until that finishes.
+ * Wait for `ready` before sending anyone there. Gives up quietly after ~15 s.
+ */
+export async function waitForDraftReady(id: string, timeoutMs = 15_000) {
+  const until = Date.now() + timeoutMs;
+  for (let delay = 250; Date.now() < until; delay = Math.min(delay * 1.5, 1500)) {
+    const r = await admin<{ draftOrder: { ready: boolean } | null }>(DRAFT_READY, { variables: { id } });
+    if (!r.draftOrder || r.draftOrder.ready) return;
+    await new Promise((res) => setTimeout(res, delay));
+  }
+}
+
 /**
  * Create (or refresh) the shopper's draft order and return Shopify's hosted
  * checkout URL. Re-using the previous open draft keeps abandoned drafts from
@@ -145,10 +162,13 @@ export async function createRetailDraft(p: PricedCart, previousDraftId?: string 
   if (previousDraftId) {
     try {
       const r = await admin<{ draftOrderUpdate: { draftOrder: DraftRes | null; userErrors: { message: string }[] } }>(DRAFT_UPDATE, { variables: { id: previousDraftId, input } });
-      if (r.draftOrderUpdate.draftOrder && !r.draftOrderUpdate.userErrors.length && r.draftOrderUpdate.draftOrder.status === "OPEN") return r.draftOrderUpdate.draftOrder;
+      const d = r.draftOrderUpdate.draftOrder;
+      if (d && !r.draftOrderUpdate.userErrors.length && d.status === "OPEN") { await waitForDraftReady(d.id); return d; }
     } catch { /* completed or deleted — fall through to a new draft */ }
   }
   const r = await admin<{ draftOrderCreate: { draftOrder: DraftRes | null; userErrors: { field?: string[]; message: string }[] } }>(DRAFT_CREATE, { variables: { input } });
   assertNoUserErrors(r.draftOrderCreate, "Could not start checkout");
-  return r.draftOrderCreate.draftOrder!;
+  const d = r.draftOrderCreate.draftOrder!;
+  await waitForDraftReady(d.id);
+  return d;
 }
