@@ -6,6 +6,8 @@ import { SettingsView } from "@/components/admin/SettingsView";
 
 export const metadata: Metadata = { title: "Settings" };
 export const dynamic = "force-dynamic";
+// Store setup (a server action on this page) can make a few dozen Admin API calls.
+export const maxDuration = 120;
 
 export default async function SettingsPage() {
   await requireAdmin();

@@ -33,10 +33,11 @@ Admin edits are kept in memory and checkout says it's in demo. Admin is open loc
    `write_metaobject_definitions, write_metaobjects, write_products, write_publications, write_files,
    read_orders, write_orders, write_draft_orders, write_merchant_managed_fulfillment_orders,
    write_fulfillments, read_customers, read_payment_terms`. Put its client ID/secret, or a static token, in `.env.local`.
-3. `npm run setup:shopify` creates the `green_lot` metaobject definition, the `blended.*` product
-   metafield definitions and the `our-coffees` collection. Add `-- --seed` to load the design's
-   sample coffees with photos. Add `-- --webhooks` once `APP_URL` is public. (Settings → Register
-   webhooks does the same.)
+3. **Set up the store once:** Admin → Settings → **Set up store** creates the `green_lot` metaobject
+   definition, the `blended.*` product metafield definitions and the `our-coffees` collection.
+   **Set up + add sample coffees** also loads the design's sample catalog with photos. Then click
+   **Register webhooks**. You can also run it locally: `npm run setup:shopify` (add `-- --seed` for
+   the samples, `-- --webhooks` for webhooks to `APP_URL`).
 4. Tag wholesale customers `wholesale`. Turn on **Net 30** payment terms in Shopify.
 5. Deploy (e.g. Vercel, project root `web/`) with the same env vars, plus `SESSION_SECRET` and `ADMIN_PASSWORD`.
 

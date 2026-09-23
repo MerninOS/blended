@@ -1,7 +1,7 @@
 // Demo data from the design prototype. Used when Shopify isn't configured
 // (local preview) and by the setup script to seed a fresh store.
 import type { CoffeeReviewsData, GreenLot, Notes, StockCoffee } from "./domain/types";
-import { AX } from "./domain/coffee";
+import { AX } from "./domain/coffee.ts";
 
 // Demo-only sample reviews, derived from each coffee's cupping scores (ported
 // from the prototype). Never seeded into a real store — real reviews come from

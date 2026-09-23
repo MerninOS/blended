@@ -22,6 +22,7 @@ const SHOP = gql`
       currencyCode
       metafield(namespace: "blended", key: "settings") { value }
     }
+    greenLotDefinition: metaobjectDefinitionByType(type: "green_lot") { id }
   }
 `;
 const SET = gql`
@@ -29,7 +30,7 @@ const SET = gql`
     metafieldsSet(metafields: $metafields) { userErrors { field message } }
   }
 `;
-type ShopRes = { shop: { id: string; name: string; myshopifyDomain: string; currencyCode: string; metafield: { value: string } | null } };
+type ShopRes = { shop: { id: string; name: string; myshopifyDomain: string; currencyCode: string; metafield: { value: string } | null }; greenLotDefinition: { id: string } | null };
 
 let demoSettings = { ...DEFAULT_SETTINGS };
 
@@ -89,6 +90,8 @@ export interface ConnectionInfo {
   checks: { label: string; ok: boolean; hint: string }[];
   hooks: { topic: string; use: string; active: boolean; last: string | null }[];
   activity: { t: string; ev: string; ref: string; msg: string }[];
+  /** Whether the green_lot definition exists (null when the store couldn't be reached). */
+  setupDone: boolean | null;
   error?: string;
 }
 
@@ -100,7 +103,7 @@ export async function getConnection(): Promise<ConnectionInfo> {
     { label: "Webhook secret", ok: !!env.webhookSecret, hint: "SHOPIFY_WEBHOOK_SECRET or SHOPIFY_CLIENT_SECRET" },
     { label: "Session secret", ok: !!env.sessionSecret, hint: "SESSION_SECRET (32+ random characters)" },
   ];
-  const base: ConnectionInfo = { demo: isDemo(), shop: null, apiVersion: env.apiVersion, checks, hooks: WEBHOOKS.map((h) => ({ topic: h.topic, use: h.use, active: false, last: null })), activity: [] };
+  const base: ConnectionInfo = { demo: isDemo(), shop: null, apiVersion: env.apiVersion, checks, hooks: WEBHOOKS.map((h) => ({ topic: h.topic, use: h.use, active: false, last: null })), activity: [], setupDone: null };
   if (!hasAdmin()) return base;
   try {
     const [s, h, a] = await Promise.all([
@@ -114,6 +117,7 @@ export async function getConnection(): Promise<ConnectionInfo> {
     return {
       ...base,
       shop: { name: s.shop.name, domain: s.shop.myshopifyDomain, currency: s.shop.currencyCode },
+      setupDone: !!s.greenLotDefinition,
       hooks: WEBHOOKS.map((w) => { const m = mine.find((n) => n.topic === w.topic); return { topic: w.topic, use: w.use, active: !!m, last: m ? time(m.updatedAt) : null }; }),
       activity: [
         ...a.orders.nodes.map((o) => ({ at: o.createdAt, t: time(o.createdAt), ev: "orders/create", ref: o.name,

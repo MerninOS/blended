@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { ConnectionInfo, StoreSettings } from "@/lib/settings";
 import { Btn, CO, Pill, Toast } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
-import { registerWebhooksAction, saveSettingsAction } from "@/app/admin/actions";
+import { registerWebhooksAction, saveSettingsAction, setupStoreAction } from "@/app/admin/actions";
 
 const over = (o = {}) => CO.over({ fontSize: 10, color: "var(--ink-muted)", ...o });
 
@@ -68,6 +68,12 @@ export function SettingsView({ conn, initial }: { conn: ConnectionInfo; initial:
   const save = () => start(async () => { const r = await saveSettingsAction(s); if (r.ok) { flash("Settings saved"); router.refresh(); } else flash(r.error, "danger"); });
   const hooks = () => start(async () => { const r = await registerWebhooksAction(); if (r.ok) { flash("Webhooks registered"); router.refresh(); } else flash(r.error, "danger"); });
   const connected = !!conn.shop;
+  const [setupLog, setSetupLog] = useState<string[] | null>(null);
+  const setup = (seed: boolean) => start(async () => {
+    const r = await setupStoreAction(seed);
+    setSetupLog([...(r.log ?? []), ...(r.ok ? [] : [`Stopped: ${r.error}`])]);
+    if (r.ok) { flash("Store is set up"); router.refresh(); } else flash(r.error, "danger");
+  });
 
   return (
     <div style={{ maxWidth: 1040, padding: "22px 24px 80px", display: "flex", flexDirection: "column", gap: 34 }}>
@@ -86,7 +92,7 @@ export function SettingsView({ conn, initial }: { conn: ConnectionInfo; initial:
         </div>
       </section>
 
-      <Section title="Setup checklist" note="Environment variables on this deployment. Run scripts/setup-shopify.ts once to create the definitions, collection and webhooks.">
+      <Section title="Setup checklist" note="Environment variables on this deployment.">
         <div style={{ border: "1px solid var(--hairline)", borderRadius: "var(--r-md)", overflow: "hidden" }}>
           {conn.checks.map((c, i) => (
             <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 14, padding: "11px 16px", borderTop: i ? "1px solid var(--hairline)" : "none" }}>
@@ -96,6 +102,20 @@ export function SettingsView({ conn, initial }: { conn: ConnectionInfo; initial:
             </div>
           ))}
         </div>
+      </Section>
+
+      <Section title="Store setup"
+        note="Creates what Blended needs in Shopify: the green_lot metaobject definition (the green catalog), the blended.* product fields and the Our coffees collection. Safe to run again. The sample option also adds the design's coffees so you can try the storefront."
+        right={<Pill variant={conn.setupDone ? "matcha" : "cream"} dot>{conn.setupDone ? "Done" : conn.setupDone === false ? "Not set up" : "Unknown"}</Pill>}>
+        <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
+          <Btn size="sm" variant={conn.setupDone ? "outline" : "primary"} disabled={busy || !connected} onClick={() => setup(false)}>{busy ? "Working…" : "Set up store"}</Btn>
+          <Btn size="sm" variant="outline" disabled={busy || !connected} onClick={() => setup(true)}>Set up + add sample coffees</Btn>
+        </div>
+        {setupLog && (
+          <div style={{ border: "1px solid var(--hairline)", borderRadius: "var(--r-md)", padding: "10px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
+            {setupLog.map((l, i) => <span key={i} style={CO.data({ fontSize: 12, color: l.startsWith("Stopped") ? "var(--danger)" : "var(--ink-muted)" })}>{l}</span>)}
+          </div>
+        )}
       </Section>
 
       <Section title="Checkout routing" note="Nothing is billed here. Both storefront tabs hand off to Shopify — retail as a checkout, wholesale as a draft order on account terms — and the order comes back to the Orders board as a roast job.">

@@ -7,8 +7,10 @@ import { setOrderStage } from "@/lib/orders";
 import { deleteGreenLot, saveGreenLot } from "@/lib/green-admin";
 import { finalizeUpload, stageUpload } from "@/lib/shopify/files";
 import { registerWebhooks, saveSettings, type StoreSettings } from "@/lib/settings";
-import { CACHE_TAGS } from "@/lib/shopify/client";
-import { isDemo } from "@/lib/env";
+import { CACHE_TAGS, admin } from "@/lib/shopify/client";
+import { env, isDemo } from "@/lib/env";
+import { setupStore } from "@/lib/store-setup";
+import { DEMO_GREEN, DEMO_STOCK } from "@/lib/fixtures";
 import { demoStore } from "@/lib/demo-store";
 
 type Result = { ok: true } | { ok: false, error: string };
@@ -76,4 +78,27 @@ export async function registerWebhooksAction(): Promise<Result> {
   await requireAdmin();
   if (isDemo()) return { ok: false, error: "Connect a Shopify store first." };
   try { await registerWebhooks(); revalidatePath("/admin/settings"); return { ok: true }; } catch (e) { return fail(e); }
+}
+
+/**
+ * Create the green_lot definition, blended.* product fields and the Our coffees
+ * collection in Shopify (idempotent). With `seed`, also adds the sample catalog;
+ * its photos are pulled by Shopify from this deployment's public URL.
+ */
+export async function setupStoreAction(seed: boolean): Promise<Result & { log?: string[] }> {
+  await requireAdmin();
+  if (isDemo()) return { ok: false, error: "Connect a Shopify store first." };
+  const base = env.appUrl.replace(/\/$/, "");
+  const publicUrl = /localhost|127\.0\.0\.1/.test(base) ? null : base;
+  const lines: string[] = [];
+  try {
+    await setupStore({
+      q: (query, variables) => admin(query, { variables }),
+      collectionHandle: env.stockCollection,
+      seed: seed ? { green: DEMO_GREEN, stock: DEMO_STOCK, image: async (p) => (publicUrl ? `${publicUrl}${p}` : null) } : null,
+      log: (l) => lines.push(l),
+    });
+    updateTag(CACHE_TAGS.catalog); revalidatePath("/admin", "layout");
+    return { ok: true, log: lines };
+  } catch (e) { return { ...fail(e), log: lines }; }
 }
