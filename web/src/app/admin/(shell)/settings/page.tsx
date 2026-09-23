@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/admin-auth";
-import { getConnection, getSettings } from "@/lib/settings";
+import { DEFAULT_SETTINGS, getConnection, getSettings } from "@/lib/settings";
 import { TopBar } from "@/components/admin/Chrome";
 import { SettingsView } from "@/components/admin/SettingsView";
 
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   await requireAdmin();
-  const [conn, settings] = await Promise.all([getConnection(), getSettings()]);
+  const [conn, settings] = await Promise.all([getConnection(), getSettings().catch(() => DEFAULT_SETTINGS)]);
   return (
     <>
       <TopBar title="Settings" subtitle="How Blended talks to the Shopify store." breadcrumbs="Settings / Shopify" />

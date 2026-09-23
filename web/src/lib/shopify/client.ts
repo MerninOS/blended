@@ -47,7 +47,11 @@ async function adminToken(): Promise<string> {
     body: new URLSearchParams({ grant_type: "client_credentials", client_id: env.adminClientId, client_secret: env.adminClientSecret }),
     cache: "no-store",
   });
-  if (!res.ok) throw new ShopifyError(`Admin token exchange failed (${res.status})`, await res.text().catch(() => null));
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    const reason = body.match(/Oauth error ([a-z_]+)/i)?.[1] ?? body.match(/"error"\s*:\s*"([^"]+)"/)?.[1];
+    throw new ShopifyError(`Admin token exchange failed (${res.status}${reason ? `: ${reason}` : ""})`, body);
+  }
   const j = await res.json() as { access_token: string; expires_in?: number };
   cached = { token: j.access_token, exp: Date.now() + (j.expires_in ?? 3600) * 1000 };
   return cached.token;
