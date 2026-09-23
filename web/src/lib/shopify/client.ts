@@ -21,7 +21,10 @@ async function post<T>(url: string, headers: Record<string, string>, query: stri
   const res = await fetch(url, init);
   if (!res.ok) throw new ShopifyError(`Shopify ${res.status} ${res.statusText}`, await res.text().catch(() => null));
   const json = await res.json() as { data?: T; errors?: unknown };
-  if (json.errors) throw new ShopifyError("Shopify GraphQL error", json.errors);
+  if (json.errors) {
+    const msg = Array.isArray(json.errors) ? json.errors.map((e: { message?: string }) => e.message).filter(Boolean).join("; ") : "";
+    throw new ShopifyError(`Shopify GraphQL error${msg ? `: ${msg}` : ""}`, json.errors);
+  }
   return json.data as T;
 }
 

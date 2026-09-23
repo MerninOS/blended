@@ -104,15 +104,16 @@ type MF = { value: string } | null;
 export type GreenNode = {
   id: string; handle: string; title: string; status: string;
   media: { nodes: { id: string; image?: { url: string } | null }[] };
-  variants: { nodes: { id: string; inventoryItem: { id: string; inventoryLevel: { quantities: { name: string; quantity: number }[] } | null } }[] };
+  variants: { nodes: { id: string; inventoryQuantity: number | null; inventoryItem: { id: string; inventoryLevel?: { quantities: { name: string; quantity: number }[] } | null } }[] };
 } & Record<(typeof GREEN_FIELDS)[number][0], MF>;
 
-/** Selection shared by every green product query (the operation must declare $loc: ID!). */
+/** Selection shared by every green product query. Stock here is the total across locations;
+ * the admin also asks for the green location's level (GREEN_LEVEL) for compare-and-set edits. */
 export const GREEN_NODE = gql`
   fragment GreenNode on Product {
     id handle title status
     media(first: 1) { nodes { id ... on MediaImage { image { url(transform: { maxWidth: 480 }) } } } }
-    variants(first: 1) { nodes { id inventoryItem { id inventoryLevel(locationId: $loc) { quantities(names: ["available"]) { name quantity } } } } }
+    variants(first: 1) { nodes { id inventoryQuantity inventoryItem { id } } }
     origin: metafield(namespace: "blended", key: "origin") { value }
     lot_code: metafield(namespace: "blended", key: "lot_code") { value }
     process: metafield(namespace: "blended", key: "process") { value }
@@ -128,6 +129,13 @@ export const GREEN_NODE = gql`
   }
 `;
 
+/** Per-location stock for the admin (needs read_locations; the operation declares $loc: ID!). */
+export const GREEN_LEVEL = gql`
+  fragment GreenLevel on Product {
+    variants(first: 1) { nodes { inventoryItem { inventoryLevel(locationId: $loc) { quantities(names: ["available"]) { name quantity } } } } }
+  }
+`;
+
 const num = (v: string | null | undefined, d: number | null = null) => {
   if (v == null || v === "") return d;
   const n = Number(v); return isNaN(n) ? d : n;
@@ -137,7 +145,9 @@ const json = <T,>(v: string | null | undefined, d: T): T => { try { return v ? J
 export function lotFromProduct(p: GreenNode): GreenLot {
   const v = p.variants.nodes[0];
   const level = v?.inventoryItem.inventoryLevel;
-  const grams = level ? Math.max(0, level.quantities.find((x) => x.name === "available")?.quantity ?? 0) : 0;
+  const grams = Math.max(0, level !== undefined
+    ? level?.quantities.find((x) => x.name === "available")?.quantity ?? 0
+    : v?.inventoryQuantity ?? 0);
   const kind = p.kind?.value;
   return {
     id: p.handle,
@@ -151,7 +161,7 @@ export function lotFromProduct(p: GreenNode): GreenLot {
     wholesale: num(p.wholesale_price?.value),
     retail: num(p.retail_price?.value),
     avail: gToLb(grams),
-    onHandG: level ? grams : null,
+    onHandG: level ? grams : null, // only known when the location level was queried
     minG: num(p.min_grams?.value),
     kind: kind === "limited" || kind === "soon" ? kind : "anchor",
     tag: p.badge?.value || null,

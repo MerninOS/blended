@@ -9,7 +9,7 @@ import type { GreenLot } from "@/lib/domain/types";
 import { env, isDemo } from "@/lib/env";
 import { admin, assertNoUserErrors, gql } from "@/lib/shopify/client";
 import {
-  GREEN_NODE, GREEN_QUERY, PRODUCT_SET, adjustGreen, gToLb, greenMetafields, greenProductInput, lbToG, lotFromProduct, resolveLocation,
+  GREEN_LEVEL, GREEN_NODE, GREEN_QUERY, PRODUCT_SET, adjustGreen, gToLb, greenMetafields, greenProductInput, lbToG, lotFromProduct, resolveLocation,
   type AdminQ, type GreenNode,
 } from "@/lib/shopify/green-product";
 import { demoStore } from "@/lib/demo-store";
@@ -25,9 +25,10 @@ export function greenLocation() {
 
 const LIST = gql`
   query AdminGreenLots($query: String!, $loc: ID!) {
-    products(first: 250, query: $query, sortKey: TITLE) { nodes { ...GreenNode } }
+    products(first: 250, query: $query, sortKey: TITLE) { nodes { ...GreenNode ...GreenLevel } }
   }
   ${GREEN_NODE}
+  ${GREEN_LEVEL}
 `;
 
 export async function listGreenLotsAdmin(): Promise<GreenLot[]> {
