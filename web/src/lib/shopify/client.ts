@@ -5,7 +5,7 @@ import { env } from "@/lib/env";
 export const gql = String.raw;
 
 export class ShopifyError extends Error {
-  constructor(message: string, public details?: unknown) { super(message); }
+  constructor(message: string, public details?: unknown, public status?: number) { super(message); }
 }
 
 type FetchOpts = { variables?: Record<string, unknown>; tags?: string[]; revalidate?: number | false; cache?: RequestCache; buyerIp?: string | null };
@@ -19,7 +19,7 @@ async function post<T>(url: string, headers: Record<string, string>, query: stri
   if (o.tags || o.revalidate !== undefined) init.next = { tags: o.tags, revalidate: o.revalidate };
   else init.cache = o.cache ?? "no-store";
   const res = await fetch(url, init);
-  if (!res.ok) throw new ShopifyError(`Shopify ${res.status} ${res.statusText}`, await res.text().catch(() => null));
+  if (!res.ok) throw new ShopifyError(`Shopify ${res.status} ${res.statusText}`, await res.text().catch(() => null), res.status);
   const json = await res.json() as { data?: T; errors?: unknown };
   if (json.errors) {
     const msg = Array.isArray(json.errors) ? json.errors.map((e: { message?: string }) => e.message).filter(Boolean).join("; ") : "";
@@ -65,9 +65,11 @@ export async function admin<T>(query: string, o: FetchOpts = {}): Promise<T> {
   try {
     return await post<T>(url, { "X-Shopify-Access-Token": await adminToken() }, query, o);
   } catch (e) {
-    // A token issued before new scopes were approved keeps the old scopes until it
-    // expires (up to 24 h). On "access denied", get a fresh token and try once more.
-    if (env.adminToken || !(e instanceof ShopifyError) || !/access denied/i.test(e.message)) throw e;
+    // A cached token can go stale before it expires: it keeps the scopes it was issued
+    // with (new scopes → "access denied") and dies if the app is reinstalled (401).
+    // Either way, get a fresh token and try once more.
+    const stale = e instanceof ShopifyError && (e.status === 401 || /access denied/i.test(e.message));
+    if (env.adminToken || !stale) throw e;
     cached = null;
     return post<T>(url, { "X-Shopify-Access-Token": await adminToken() }, query, { ...o, cache: "no-store", tags: undefined, revalidate: undefined });
   }
