@@ -3,58 +3,31 @@
 // (No "server-only" import so the Node script can use it; it only ever runs server-side.)
 import type { GreenLot, StockCoffee } from "./domain/types.ts";
 import { SHOP_SIZES, bagPrice, stockRetail } from "./domain/coffee.ts";
+import { lotFromFields, type MetaField } from "./shopify/mapping.ts";
+import { GREEN_FIELDS, PRODUCT_SET, greenProductInput, lbToG, resolveLocation, type AdminQ, type GreenFile } from "./shopify/green-product.ts";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type AdminQ = (query: string, variables?: Record<string, unknown>) => Promise<any>;
+export type { AdminQ };
 /** Turn an app image path ("/images/…") into something Shopify can ingest (public URL or staged upload). */
 export type ImageSource = (publicPath: string) => Promise<string | null>;
 
 const gql = String.raw;
+
+/** Webhook topics the app subscribes to (Settings → Register webhooks, setup script). */
+export const WEBHOOKS: { topic: string; use: string; filter?: string }[] = [
+  { topic: "ORDERS_CREATE", use: "Deducts the green each blend uses from Shopify inventory" },
+  { topic: "ORDERS_CANCELLED", use: "Puts that green back when an order is cancelled" },
+  { topic: "ORDERS_PAID", use: "Puts custom blends on QC hold" },
+  { topic: "ORDERS_FULFILLED", use: "Moves the order to shipped" },
+  { topic: "DRAFT_ORDERS_UPDATE", use: "Tracks wholesale invoices as they're paid" },
+  { topic: "PRODUCTS_UPDATE", use: "Refreshes Our coffees and the green catalog" },
+  { topic: "INVENTORY_LEVELS_UPDATE", use: "Refreshes green stock on the blend builder" },
+];
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const check = (payload: any, what: string) => {
   if (payload?.userErrors?.length) throw new Error(`${what}: ${payload.userErrors.map((e: { message: string }) => e.message).join("; ")}`);
 };
 
-// ---------- 1. green_lot metaobject definition ----------
-const DEF_BY_TYPE = gql`
-  query DefByType { metaobjectDefinitionByType(type: "green_lot") { id } }
-`;
-const DEF_CREATE = gql`
-  mutation DefCreate($definition: MetaobjectDefinitionCreateInput!) {
-    metaobjectDefinitionCreate(definition: $definition) { metaobjectDefinition { id } userErrors { field message } }
-  }
-`;
-async function ensureGreenLotDefinition(q: AdminQ, log: (s: string) => void) {
-  if ((await q(DEF_BY_TYPE)).metaobjectDefinitionByType) return log("Green lot definition already exists");
-  const f = (key: string, name: string, type: string, extra = {}) => ({ key, name, type, ...extra });
-  const r = await q(DEF_CREATE, { definition: {
-    type: "green_lot", name: "Green lot", displayNameKey: "name",
-    description: "Green coffee customers can put in a custom blend (Blended storefront).",
-    access: { storefront: "PUBLIC_READ" },
-    capabilities: { publishable: { enabled: true } },
-    fieldDefinitions: [
-      f("name", "Name", "single_line_text_field", { required: true }),
-      f("origin", "Origin", "single_line_text_field"),
-      f("lot_code", "Lot code", "single_line_text_field"),
-      f("process", "Process", "single_line_text_field"),
-      f("roast_level", "Preferred roast (1–5)", "number_integer", { validations: [{ name: "min", value: "1" }, { name: "max", value: "5" }] }),
-      f("green_price", "Green cost $/lb", "number_decimal"),
-      f("wholesale_price", "Wholesale $/lb roasted", "number_decimal"),
-      f("retail_price", "Retail $/lb roasted", "number_decimal"),
-      f("on_hand_lb", "On hand (green lb)", "number_integer"),
-      f("min_grams", "Min in a blend (g)", "number_integer"),
-      f("kind", "Kind", "single_line_text_field", { validations: [{ name: "choices", value: JSON.stringify(["anchor", "limited", "soon"]) }] }),
-      f("badge", "Badge", "single_line_text_field"),
-      f("tasting_notes", "Tasting notes (0–10 scores)", "json"),
-      f("reviews", "Grader + customer reviews", "json"),
-      f("image", "Photo", "file_reference", { validations: [{ name: "file_type_options", value: JSON.stringify(["Image"]) }] }),
-    ],
-  } });
-  check(r.metaobjectDefinitionCreate, "Green lot definition");
-  log("Created the green lot definition");
-}
-
-// ---------- 2. product metafield definitions ----------
+// ---------- 1. product metafield definitions (Our coffees + green lots) ----------
 const MF_CREATE = gql`
   mutation MfCreate($definition: MetafieldDefinitionInput!) {
     metafieldDefinitionCreate(definition: $definition) { createdDefinition { id } userErrors { field message code } }
@@ -62,14 +35,10 @@ const MF_CREATE = gql`
 `;
 async function ensureProductMetafields(q: AdminQ, log: (s: string) => void) {
   const defs = [
-    ["roast_level", "Roast level (1–5)", "number_integer"],
-    ["tasting_notes", "Tasting notes (0–10 scores)", "json"],
-    ["wholesale_price", "Wholesale $/lb (private label)", "number_decimal"],
+    ...GREEN_FIELDS,
     ["subtitle", "Subtitle", "single_line_text_field"],
     ["lead_time", "Lead time", "single_line_text_field"],
     ["availability", "Availability note", "single_line_text_field"],
-    ["badge", "Badge", "single_line_text_field"],
-    ["reviews", "Grader + customer reviews", "json"],
   ];
   for (const [key, name, type] of defs) {
     const r = await q(MF_CREATE, { definition: { namespace: "blended", key, name, type, ownerType: "PRODUCT", pin: true, access: { storefront: "PUBLIC_READ" } } });
@@ -79,7 +48,7 @@ async function ensureProductMetafields(q: AdminQ, log: (s: string) => void) {
   log("Product fields (blended.*) are in place");
 }
 
-// ---------- 3. publications + "Our coffees" collection ----------
+// ---------- 2. publications + "Our coffees" collection ----------
 const PUBLICATIONS = gql`
   query Pubs { publications(first: 25) { nodes { id name } } }
 `;
@@ -112,42 +81,66 @@ async function ensureCollection(q: AdminQ, handle: string, log: (s: string) => v
   log(`Created collection "${handle}" (products tagged blended-stock)`);
 }
 
-// ---------- 4. optional sample catalog ----------
-const FILE_CREATE = gql`
-  mutation FileCreate($files: [FileCreateInput!]!) {
-    fileCreate(files: $files) { files { id } userErrors { field message } }
+// ---------- 3. green lots → products with Shopify inventory ----------
+const PRODUCT_BY_HANDLE_GREEN = gql`
+  query GreenByHandle($identifier: ProductIdentifierInput!) { productByIdentifier(identifier: $identifier) { id } }
+`;
+async function createGreen(q: AdminQ, l: GreenLot, loc: string, file: GreenFile | null) {
+  const r = await q(PRODUCT_SET, { input: greenProductInput(l, l.id, loc, lbToG(l.avail), file) });
+  check(r.productSet, `Green lot ${l.name}`);
+}
+
+const LEGACY_DEF = gql`
+  query LegacyGreenDef { metaobjectDefinitionByType(type: "green_lot") { id metaobjectsCount } }
+`;
+const LEGACY_LOTS = gql`
+  query LegacyGreenLots($after: String) {
+    metaobjects(type: "green_lot", first: 100, after: $after) {
+      nodes {
+        id
+        handle
+        capabilities { publishable { status } }
+        fields { key value reference { ... on MediaImage { id image { url } } } }
+      }
+      pageInfo { hasNextPage endCursor }
+    }
   }
 `;
-const LOT_BY_HANDLE = gql`
-  query LotByHandle($handle: MetaobjectHandleInput!) { metaobjectByHandle(handle: $handle) { id } }
-`;
-const LOT_UPSERT = gql`
-  mutation LotUpsert($handle: MetaobjectHandleInput!, $metaobject: MetaobjectUpsertInput!) {
-    metaobjectUpsert(handle: $handle, metaobject: $metaobject) { metaobject { id } userErrors { field message } }
-  }
-`;
-async function seedGreen(q: AdminQ, lots: GreenLot[], image: ImageSource, log: (s: string) => void) {
+type LegacyNode = { id: string; handle: string; capabilities: { publishable: { status: string } | null } | null; fields: (MetaField & { reference?: { id?: string; image?: { url: string } | null } | null })[] };
+
+/** Copy green lots saved as `green_lot` metaobjects (older versions) into products, stock included. */
+async function migrateLegacyGreen(q: AdminQ, loc: string, log: (s: string) => void) {
+  const def = (await q(LEGACY_DEF)).metaobjectDefinitionByType;
+  if (!def?.metaobjectsCount) return;
+  let moved = 0, after: string | null = null;
+  do {
+    const r: { nodes: LegacyNode[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } } = (await q(LEGACY_LOTS, { after })).metaobjects;
+    for (const n of r.nodes) {
+      if ((await q(PRODUCT_BY_HANDLE_GREEN, { identifier: { handle: n.handle } })).productByIdentifier) continue;
+      const lot = lotFromFields(n);
+      const imageId = n.fields.find((f) => f.key === "image")?.reference?.id;
+      await createGreen(q, lot, loc, imageId ? { id: imageId } : null);
+      moved++;
+    }
+    after = r.pageInfo.hasNextPage ? r.pageInfo.endCursor : null;
+  } while (after);
+  log(moved
+    ? `Moved ${moved} green lot${moved === 1 ? "" : "s"} into Shopify products with inventory. The old "Green lot" metaobject entries are no longer used and can be deleted.`
+    : "Green lots are already products");
+}
+
+async function seedGreen(q: AdminQ, lots: GreenLot[], loc: string, image: ImageSource, log: (s: string) => void) {
   let n = 0;
   for (const l of lots) {
-    if ((await q(LOT_BY_HANDLE, { handle: { type: "green_lot", handle: l.id } })).metaobjectByHandle) continue;
-    let imageId: string | null = null;
+    if ((await q(PRODUCT_BY_HANDLE_GREEN, { identifier: { handle: l.id } })).productByIdentifier) continue;
     const src = l.image ? await image(l.image) : null;
-    if (src) {
-      const f = await q(FILE_CREATE, { files: [{ originalSource: src, contentType: "IMAGE", alt: l.name }] });
-      check(f.fileCreate, "Photo"); imageId = f.fileCreate.files[0].id;
-    }
-    const fields = [
-      ["name", l.name], ["origin", l.origin], ["lot_code", l.lot], ["process", l.process], ["roast_level", String(l.roast)],
-      ["green_price", l.price.toFixed(2)], ["on_hand_lb", String(l.avail)], ["kind", l.kind], ["badge", l.tag ?? ""],
-      ["tasting_notes", JSON.stringify(l.notes)], ...(imageId ? [["image", imageId]] : []),
-    ].filter(([, v]) => v !== "").map(([key, value]) => ({ key, value }));
-    const r = await q(LOT_UPSERT, { handle: { type: "green_lot", handle: l.id }, metaobject: { fields, capabilities: { publishable: { status: l.listed ? "ACTIVE" : "DRAFT" } } } });
-    check(r.metaobjectUpsert, `Green lot ${l.name}`);
+    await createGreen(q, l, loc, src ? { originalSource: src } : null);
     n++;
   }
   log(n ? `Added ${n} sample green lots` : "Sample green lots already present");
 }
 
+// ---------- 4. optional sample "Our coffees" ----------
 const PRODUCT_BY_HANDLE = gql`
   query ProductByHandle($identifier: ProductIdentifierInput!) { productByIdentifier(identifier: $identifier) { id } }
 `;
@@ -199,19 +192,22 @@ async function seedStock(q: AdminQ, stock: StockCoffee[], image: ImageSource, lo
 export interface SetupOptions {
   q: AdminQ;
   collectionHandle: string;
+  /** SHOPIFY_LOCATION_ID; blank = primary location */
+  locationId?: string | null;
   seed?: { green: GreenLot[]; stock: StockCoffee[]; image: ImageSource } | null;
   log?: (s: string) => void;
 }
 
 /** Create everything the storefront expects in Shopify. Returns a log of what happened. */
-export async function setupStore({ q, collectionHandle, seed, log: out }: SetupOptions): Promise<string[]> {
+export async function setupStore({ q, collectionHandle, locationId, seed, log: out }: SetupOptions): Promise<string[]> {
   const lines: string[] = [];
   const log = (s: string) => { lines.push(s); out?.(s); };
-  await ensureGreenLotDefinition(q, log);
   await ensureProductMetafields(q, log);
   await ensureCollection(q, collectionHandle, log);
+  const loc = await resolveLocation(q, locationId);
+  await migrateLegacyGreen(q, loc, log);
   if (seed) {
-    await seedGreen(q, seed.green, seed.image, log);
+    await seedGreen(q, seed.green, loc, seed.image, log);
     await seedStock(q, seed.stock, seed.image, log);
   }
   return lines;

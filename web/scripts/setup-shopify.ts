@@ -4,13 +4,13 @@
 //   node --env-file=.env.local scripts/setup-shopify.ts --seed     # …plus the design's sample coffees
 //   node --env-file=.env.local scripts/setup-shopify.ts --webhooks # …plus webhooks to APP_URL
 //
-// Needs Admin API scopes: write_metaobject_definitions, write_metaobjects,
-// write_products, write_publications, write_files, read_orders, write_orders,
+// Needs Admin API scopes: write_products, write_inventory, read_locations,
+// write_publications, write_files, read_metaobjects (to migrate old green lots), read_orders, write_orders,
 // write_draft_orders, write_fulfillments (+ read_customers for wholesale).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { DEMO_GREEN, DEMO_STOCK } from "../src/lib/fixtures.ts";
-import { setupStore } from "../src/lib/store-setup.ts";
+import { WEBHOOKS, setupStore } from "../src/lib/store-setup.ts";
 
 const gql = String.raw;
 const domain = process.env.SHOPIFY_STORE_DOMAIN;
@@ -78,9 +78,7 @@ async function ensureWebhooks() {
   if (!app || app.includes("localhost")) return console.log("! skipped webhooks: set APP_URL to your public deployment URL");
   const uri = `${app}/api/webhooks/shopify`;
   const have = new Set((await adminQ(HOOKS)).webhookSubscriptions.nodes.filter((n: { uri: string }) => n.uri === uri).map((n: { topic: string }) => n.topic));
-  const topics: [string, string?][] = [["ORDERS_CREATE"], ["ORDERS_PAID"], ["ORDERS_FULFILLED"], ["DRAFT_ORDERS_UPDATE"], ["PRODUCTS_UPDATE"],
-    ["METAOBJECTS_CREATE", "type:green_lot"], ["METAOBJECTS_UPDATE", "type:green_lot"], ["METAOBJECTS_DELETE", "type:green_lot"]];
-  for (const [topic, filter] of topics) {
+  for (const { topic, filter } of WEBHOOKS) {
     if (have.has(topic)) continue;
     const r = await adminQ(HOOK_CREATE, { topic, sub: { uri, format: "JSON", ...(filter ? { filter } : {}) } });
     check(r.webhookSubscriptionCreate, `webhook ${topic}`);
@@ -91,6 +89,7 @@ async function ensureWebhooks() {
 await setupStore({
   q: adminQ,
   collectionHandle: process.env.SHOPIFY_STOCK_COLLECTION || "our-coffees",
+  locationId: process.env.SHOPIFY_LOCATION_ID,
   seed: args.has("--seed") ? { green: DEMO_GREEN, stock: DEMO_STOCK, image: uploadImage } : null,
   log: (s) => console.log(`✓ ${s}`),
 });

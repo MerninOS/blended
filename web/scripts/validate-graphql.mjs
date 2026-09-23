@@ -21,15 +21,23 @@ const walk = (d) => readdirSync(d).forEach((f) => { const p = join(d, f); if (st
 walk(join(root, "src")); walk(join(root, "scripts"));
 const self = new URL(import.meta.url).pathname;
 
+// Fragments (`const X = gql\`fragment …\``) are inlined where a document uses \${X}.
+const fragments = new Map();
+for (const f of files) for (const m of readFileSync(f, "utf8").matchAll(/const (\w+) = gql`(\s*fragment[\s\S]*?)`/g)) fragments.set(m[1], m[2]);
+
 let docs = 0, bad = 0;
 for (const f of files.filter((x) => x !== self)) {
   const rel = relative(root, f);
   const src = readFileSync(f, "utf8");
-  const which = STOREFRONT.includes(rel) ? "storefront" : CUSTOMER.includes(rel) ? "customer" : "admin";
+  const fileApi = STOREFRONT.includes(rel) ? "storefront" : CUSTOMER.includes(rel) ? "customer" : "admin";
   for (const m of src.matchAll(/gql`([\s\S]*?)`/g)) {
+    // A document can opt into another API with a leading "# admin" / "# storefront" comment.
+    const which = m[1].match(/^\s*#\s*(admin|storefront|customer)\b/)?.[1] ?? fileApi;
+    if (/^\s*fragment\b/.test(m[1])) continue; // validated where it's used
     docs++;
     try {
-      const errs = validate(schemas[which], parse(m[1]));
+      const doc = m[1].replace(/\$\{(\w+)\}/g, (_, n) => { if (!fragments.has(n)) throw new Error(`unknown fragment \${${n}}`); return fragments.get(n); });
+      const errs = validate(schemas[which], parse(doc));
       if (errs.length) { bad++; console.error(`✗ ${rel} [${which}]\n  ${errs.map((e) => e.message).join("\n  ")}`); }
     } catch (e) { bad++; console.error(`✗ ${rel} [${which}] parse: ${e.message}`); }
   }

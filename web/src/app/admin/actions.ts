@@ -29,7 +29,7 @@ function cleanLot(l: GreenLot): GreenLot {
     ...l, name: String(l.name).trim().slice(0, 80), origin: String(l.origin).trim().slice(0, 80), lot: String(l.lot || "").trim().slice(0, 40),
     process: String(l.process || "Washed").slice(0, 40), roast: Math.max(1, Math.min(5, Math.round(n(l.roast, 3)))), price: n(l.price),
     wholesale: l.wholesale == null ? null : n(l.wholesale), retail: l.retail == null ? null : n(l.retail),
-    avail: Math.round(n(l.avail)), minG: l.minG == null ? null : Math.round(n(l.minG)), notes,
+    avail: Math.round(n(l.avail) * 10) / 10, onHandG: l.onHandG == null ? null : Math.round(n(l.onHandG)), minG: l.minG == null ? null : Math.round(n(l.minG)), notes,
     kind: l.kind === "limited" || l.kind === "soon" ? l.kind : "anchor", tag: l.tag ? String(l.tag).slice(0, 30) : null, listed: !!l.listed,
   };
 }
@@ -95,6 +95,7 @@ export async function setupStoreAction(seed: boolean): Promise<Result & { log?: 
     await setupStore({
       q: (query, variables) => admin(query, { variables }),
       collectionHandle: env.stockCollection,
+      locationId: env.locationId,
       seed: seed ? { green: DEMO_GREEN, stock: DEMO_STOCK, image: async (p) => (publicUrl ? `${publicUrl}${p}` : null) } : null,
       log: (l) => lines.push(l),
     });

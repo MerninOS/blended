@@ -1,26 +1,21 @@
 import "server-only";
 import type { Catalog, GreenLot, StockCoffee } from "@/lib/domain/types";
 import { env, isDemo } from "@/lib/env";
-import { CACHE_TAGS, gql, storefront } from "@/lib/shopify/client";
-import { GREEN_LOT_TYPE, lotFromFields, stockFromProduct, type MetaField, type SfProduct } from "@/lib/shopify/mapping";
+import { CACHE_TAGS, admin, gql, storefront } from "@/lib/shopify/client";
+import { stockFromProduct, type SfProduct } from "@/lib/shopify/mapping";
+import { GREEN_NODE, GREEN_QUERY, lotFromProduct, type GreenNode } from "@/lib/shopify/green-product";
+import { greenLocation } from "@/lib/green-admin";
 import { DEMO_STOCK } from "@/lib/fixtures";
 import { demoStore } from "@/lib/demo-store";
 
+// Green lots are unpublished products, so they're read with the Admin API
+// (server only) and cached with the rest of the catalog.
 const GREEN_LOTS = gql`
-  query GreenLots($type: String!, $after: String) {
-    metaobjects(type: $type, first: 100, after: $after) {
-      nodes {
-        id
-        handle
-        fields {
-          key
-          value
-          reference { ... on MediaImage { image { url(transform: { maxWidth: 480 }) } } }
-        }
-      }
-      pageInfo { hasNextPage endCursor }
-    }
+  # admin
+  query GreenLots($query: String!, $loc: ID!) {
+    products(first: 250, query: $query, sortKey: TITLE) { nodes { ...GreenNode } }
   }
+  ${GREEN_NODE}
 `;
 
 const STOCK = gql`
@@ -50,19 +45,13 @@ const STOCK = gql`
   }
 `;
 
-type LotsRes = { metaobjects: { nodes: { id: string; handle: string; fields: MetaField[] }[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } } };
-
-/** Listed green lots (the Storefront API only returns ACTIVE metaobjects). */
+/** Listed green lots with live Shopify stock. */
 export async function getGreenLots(): Promise<GreenLot[]> {
   if (isDemo()) return demoStore.green().filter((l) => l.listed);
-  const out: GreenLot[] = [];
-  let after: string | null = null;
-  do {
-    const r: LotsRes = await storefront<LotsRes>(GREEN_LOTS, { variables: { type: GREEN_LOT_TYPE, after }, tags: [CACHE_TAGS.catalog], revalidate: 300 });
-    out.push(...r.metaobjects.nodes.map(lotFromFields));
-    after = r.metaobjects.pageInfo.hasNextPage ? r.metaobjects.pageInfo.endCursor : null;
-  } while (after);
-  return out.filter((l) => l.listed);
+  const r = await admin<{ products: { nodes: GreenNode[] } }>(GREEN_LOTS, {
+    variables: { query: `${GREEN_QUERY} AND status:active`, loc: await greenLocation() }, tags: [CACHE_TAGS.catalog], revalidate: 300,
+  });
+  return r.products.nodes.map(lotFromProduct);
 }
 
 export async function getStockCoffees(): Promise<StockCoffee[]> {

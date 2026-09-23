@@ -89,6 +89,12 @@ export const enforceMins = (arr: SelItem[], lockedId: string | null, batchG: num
   return next;
 };
 
+/** Green grams each lot gives up for `roastedLb` of a blend (roast loss included), added into `into`. */
+export function greenUsageG(sel: SelItem[], roastedLb: number, into = new Map<string, number>()) {
+  for (const s of sel) into.set(s.id, (into.get(s.id) ?? 0) + (roastedLb * G_PER_LB * s.pct) / 100 / ROAST_LOSS);
+  return into;
+}
+
 // ---- pricing ----
 export const RETAIL_X = 2.6, WHOLESALE_X = 1.85, ROAST_LOSS = 0.84;
 export const roastedCost = (greenPrice: number) => greenPrice / ROAST_LOSS;

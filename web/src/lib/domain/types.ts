@@ -4,10 +4,10 @@ export type FlavorKey =
 
 export type Notes = Partial<Record<FlavorKey, number>>;
 
-/** A green coffee lot customers can put in a blend (Shopify metaobject `green_lot`). */
+/** A green coffee lot customers can put in a blend (Shopify product tagged `blended-green`, stock in grams). */
 export interface GreenLot {
   id: string;            // stable handle, e.g. "cerrado"
-  gid?: string;          // Shopify metaobject GID when backed by Shopify
+  gid?: string;          // Shopify product GID when backed by Shopify
   name: string;
   origin: string;        // "Brazil · Minas Gerais"
   lot: string;           // "LOT-2571"
@@ -16,7 +16,8 @@ export interface GreenLot {
   price: number;         // green cost $/lb
   wholesale: number | null; // $/lb roasted; null = standard markup
   retail: number | null;    // $/lb roasted; null = standard markup
-  avail: number;         // green lb on hand
+  avail: number;         // green lb available (Shopify inventory, shown in lb)
+  onHandG?: number | null; // grams at the green location as loaded (compare-and-set on edit); null = not stocked there yet
   minG: number | null;   // smallest weight allowed in a blend (g); null = default
   kind: "anchor" | "limited" | "soon";
   tag: string | null;    // badge

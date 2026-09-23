@@ -1,7 +1,7 @@
 "use client";
 // Green catalog (GreenAdmin.jsx): the coffees customers can blend — photo,
 // cupping scores (drive the tasting wheel), price, on-hand, min grams, roast.
-// Saves to Shopify `green_lot` metaobjects.
+// Saves to Shopify products tagged blended-green (stock = Shopify inventory, grams).
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { GreenLot } from "@/lib/domain/types";
@@ -97,7 +97,7 @@ function Editor({ row, isNew, busy, error, onChange, onClose, onSave, onDelete, 
             <Head label="Price and stock" />
             <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 14 }}>
               <div style={{ flex: "1 1 150px" }}><F label="Green cost $ / lb" hint={`${money(cost)}/lb roasted after 16% loss`}><input type="number" min={0} step="0.05" value={row.price} onChange={(e) => set("price", Math.max(0, +e.target.value || 0))} style={monoInput} /></F></div>
-              <div style={{ flex: "1 1 150px" }}><F label="On hand (green lb)" hint={row.avail === 0 ? "Zero shows it as out of stock" : undefined}><input type="number" min={0} value={row.avail} onChange={(e) => set("avail", Math.max(0, +e.target.value || 0))} style={monoInput} /></F></div>
+              <div style={{ flex: "1 1 150px" }}><F label="On hand (green lb)" hint={row.avail === 0 ? "Zero shows it as out of stock" : "Shopify inventory, counted in grams"}><input type="number" min={0} step={0.1} value={row.avail} onChange={(e) => set("avail", Math.max(0, +e.target.value || 0))} style={monoInput} /></F></div>
               <div style={{ flex: "1 1 170px" }}><F label="Min in a blend (g)" hint={minG(row) ? `${minPctFor(row, G_PER_LB)}% of a 1 lb bag · ${minPctFor(row, 5 * G_PER_LB)}% of a 5 lb run` : "No floor — any share allowed."}>
                 <input type="number" min={0} step={10} value={row.minG ?? MING_DEFAULT} onChange={(e) => set("minG", Math.max(0, Math.round(+e.target.value || 0)))} style={monoInput} /></F></div>
               <div style={{ flex: "1 1 150px" }}><F label="Badge">
@@ -225,7 +225,7 @@ export function GreenCatalogView({ rows, demo }: { rows: GreenLot[]; demo: boole
     const r = await saveLotAction(draft, imageFileId);
     if (r.ok) done(isNew ? `${draft.name} added` : `${draft.name} saved`); else setError(r.error);
   });
-  const del = () => draft && confirm(`Delete ${draft.name}? Past orders keep their recipe.`) && start(async () => {
+  const del = () => draft && confirm(`Delete ${draft.name}? It's archived in Shopify with its inventory history, and past orders keep their recipe.`) && start(async () => {
     const r = await deleteLotAction(draft);
     if (r.ok) done(`${draft.name} deleted`); else setError(r.error);
   });
@@ -238,7 +238,7 @@ export function GreenCatalogView({ rows, demo }: { rows: GreenLot[]; demo: boole
     <div style={{ display: "flex", flexDirection: "column", gap: 24, padding: "20px 24px 40px", maxWidth: "var(--content-max)" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
         <HeroMetric label="Green lots customers can blend" value={listed.length}
-          caption={`${rows.length} in the catalog · ${lbs.toLocaleString()} lb on hand${unscored.length ? ` · ${unscored.length} missing tasting notes` : ""}`} />
+          caption={`${rows.length} in the catalog · ${Math.round(lbs).toLocaleString()} lb on hand${unscored.length ? ` · ${unscored.length} missing tasting notes` : ""}`} />
         <StatStrip items={[
           { label: "Green value", value: money0(value) },
           { label: "Hidden", value: rows.filter((r) => !r.listed).length },
@@ -296,7 +296,7 @@ export function GreenCatalogView({ rows, demo }: { rows: GreenLot[]; demo: boole
                     <td style={{ padding: "11px 14px", textAlign: "right" }}><span style={CO.data({ fontSize: 12.5, color: "var(--ink-muted)" })}>{money(r.price)}</span></td>
                     <td style={{ padding: "11px 14px", textAlign: "right" }}><span style={CO.data({ fontSize: 13, color: "var(--ink)" })}>{money(wholesaleOf(r))}</span></td>
                     <td style={{ padding: "11px 14px", textAlign: "right" }}><span style={CO.data({ fontSize: 13, color: "var(--ink)" })}>{money(retailOf(r))}</span></td>
-                    <td style={{ padding: "11px 14px", textAlign: "right" }}><span style={CO.data({ fontSize: 13, color: r.avail === 0 ? "var(--danger)" : r.avail < 500 ? "var(--warning)" : "var(--ink)" })}>{r.avail.toLocaleString()}</span></td>
+                    <td style={{ padding: "11px 14px", textAlign: "right" }}><span style={CO.data({ fontSize: 13, color: r.avail === 0 ? "var(--danger)" : r.avail < 500 ? "var(--warning)" : "var(--ink)" })}>{r.avail.toLocaleString("en-US", { maximumFractionDigits: 1 })}</span></td>
                     <td style={{ padding: "11px 14px", textAlign: "right" }}><span style={CO.data({ fontSize: 13, color: minG(r) ? "var(--ink)" : "var(--ink-subtle)" })}>{minG(r) ? minG(r) + " g" : "—"}</span></td>
                     <td style={{ padding: "11px 14px" }}>{r.avail === 0 ? <Pill variant="cream">Out</Pill> : r.listed ? <Pill variant="matcha">Listed</Pill> : <Pill variant="cream">Hidden</Pill>}</td>
                   </tr>

@@ -9,7 +9,7 @@ fulfillment and inventory.
 | `/` | **Retail / Coffee Lab**: 3D carton hero, "Our coffees" or "Build your own blend", cart drawer, Shopify checkout |
 | `/wholesale` | **Private label** for signed-in wholesale accounts: stocked coffee or custom blend, packaging, run size, Net 30 or card |
 | `/admin/orders` | Orders board: to fulfil / roast list / all orders, order drawer with gram-level roast sheet, stage → fulfillment |
-| `/admin/green` | Green catalog: the lots customers can blend (photo, cupping scores, prices, on-hand, min grams, roast) |
+| `/admin/green` | Green catalog: the lots customers can blend (photo, cupping scores, prices, stock, min grams, roast) |
 | `/admin/settings` | Shopify connection, setup checklist, checkout switches, webhooks, recent activity |
 
 ## Run it
@@ -30,11 +30,12 @@ Admin edits are kept in memory and checkout says it's in demo. Admin is open loc
    the **private Storefront API token**. Enable the **Customer Account API** and add
    `APP_URL/account/callback` as a callback URI and `APP_URL/wholesale` as a logout URI.
 2. **Admin API:** create an app (Dev Dashboard) for your store with these scopes:
-   `write_metaobject_definitions, write_metaobjects, write_products, write_publications, write_files,
+   `write_products, write_inventory, read_locations, write_publications, write_files, read_metaobjects,
    read_orders, write_orders, write_draft_orders, write_merchant_managed_fulfillment_orders,
    write_fulfillments, read_customers, read_payment_terms`. Put its client ID/secret, or a static token, in `.env.local`.
-3. **Set up the store once:** Admin → Settings → **Set up store** creates the `green_lot` metaobject
-   definition, the `blended.*` product metafield definitions and the `our-coffees` collection.
+3. **Set up the store once:** Admin → Settings → **Set up store** creates the `blended.*` product
+   metafield definitions and the `our-coffees` collection. It also moves green lots saved by older
+   versions (`green_lot` metaobjects) into products.
    **Set up + add sample coffees** also loads the design's sample catalog with photos. Then click
    **Register webhooks**. You can also run it locally: `npm run setup:shopify` (add `-- --seed` for
    the samples, `-- --webhooks` for webhooks to `APP_URL`).
@@ -43,8 +44,16 @@ Admin edits are kept in memory and checkout says it's in demo. Admin is open loc
 
 ## How it maps onto Shopify
 
-- **Green catalog**: `green_lot` metaobjects. Listed = `ACTIVE`, hidden = `DRAFT`, so the Storefront
-  API only returns listed lots. Photos are Shopify files. Admin edits invalidate the storefront cache.
+- **Green catalog**: each lot is a product tagged `blended-green` (type "Green coffee") with one
+  inventory-tracked variant. **Its stock is Shopify inventory counted in grams** at the primary location
+  (or `SHOPIFY_LOCATION_ID`), so receiving, counts, adjustments and history happen in Shopify like any
+  product. Listed = active, hidden = draft, deleted = archived. The product is never on a sales channel;
+  the app reads it with the Admin API. Other details (origin, prices, notes, min grams…) are `blended.*` metafields.
+- **Green stock and orders**: checkout refuses a blend that needs more green than is available. When an
+  order is placed (`orders/create`), the app deducts each blend's green (roast loss included) with
+  `inventoryAdjustQuantities`, referencing the order and using an idempotency key, then tags it
+  `green:deducted`. `orders/cancelled` puts it back (`green:restocked`). Editing "on hand" in the admin is a
+  compare-and-set, so an order deducting at the same moment is never overwritten.
 - **Our coffees**: products in the `our-coffees` collection (tag `blended-stock`), with a `Size` option
   (8 oz / 1 lb / 2 lb / 5 lb). **The variant price is the shelf price.** Roast, tasting notes,
   wholesale $/lb and reviews come from `blended.*` metafields.
@@ -59,9 +68,9 @@ Admin edits are kept in memory and checkout says it's in demo. Admin is open loc
   numbers never touch this app. Label artwork uploads straight from the browser to Shopify Files.
 - **Orders board**: reads orders tagged `blended`. Stage = `stage:roasting` / `stage:packing` tags.
   **Mark shipped** creates a real fulfillment (optional tracking; the customer email is a Settings toggle).
-- **Webhooks** (`/api/webhooks/shopify`, HMAC-verified): product/metaobject changes refresh the catalog
-  cache. `orders/paid` draws down green on-hand for blends and adds a `qc-hold` tag. Both are
-  Settings toggles and idempotent via the `green:deducted` tag.
+- **Webhooks** (`/api/webhooks/shopify`, HMAC-verified): product and inventory changes refresh the catalog
+  cache. `orders/create` / `orders/cancelled` move green stock (above). `orders/paid` adds a `qc-hold` tag
+  to custom blends. Both are Settings toggles.
 
 ## Checks
 

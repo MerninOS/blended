@@ -20,6 +20,7 @@ export const env = {
   sessionSecret: v("SESSION_SECRET"),
   adminPassword: v("ADMIN_PASSWORD"),
   stockCollection: v("SHOPIFY_STOCK_COLLECTION") || "our-coffees",
+  locationId: v("SHOPIFY_LOCATION_ID"),                   // where green is counted; default: primary location
   wholesaleTag: v("SHOPIFY_WHOLESALE_TAG") || "wholesale",
   currency: v("SHOPIFY_CURRENCY") || "USD",
   isProd: process.env.NODE_ENV === "production",

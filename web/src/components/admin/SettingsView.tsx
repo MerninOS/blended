@@ -48,7 +48,8 @@ const ROUTES = [
   { id: "wholesaleCheckout" as const, channel: "Wholesale · Private label", target: "Draft order", detail: "Net 30 on account, or card", pay: "Payment terms on the order, or card checkout", tag: "channel:wholesale · private-label", roast: "On the Orders board when placed" },
 ];
 const MAP = [
-  { from: "Green lot", to: "Metaobject green_lot", note: "Listing publishes it (ACTIVE); hiding sets it to draft. Photo is a Shopify file." },
+  { from: "Green lot", to: "Product tagged blended-green", note: "Stock is Shopify inventory in grams. Listed = active, hidden = draft, never on a sales channel." },
+  { from: "Blend order", to: "Inventory adjustment", note: "Each blend deducts its green (roast loss included) when the order is placed. Cancelling puts it back." },
   { from: "Our coffees", to: "Products in our-coffees", note: "Tag products blended-stock. Size option: 8 oz / 1 lb / 2 lb / 5 lb." },
   { from: "Bag size", to: "Variant", note: "Variant price is the shelf price shown on the storefront." },
   { from: "Custom blend", to: "Custom line item", note: "Priced from the ratios; recipe rides as line-item properties (_blend)." },
@@ -105,10 +106,15 @@ export function SettingsView({ conn, initial }: { conn: ConnectionInfo; initial:
       </Section>
 
       <Section title="Store setup"
-        note="Creates what Blended needs in Shopify: the green_lot metaobject definition (the green catalog), the blended.* product fields and the Our coffees collection. Safe to run again. The sample option also adds the design's coffees so you can try the storefront."
-        right={<Pill variant={conn.setupDone ? "matcha" : "cream"} dot>{conn.setupDone ? "Done" : conn.setupDone === false ? "Not set up" : "Unknown"}</Pill>}>
+        note="Creates what Blended needs in Shopify: the blended.* product fields and the Our coffees collection. Green lots are products tagged blended-green whose stock is tracked in Shopify inventory, in grams. Safe to run again. The sample option also adds the design's coffees so you can try the storefront."
+        right={<Pill variant={conn.setupDone && !conn.legacyGreen ? "matcha" : "cream"} dot>{conn.legacyGreen ? "Needs update" : conn.setupDone ? "Done" : conn.setupDone === false ? "Not set up" : "Unknown"}</Pill>}>
+        {conn.legacyGreen > 0 && (
+          <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: 13, lineHeight: 1.55, color: "var(--ink)" }}>
+            {conn.legacyGreen} green lot{conn.legacyGreen === 1 ? " is" : "s are"} still saved the old way (metaobjects), so orders can&apos;t deduct stock. Click <b>Set up store</b> to move {conn.legacyGreen === 1 ? "it" : "them"} into Shopify products with inventory. On-hand pounds carry over.
+          </p>
+        )}
         <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
-          <Btn size="sm" variant={conn.setupDone ? "outline" : "primary"} disabled={busy || !connected} onClick={() => setup(false)}>{busy ? "Working…" : "Set up store"}</Btn>
+          <Btn size="sm" variant={conn.setupDone && !conn.legacyGreen ? "outline" : "primary"} disabled={busy || !connected} onClick={() => setup(false)}>{busy ? "Working…" : "Set up store"}</Btn>
           <Btn size="sm" variant="outline" disabled={busy || !connected} onClick={() => setup(true)}>Set up + add sample coffees</Btn>
         </div>
         {setupLog && (
@@ -144,7 +150,7 @@ export function SettingsView({ conn, initial }: { conn: ConnectionInfo; initial:
         <ToggleRow title="Hold custom blends for a QC cupping" desc="Paid orders with a custom blend land on the board with a QC hold. Shopify still shows them as paid; starting the roast releases the hold." on={s.qcHoldNewBlends} onChange={(v) => set("qcHoldNewBlends", v)} />
       </Section>
 
-      <Section title="Catalog mapping" note="Shopify is the source of truth. The green catalog lives in metaobjects; Our coffees are regular products.">
+      <Section title="Catalog mapping" note="Shopify is the source of truth. Green lots and Our coffees are both Shopify products; green stock is Shopify inventory.">
         <div style={{ border: "1px solid var(--hairline)", borderRadius: "var(--r-md)", overflow: "hidden" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.6fr", gap: 16, padding: "9px 16px", background: "var(--surface-sunken)", borderBottom: "1px solid var(--hairline)" }}>
             <span style={over()}>Blended</span><span style={over()}>Shopify</span><span style={over()}>Note</span>
@@ -160,7 +166,7 @@ export function SettingsView({ conn, initial }: { conn: ConnectionInfo; initial:
       </Section>
 
       <Section title="Inventory and fulfillment">
-        <ToggleRow title="Draw down green on-hand when blend orders are paid" desc="Subtracts the green pounds each blend used (16% roast loss included) from its lot in the green catalog." on={s.drawDownGreen} onChange={(v) => set("drawDownGreen", v)} />
+        <ToggleRow title="Deduct green from Shopify inventory when blend orders are placed" desc="Each custom blend takes the green it used (16% roast loss included) out of its lot’s inventory, with the order as the reference. Cancelled orders put it back." on={s.drawDownGreen} onChange={(v) => set("drawDownGreen", v)} />
         <ToggleRow title="Email tracking when an order is marked shipped" desc="Marking an order shipped on the Orders board files a Shopify fulfillment; with this on, Shopify emails the customer." on={s.notifyOnShip} onChange={(v) => set("notifyOnShip", v)} />
       </Section>
 

@@ -5,7 +5,7 @@ import type { Catalog, GreenLot, SelItem } from "@/lib/domain/types";
 import type { RetailLine } from "@/lib/domain/requests";
 import {
   G_PER_LB, MAX_BAGS, stockBagPrice, MAX_COMPONENTS, bagPrice, indexLots, minPctFor, minsFit, minsTotalG,
-  retailSel, roastName, roastOf, round2, shippingFor, shopSize, type LotIndex,
+  greenUsageG, retailSel, roastName, roastOf, round2, shippingFor, shopSize, type LotIndex,
 } from "@/lib/domain/coffee";
 import { env } from "@/lib/env";
 import { admin, assertNoUserErrors, gql } from "@/lib/shopify/client";
@@ -40,6 +40,15 @@ export function checkBlend(sel: SelItem[], batchG: number, idx: LotIndex): SelIt
   return clean;
 }
 
+/** Refuse an order that needs more green than Shopify has available. */
+export function assertGreenStock(usageG: Map<string, number>, idx: LotIndex) {
+  for (const [id, g] of usageG) {
+    const lot = idx.get(id);
+    if (lot && g / G_PER_LB > lot.avail + 0.05)
+      throw new CheckoutError(`Only ${Math.floor(lot.avail).toLocaleString("en-US")} lb of ${lot.name} is left — make a smaller batch or swap it out.`);
+  }
+}
+
 export const recipeOf = (name: string, roast: number, sizeId: string, sel: SelItem[], idx: LotIndex): BlendRecipe => ({
   v: BLEND_VERSION, name, roast, sizeId,
   sel: sel.map((s) => { const l = idx.get(s.id) as GreenLot; return { id: l.id, name: l.name, lot: l.lot, pct: s.pct, roast: l.roast }; }),
@@ -58,6 +67,7 @@ export function priceRetailCart(lines: RetailLine[], cat: Catalog, opts: { demo?
   if (!Array.isArray(lines) || !lines.length) throw new CheckoutError("Your cart is empty.");
   if (lines.length > 30) throw new CheckoutError("Too many lines in the cart.");
   const idx = indexLots(cat.green);
+  const usage = new Map<string, number>();
   let goods = 0;
   const out: DraftLine[] = lines.map((l) => {
     const qty = Math.round(Number(l.qty));
@@ -75,6 +85,7 @@ export function priceRetailCart(lines: RetailLine[], cat: Catalog, opts: { demo?
     const sel = checkBlend(l.sel, batchG, idx);
     const name = cleanName(l.name, "House blend");
     const roast = clampRoast(l.roast, sel, idx);
+    greenUsageG(sel, size.lb * qty, usage);
     const unit = bagPrice(retailSel(sel, idx), size);
     goods += unit * qty;
     const recipe = recipeOf(name, roast, size.id, sel, idx);
@@ -95,6 +106,7 @@ export function priceRetailCart(lines: RetailLine[], cat: Catalog, opts: { demo?
       ],
     };
   });
+  assertGreenStock(usage, idx);
   return { lines: out, goods, shipping: shippingFor(goods) };
 }
 

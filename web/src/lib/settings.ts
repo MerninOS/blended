@@ -8,7 +8,7 @@ export interface StoreSettings {
   retailCheckout: boolean;     // Retail tab hands carts to Shopify
   wholesaleCheckout: boolean;  // Wholesale tab places draft orders
   qcHoldNewBlends: boolean;    // paid orders with custom blends get a qc-hold tag
-  drawDownGreen: boolean;      // subtract green lb from lots when blend orders are paid
+  drawDownGreen: boolean;      // deduct green (Shopify inventory) when blend orders are placed
   notifyOnShip: boolean;       // Shopify emails tracking when an order is marked shipped
 }
 export const DEFAULT_SETTINGS: StoreSettings = { retailCheckout: true, wholesaleCheckout: true, qcHoldNewBlends: true, drawDownGreen: true, notifyOnShip: true };
@@ -22,15 +22,22 @@ const SHOP = gql`
       currencyCode
       metafield(namespace: "blended", key: "settings") { value }
     }
-    greenLotDefinition: metaobjectDefinitionByType(type: "green_lot") { id }
   }
 `;
+const SETUP_STATE = gql`
+  query SetupState {
+    greenFields: metafieldDefinitions(first: 1, ownerType: PRODUCT, namespace: "blended", key: "green_price") { nodes { id } }
+    greenProducts: productsCount(query: "tag:blended-green") { count }
+    legacyGreen: metaobjectDefinitionByType(type: "green_lot") { metaobjectsCount }
+  }
+`;
+type SetupRes = { greenFields: { nodes: { id: string }[] }; greenProducts: { count: number } | null; legacyGreen: { metaobjectsCount: number } | null };
 const SET = gql`
   mutation SaveSettings($metafields: [MetafieldsSetInput!]!) {
     metafieldsSet(metafields: $metafields) { userErrors { field message } }
   }
 `;
-type ShopRes = { shop: { id: string; name: string; myshopifyDomain: string; currencyCode: string; metafield: { value: string } | null }; greenLotDefinition: { id: string } | null };
+type ShopRes = { shop: { id: string; name: string; myshopifyDomain: string; currencyCode: string; metafield: { value: string } | null }; };
 
 let demoSettings = { ...DEFAULT_SETTINGS };
 
@@ -50,16 +57,8 @@ export async function saveSettings(s: StoreSettings) {
 }
 
 // ---------- connection + webhooks ----------
-export const WEBHOOKS: { topic: string; use: string; filter?: string }[] = [
-  { topic: "ORDERS_CREATE", use: "Opens the order on the Orders board" },
-  { topic: "ORDERS_PAID", use: "Draws down green on-hand and applies the QC hold" },
-  { topic: "ORDERS_FULFILLED", use: "Moves the order to shipped" },
-  { topic: "DRAFT_ORDERS_UPDATE", use: "Tracks wholesale invoices as they're paid" },
-  { topic: "PRODUCTS_UPDATE", use: "Refreshes Our coffees on the storefront" },
-  { topic: "METAOBJECTS_CREATE", use: "Refreshes the blend builder", filter: "type:green_lot" },
-  { topic: "METAOBJECTS_UPDATE", use: "Refreshes the blend builder", filter: "type:green_lot" },
-  { topic: "METAOBJECTS_DELETE", use: "Refreshes the blend builder", filter: "type:green_lot" },
-];
+import { WEBHOOKS } from "@/lib/store-setup";
+export { WEBHOOKS };
 
 const HOOKS = gql`
   query Hooks {
@@ -90,8 +89,10 @@ export interface ConnectionInfo {
   checks: { label: string; ok: boolean; hint: string }[];
   hooks: { topic: string; use: string; active: boolean; last: string | null }[];
   activity: { t: string; ev: string; ref: string; msg: string }[];
-  /** Whether the green_lot definition exists (null when the store couldn't be reached). */
+  /** Whether store setup has run (null when unknown). */
   setupDone: boolean | null;
+  /** Green lots still stored as old `green_lot` metaobjects, waiting to be moved into products. */
+  legacyGreen: number;
   error?: string;
 }
 
@@ -103,21 +104,23 @@ export async function getConnection(): Promise<ConnectionInfo> {
     { label: "Webhook secret", ok: !!env.webhookSecret, hint: "SHOPIFY_WEBHOOK_SECRET or SHOPIFY_CLIENT_SECRET" },
     { label: "Session secret", ok: !!env.sessionSecret, hint: "SESSION_SECRET (32+ random characters)" },
   ];
-  const base: ConnectionInfo = { demo: isDemo(), shop: null, apiVersion: env.apiVersion, checks, hooks: WEBHOOKS.map((h) => ({ topic: h.topic, use: h.use, active: false, last: null })), activity: [], setupDone: null };
+  const base: ConnectionInfo = { demo: isDemo(), shop: null, apiVersion: env.apiVersion, checks, hooks: WEBHOOKS.map((h) => ({ topic: h.topic, use: h.use, active: false, last: null })), activity: [], setupDone: null, legacyGreen: 0 };
   if (!hasAdmin()) return base;
   try {
-    const [s, h, a] = await Promise.all([
+    const [s, h, a, st] = await Promise.all([
       admin<ShopRes>(SHOP),
       admin<{ webhookSubscriptions: { nodes: { topic: string; uri: string; updatedAt: string }[] } }>(HOOKS),
       admin<{ orders: { nodes: { name: string; createdAt: string; tags: string[]; displayFinancialStatus: string | null; totalPriceSet: { shopMoney: { amount: string } } }[] };
         draftOrders: { nodes: { name: string; updatedAt: string; status: string }[] } }>(ACTIVITY),
+      admin<SetupRes>(SETUP_STATE).catch(() => null),
     ]);
     const mine = h.webhookSubscriptions.nodes.filter((n) => n.uri === webhookUri());
     const time = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
     return {
       ...base,
       shop: { name: s.shop.name, domain: s.shop.myshopifyDomain, currency: s.shop.currencyCode },
-      setupDone: !!s.greenLotDefinition,
+      setupDone: st ? st.greenFields.nodes.length > 0 : null,
+      legacyGreen: st && !st.greenProducts?.count ? st.legacyGreen?.metaobjectsCount ?? 0 : 0,
       hooks: WEBHOOKS.map((w) => { const m = mine.find((n) => n.topic === w.topic); return { topic: w.topic, use: w.use, active: !!m, last: m ? time(m.updatedAt) : null }; }),
       activity: [
         ...a.orders.nodes.map((o) => ({ at: o.createdAt, t: time(o.createdAt), ev: "orders/create", ref: o.name,

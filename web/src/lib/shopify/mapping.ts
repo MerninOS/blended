@@ -1,8 +1,6 @@
 import type { CoffeeReviewsData, GreenLot, Notes, ShopSizeId, StockCoffee } from "@/lib/domain/types";
 
-// ---------- green_lot metaobject <-> GreenLot ----------
-export const GREEN_LOT_TYPE = "green_lot";
-export const META_NS = "blended";
+// ---------- legacy green_lot metaobject -> GreenLot (migration only) ----------
 
 export type MetaField = { key: string; value: string | null; reference?: { image?: { url: string } | null } | null };
 
@@ -36,26 +34,6 @@ export function lotFromFields(node: { id: string; handle: string; fields: MetaFi
     image: f.image?.reference?.image?.url ?? null,
     reviews: json<CoffeeReviewsData | null>(val("reviews"), null),
   };
-}
-
-/** Metaobject field inputs for create/update (image handled separately). */
-export function lotToFields(l: GreenLot): { key: string; value: string }[] {
-  const s = (n: number | null | undefined) => (n == null ? "" : String(n));
-  return [
-    { key: "name", value: l.name },
-    { key: "origin", value: l.origin },
-    { key: "lot_code", value: l.lot },
-    { key: "process", value: l.process },
-    { key: "roast_level", value: String(Math.round(l.roast)) },
-    { key: "green_price", value: l.price.toFixed(2) },
-    { key: "wholesale_price", value: l.wholesale == null ? "" : l.wholesale.toFixed(2) },
-    { key: "retail_price", value: l.retail == null ? "" : l.retail.toFixed(2) },
-    { key: "on_hand_lb", value: s(Math.round(l.avail)) },
-    { key: "min_grams", value: s(l.minG) },
-    { key: "kind", value: l.kind },
-    { key: "badge", value: l.tag ?? "" },
-    { key: "tasting_notes", value: JSON.stringify(l.notes || {}) },
-  ];
 }
 
 // ---------- product -> StockCoffee ----------
