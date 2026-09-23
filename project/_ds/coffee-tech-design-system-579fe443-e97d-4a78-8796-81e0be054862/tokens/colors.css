@@ -1,0 +1,133 @@
+/* Coffee-ops DS — Color
+   Precision-instrument palette: warm-neutral base (never cool slate) +
+   one confident accent (deep botanical green, ties to *green* coffee).
+   Base ramps first, then semantic aliases. */
+:root {
+  /* ---- Warm neutrals (the whole system lives here) ---- */
+  --neutral-0:   #FFFFFF;
+  --neutral-50:  #FBFAF8;   /* paper — app background */
+  --neutral-100: #F4F2ED;   /* panel — sidebar / secondary surface */
+  --neutral-150: #EDEAE3;
+  --neutral-200: #E8E3DA;   /* hairline — borders / dividers */
+  --neutral-250: #DED8CC;
+  --neutral-300: #D0C9BB;
+  --neutral-400: #B0A796;
+  --neutral-500: #8B8273;
+  --neutral-600: #6B6459;   /* muted — secondary text */
+  --neutral-700: #4C453B;
+  --neutral-800: #2F2A23;
+  --neutral-900: #1F1B16;   /* ink — primary text (warm near-black) */
+  --neutral-950: #14110C;
+
+  /* ---- Accent: deep botanical green ---- */
+  --accent-50:  #EAF0EC;    /* selected / active backgrounds */
+  --accent-100: #D8E4DB;
+  --accent-200: #B4CBBD;
+  --accent-300: #86AB95;
+  --accent-400: #53886A;
+  --accent-500: #2E5E43;    /* primary action */
+  --accent-600: #26503A;    /* hover */
+  --accent-700: #1E4130;
+  --accent-800: #163124;
+  --accent-900: #0E2016;
+
+  /* ---- Petrol / teal (alternate accent for a product; NEVER amber/clay) ---- */
+  --petrol-50:  #E7EFF0;
+  --petrol-500: #1F5560;
+  --petrol-600: #194650;
+
+  /* ---- Semantic hues (desaturated to sit in the warm system) ---- */
+  --green-500:  #2E5E43;    /* success shares the accent family */
+  --green-100:  #E1ECE4;
+  --green-700:  #204734;
+  --amber-500:  #B8760C;    /* warning */
+  --amber-100:  #F4E7CE;
+  --amber-700:  #8A5807;
+  --red-500:    #A93226;    /* danger */
+  --red-100:    #F2DAD5;
+  --red-700:    #822318;
+  --blue-500:   #3A5A78;    /* info */
+  --blue-100:   #DCE5EE;
+  --blue-700:   #2A4055;
+
+  /* Roast ramp — used only for the signature roast-level chip / roast series */
+  --roast-light:  #7C9A5E;
+  --roast-medium: #B8760C;
+  --roast-dark:   #6B4423;
+  --roast-espresso: #3A241A;
+
+  /* ============ Semantic aliases (what components consume) ============ */
+  /* Brief canonical names */
+  --paper:    var(--neutral-50);
+  --panel:    var(--neutral-100);
+  --surface:  var(--neutral-0);
+  --ink:      var(--neutral-900);
+  --muted:    var(--neutral-600);
+  --hairline: var(--neutral-200);
+
+  /* Surfaces */
+  --surface-page:    var(--neutral-50);
+  --surface-card:    var(--neutral-0);
+  --surface-sunken:  var(--neutral-100);
+  --surface-raised:  var(--neutral-0);
+  --surface-inverse: var(--neutral-900);
+  --surface-hover:   var(--neutral-100);
+  --surface-active:  var(--neutral-150);
+
+  /* Text */
+  --text-primary:    var(--neutral-900);
+  --text-secondary:  var(--neutral-600);
+  --text-tertiary:   var(--neutral-500);
+  --text-disabled:   var(--neutral-400);
+  --text-inverse:    var(--neutral-50);
+  --text-onbrand:    #FFFFFF;
+  --text-accent:     var(--accent-700);
+  --text-link:       var(--accent-600);
+
+  /* Borders */
+  --border-subtle:   var(--neutral-200);
+  --border-default:  var(--neutral-300);
+  --border-strong:   var(--neutral-400);
+  --border-focus:    var(--accent-500);
+
+  /* Brand / accent */
+  --brand:           var(--neutral-900);
+  --brand-hover:     var(--neutral-800);
+  --accent:          var(--accent-500);
+  --accent-hover:    var(--accent-600);
+  --accent-soft:     var(--accent-50);
+  --accent-border:   var(--accent-200);
+  --accent-text:     var(--accent-700);
+
+  /* Semantic feedback */
+  --success:      var(--green-500);
+  --success-soft: var(--green-100);
+  --success-text: var(--green-700);
+  --warning:      var(--amber-500);
+  --warning-soft: var(--amber-100);
+  --warning-text: var(--amber-700);
+  --danger:       var(--red-500);
+  --danger-soft:  var(--red-100);
+  --danger-text:  var(--red-700);
+  --info:         var(--blue-500);
+  --info-soft:    var(--blue-100);
+  --info-text:    var(--blue-700);
+
+  /* Signature: roast-level chip gradient (green -> amber -> espresso) */
+  --roast-gradient: linear-gradient(90deg,
+    var(--roast-light) 0%,
+    var(--roast-medium) 42%,
+    var(--roast-dark) 74%,
+    var(--roast-espresso) 100%);
+
+  /* Data-viz series (restrained, from the accent family + warm neutrals) */
+  --viz-1: var(--accent-500);
+  --viz-2: var(--amber-500);
+  --viz-3: var(--blue-500);
+  --viz-4: var(--neutral-500);
+  --viz-grid: var(--neutral-200);
+  --viz-axis: var(--neutral-500);
+
+  /* Focus ring */
+  --ring: 0 0 0 3px rgba(46, 94, 67, 0.30);
+}

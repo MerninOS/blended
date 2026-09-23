@@ -1,0 +1,29 @@
+/* Coffee-ops DS — Spacing & sizing (4px base grid) */
+:root {
+  --space-0:  0;
+  --space-1:  2px;
+  --space-2:  4px;
+  --space-3:  6px;
+  --space-4:  8px;
+  --space-5:  12px;
+  --space-6:  16px;
+  --space-7:  20px;
+  --space-8:  24px;
+  --space-9:  32px;
+  --space-10: 40px;
+  --space-11: 48px;
+  --space-12: 64px;
+  --space-14: 80px;
+  --space-16: 96px;
+
+  /* Control heights */
+  --control-sm: 28px;
+  --control-md: 34px;
+  --control-lg: 42px;
+
+  /* Layout */
+  --container-max: 1280px;
+  --sidebar-w:     236px;
+  --sidebar-w-collapsed: 60px;
+  --topbar-h:      56px;
+}

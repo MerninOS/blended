@@ -1,0 +1,7 @@
+/* Webfonts. No font binaries were provided with the brief, so these are the
+   nearest Google Fonts matches to the roles DESIGN.md describes:
+   - Display: Space Grotesk (characterful geometric grotesk)
+   - Body:    Geist (highly legible modern sans)
+   - Mono:    JetBrains Mono (data / numbers / IDs, tabular figures)
+   FLAG: swap these @import lines for self-hosted @font-face if brand fonts exist. */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Geist:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');

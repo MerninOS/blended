@@ -1,0 +1,33 @@
+/* CoffeeOS base layer — element defaults + role utilities. Depends on the token
+   files (loaded first via styles.css). Body prose = Instrument Sans; anything
+   that is a figure/code/label is Martian Mono (set explicitly by components). */
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--canvas);color:var(--ink);
+  font-family:var(--font-sans);font-size:var(--fs-body);line-height:var(--lh-body);
+  font-weight:var(--fw-regular);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+
+/* Links — ink with a 1px underline, shifting to brand on hover. */
+a{color:var(--ink);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px;text-decoration-color:var(--hairline-strong);transition:color var(--motion),text-decoration-color var(--motion)}
+a:hover{color:var(--brand);text-decoration-color:var(--brand)}
+
+:focus-visible{outline:var(--focus-width) solid var(--brand);outline-offset:2px}
+
+/* Type role utilities */
+.coffeeos-display{font-family:var(--font-display);font-variation-settings:var(--display-settings);font-weight:var(--display-weight);letter-spacing:var(--display-tracking);line-height:var(--lh-tight)}
+.coffeeos-mono{font-family:var(--font-mono);font-variation-settings:var(--data-settings);font-weight:var(--data-weight);font-variant-numeric:tabular-nums}
+.coffeeos-overline{font-family:var(--font-mono);font-variation-settings:var(--overline-settings);font-weight:var(--overline-weight);font-size:var(--fs-overline);letter-spacing:var(--overline-tracking);text-transform:uppercase;color:var(--ink-muted)}
+
+/* Any data figure defaults to condensed mono tabular. */
+.num,data{font-family:var(--font-mono);font-variation-settings:var(--data-settings);font-variant-numeric:tabular-nums}
+
+h1,h2,h3,h4{margin:0;line-height:var(--lh-snug)}
+p{margin:0}
+
+/* Live-register pulse (batch strip). Collapses under reduced-motion. */
+@keyframes coffeeos-pulse{0%,100%{opacity:1}50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.coffeeos-pulse{animation:none!important}}

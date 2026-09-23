@@ -1,0 +1,108 @@
+/* ============================================================
+   BLENDED — storefront + admin skin.
+   Sits on top of the CoffeeOS bridge and retunes it to the
+   packaging: paper stock, true-black ink, one orange, a heavy
+   tight grotesk wordmark against tracked-out mono labels, and
+   near-square corners. Structure and components are unchanged.
+   ============================================================ */
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&display=swap");
+@font-face{font-family:"Energy Grotesk";src:url("fonts/EnergyGrotesk-UltraBold.ttf") format("truetype");font-weight:800;font-style:normal;font-display:swap;}
+
+:root{
+  /* ---- paper and ink ---- */
+  --canvas:#FFFFFF;
+  --surface:#FFFFFF;
+  --surface-sunken:#F0EDE5;
+  --surface-hover:#F6F4EE;
+  --hairline:#DEDACF;
+  --hairline-strong:#C4BEB0;
+
+  --ink:#1A1A18;
+  --on-ink:#FFFFFF;
+  --ink-muted:#6A665E;
+  --ink-subtle:#9A948A;
+
+  /* ---- the three inks off the label ---- */
+  --pkg-amber:#F5A623;
+  --pkg-vermilion:#D93D18;
+  --pkg-pink:#DE8AB4;
+  --pkg-magenta:#C43C7C;
+
+  /* ---- the one accent, off the label's vermilion ---- */
+  --brand:#D93D18;
+  --brand-hover:#B22F10;
+  --brand-soft:#FBEAE3;
+  --viz-highlight:#D93D18;
+  --focus-ring:0 0 0 2px #FFFFFF,0 0 0 4px #D93D18;
+
+  /* ---- roast ramp retuned to the label's inks ---- */
+  --roast-0:#F5A623;
+  --roast-1:#EE8A1E;
+  --roast-2:#D93D18;
+  --roast-3:#C43C7C;
+  --roast-4:#8E2F52;
+  --roast-5:#3A2118;
+
+  /* ---- type: heavy tight grotesk for display, mono for data ---- */
+  --font-display:"Energy Grotesk","Archivo","Instrument Sans",system-ui,sans-serif;
+  --display-settings:"wght" 800;
+  --display-weight:800;
+  --display-tracking:-0.035em;
+
+  /* ---- logo / header face, from the packaging artwork ---- */
+  --font-logo:"Energy Grotesk","Archivo",system-ui,sans-serif;
+  --overline-tracking:0.14em;
+
+  /* ---- crisper corners, flatter elevation ---- */
+  --r-sm:2px;
+  --r-md:3px;
+  --r-lg:4px;
+  --r-pill:999px;
+  --shadow-sm:0 1px 0 rgba(26,26,24,.05);
+  --shadow-pop:0 6px 24px rgba(26,26,24,.10);
+  --shadow-modal:0 18px 60px rgba(26,26,24,.20);
+}
+
+/* bridge tokens that were pinned to the old red */
+[data-product="coroasted-coffee-os"]{
+  --color-accent:var(--brand);
+  --color-accent-subtle:var(--brand-soft);
+  --color-chalk:var(--canvas);
+  --color-fog:var(--surface-sunken);
+}
+
+/* Display type is a grotesk now — drop the mono width axis and set it tight. */
+[data-product="coroasted-coffee-os"] h1,
+[data-product="coroasted-coffee-os"] h2,
+[data-product="coroasted-coffee-os"] h3,
+[data-product="coroasted-coffee-os"] h4,
+[data-product="coroasted-coffee-os"] .co-display{
+  font-family:var(--font-display);
+  font-variation-settings:"wght" 800;
+  font-weight:800;
+  letter-spacing:-0.035em;
+}
+[data-product="coroasted-coffee-os"] h1{text-transform:uppercase}
+
+/* Wordmark + page headings run the logo face. */
+[data-product="coroasted-coffee-os"] .co-wordmark,
+[data-product="coroasted-coffee-os"] h1{
+  font-family:var(--font-logo);
+  font-weight:800;
+  letter-spacing:-0.01em;
+}
+
+/* Overlines read like the label card: small, widely tracked. */
+[data-product="coroasted-coffee-os"] .co-over{letter-spacing:0.14em}
+
+/* Buttons: square-ish, no lift — printed, not raised. */
+[data-product="coroasted-coffee-os"] .co-btn{border-radius:var(--r-sm)!important}
+[data-product="coroasted-coffee-os"] .co-btn:hover{transform:none}
+[data-product="coroasted-coffee-os"] .co-btn:active{transform:none}
+
+.bb-add:not(:disabled):hover{background:var(--ink)!important;border-color:var(--ink)!important;color:var(--on-ink,#fff)!important}
+.bb-add:not(:disabled):active{transform:scale(.96);background:var(--brand)!important;border-color:var(--brand)!important;color:#fff!important}
+.bb-add:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+.pc-facility{white-space:nowrap}
+@media (max-width:1000px){.pc-facility{display:none}}

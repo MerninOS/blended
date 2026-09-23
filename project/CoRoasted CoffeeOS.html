@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en" data-product="coroasted-coffee-os">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CoRoasted — CoffeeOS DS</title>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/fonts.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/colors.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/typography.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/spacing.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/layout.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/base.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/styles.css"/>
+<link rel="stylesheet" href="theme/coroasted-coffeeos.css"/>
+<style>
+  html,body{margin:0;padding:0;font-family:var(--font-body);color:var(--color-text)}
+  *{box-sizing:border-box}
+  @keyframes co-pulse {0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.45;transform:scale(.85)}}
+  @keyframes co-fade  {from{opacity:0} to{opacity:1}}
+  @keyframes co-slide {from{transform:translateX(100%)} to{transform:translateX(0)}}
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/_ds_bundle.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="uds/primitives.jsx"></script>
+<script type="text/babel" src="uds/Starburst.jsx"></script>
+<script type="text/babel" src="uds/data.jsx"></script>
+<script type="text/babel" src="uds/atoms.jsx"></script>
+<script type="text/babel" src="coffeeos/parts.jsx"></script>
+<script type="text/babel" src="coffeeos/Chrome.jsx"></script>
+<script type="text/babel" src="coffeeos/Dashboard.jsx"></script>
+<script type="text/babel" src="coffeeos/PrivateLabelData.jsx"></script>
+<script type="text/babel" src="coffeeos/PLAdminData.jsx"></script>
+<script type="text/babel" src="coffeeos/PrivateLabelAdmin.jsx"></script>
+<script type="text/babel" src="coffeeos/PLOrderDrawer.jsx"></script>
+<script type="text/babel" src="coffeeos/ShopAdminData.jsx"></script>
+<script type="text/babel" src="coffeeos/ShopOrderDrawer.jsx"></script>
+<script type="text/babel" src="coffeeos/ShopOrdersAdmin.jsx"></script>
+<script type="text/babel" src="coffeeos/GreenAdmin.jsx"></script>
+<script type="text/babel" src="uds/ScheduleView.jsx"></script>
+<script type="text/babel" src="uds/BookingDrawer.jsx"></script>
+<script type="text/babel" src="uds/OtherViews.jsx"></script>
+<script type="text/babel" src="src/tweaks-panel.jsx"></script>
+<script type="text/babel" data-presets="react">
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "density": "regular",
+    "showPricing": true,
+    "minBookingMin": 60,
+    "hoursStart": 7,
+    "hoursEnd": 19,
+    "accent": "ember"
+  }/*EDITMODE-END*/;
+
+  /* CoffeeOS: red is the live register. The alt keeps the register but shifts
+     hue for teams that want it cooler; ink is offered for an all-mono chrome. */
+  const ACCENTS = {
+    red:    ["#F8693C", "#DF5024"],
+    ember:  ["#C4763C", "#9A4F26"],
+    ink:    ["#241812", "#3A2A20"],
+  };
+
+  const App = () => {
+    const [section, setSection] = React.useState("today");
+    const [booking, setBooking] = React.useState(null);
+    const [plOrder, setPlOrder] = React.useState(null);
+    const [dayKey, setDayKey] = React.useState(TODAY);
+    const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+    React.useEffect(()=>{ const s = localStorage.getItem("crcoffeeos_section"); if(s) setSection(s); },[]);
+    const setS = s => { setSection(s); setBooking(null); setPlOrder(null); localStorage.setItem("crcoffeeos_section", s); };
+
+    React.useEffect(()=>{
+      const root = document.documentElement;
+      const [b, bh] = ACCENTS[tweaks.accent] || ACCENTS.red;
+      root.style.setProperty("--brand", b);
+      root.style.setProperty("--brand-hover", bh);
+    },[tweaks.accent]);
+
+    React.useEffect(()=>{
+      FACILITY.hoursStart = tweaks.hoursStart;
+      FACILITY.hoursEnd = tweaks.hoursEnd;
+      FACILITY.minBookingMin = tweaks.minBookingMin;
+    },[tweaks.hoursStart, tweaks.hoursEnd, tweaks.minBookingMin]);
+
+    const titles = {
+      today:    {t:"Today",     s:`Wednesday · May 20 · ${FACILITY.name}`,         b:"Operations / Today"},
+      schedule: {t:"Schedule",  s:"Who's on which machine and when.",              b:"Operations / Schedule"},
+      bookings: {t:"Bookings",  s:"Every session, past and upcoming.",             b:"Operations / Bookings"},
+      orders:   {t:"Orders",    s:"Coffee sold through the shop, and what it takes to ship it.", b:"Operations / Orders"},
+      customers:{t:"Customers", s:"The roasters who run with us.",                 b:"CRM / Customers"},
+      storage:  {t:"Storage",   s:"Shelves rented and available.",                 b:"Inventory / Storage"},
+      green:    {t:"Green catalog", s:"The coffees customers can put in a blend.", b:"Inventory / Green catalog"},
+      private:  {t:"Private label", s:"Coffee we roast and bag under someone else's name.", b:"Inventory / Private label"},
+      services: {t:"Services",  s:"What we sell and the rules around it.",        b:"Setup / Services"},
+      payments: {t:"Payments",  s:"What's owed. What's paid. What's late.",        b:"Finance / Payments"},
+      settings: {t:"Settings",  s:"Configure CoRoasted.",                          b:"Settings"},
+    };
+    const cfg = titles[section];
+
+    const view = () => {
+      switch (section) {
+        case "today":     return <Dashboard openBooking={setBooking}/>;
+        case "schedule":  return <ScheduleView tweaks={tweaks} openBooking={setBooking} dayKey={dayKey} setDayKey={setDayKey}/>;
+        case "bookings":  return <ScheduleView tweaks={tweaks} openBooking={setBooking} dayKey={dayKey} setDayKey={setDayKey}/>;
+        case "orders":    return <ShopOrdersView/>;
+        case "customers": return <CustomersView/>;
+        case "storage":   return <StorageView/>;
+        case "private":   return <PrivateLabelAdminView openOrder={setPlOrder}/>;
+        case "green":     return <GreenCatalogView/>;
+        case "services":  return <ServicesView tweaks={tweaks} setTweak={setTweak}/>;
+        case "payments":  return <PaymentsView/>;
+        default: return <div style={{padding:48,fontFamily:"var(--font-display)",fontSize:32}}>Settings</div>;
+      }
+    };
+
+    const topActions = section==="today" ? <>
+      <Btn size="sm" variant="outline" icon={<I2 name="download" size={14}/>}>Export</Btn>
+      <Btn size="sm" variant="primary" icon={<I name="plus" size={14}/>}>New booking</Btn>
+    </> : section==="customers" ? <>
+      <Btn size="sm" variant="outline" icon={<I2 name="download" size={14}/>}>Export</Btn>
+      <Btn size="sm" variant="primary" icon={<I name="plus" size={14}/>}>Add roaster</Btn>
+    </> : section==="payments" ? <>
+      <Btn size="sm" variant="outline" icon={<I2 name="download" size={14}/>}>Export</Btn>
+      <Btn size="sm" variant="primary" icon={<I name="plus" size={14}/>}>New invoice</Btn>
+    </> : section==="private" ? <>
+      <Btn size="sm" variant="outline" icon={<I2 name="download" size={14}/>}>Export</Btn>
+      <Btn size="sm" variant="primary" icon={<I name="plus" size={14}/>}>New PL order</Btn>
+    </> : section==="orders" ? <>
+      <Btn size="sm" variant="outline" icon={<I2 name="download" size={14}/>}>Export</Btn>
+      <Btn size="sm" variant="primary" icon={<I name="plus" size={14}/>}>Manual order</Btn>
+    </> : section==="storage" ? <>
+      <Btn size="sm" variant="outline" icon={<I2 name="filter" size={14}/>}>Filter</Btn>
+      <Btn size="sm" variant="primary" icon={<I name="plus" size={14}/>}>Intake lot</Btn>
+    </> : null;
+
+    return (
+      <div data-screen-label={cfg.t} style={{display:"flex",minHeight:"100vh"}}>
+        <Sidebar section={section} setSection={setS}/>
+        <div style={{flex:1,minWidth:0}}>
+          <TopBar title={cfg.t} subtitle={cfg.s} breadcrumbs={cfg.b} actions={topActions}/>
+          {view()}
+        </div>
+        <BookingDrawer booking={booking} onClose={()=>setBooking(null)}/>
+        <PLOrderDrawer order={plOrder} onClose={()=>setPlOrder(null)}/>
+
+        <TweaksPanel title="CoRoasted Tweaks">
+          <TweakSection label="Schedule">
+            <TweakRadio label="Density" value={tweaks.density}
+              options={["compact","regular","comfy"]}
+              onChange={v=>setTweak("density",v)}/>
+            <TweakToggle label="Show pricing on blocks" value={tweaks.showPricing}
+              onChange={v=>setTweak("showPricing",v)}/>
+          </TweakSection>
+          <TweakSection label="Booking Rules">
+            <TweakSlider label="Min booking" value={tweaks.minBookingMin} min={30} max={240} step={15} unit="m"
+              onChange={v=>setTweak("minBookingMin",v)}/>
+            <TweakSlider label="Open at" value={tweaks.hoursStart} min={5} max={10} step={1} unit=":00"
+              onChange={v=>setTweak("hoursStart",v)}/>
+            <TweakSlider label="Close at" value={tweaks.hoursEnd} min={16} max={22} step={1} unit=":00"
+              onChange={v=>setTweak("hoursEnd",v)}/>
+          </TweakSection>
+          <TweakSection label="Live register">
+            <TweakRadio label="Accent" value={tweaks.accent}
+              options={["red","ember","ink"]}
+              onChange={v=>setTweak("accent",v)}/>
+          </TweakSection>
+        </TweaksPanel>
+      </div>
+    );
+  };
+  ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

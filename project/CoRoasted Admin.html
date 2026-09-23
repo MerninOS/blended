@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" data-product="coroasted-coffee-os">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CoRoasted — Admin</title>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/fonts.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/colors.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/typography.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/spacing.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/layout.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/base.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/styles.css"/>
+<link rel="stylesheet" href="theme/coroasted-coffeeos.css"/>
+<link rel="stylesheet" href="theme/blended.css"/>
+<link rel="stylesheet" href="theme/admin-mobile.css"/>
+<style>
+  html,body{margin:0;padding:0;font-family:var(--font-body);color:var(--color-text)}
+  *{box-sizing:border-box}
+  a{color:var(--brand);text-decoration:none}a:hover{color:var(--brand-hover)}
+  @keyframes co-pulse {0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.45;transform:scale(.85)}}
+  @keyframes co-fade  {from{opacity:0} to{opacity:1}}
+  @keyframes co-slide {from{transform:translateX(100%)} to{transform:translateX(0)}}
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/_ds_bundle.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script src="image-slot.js"></script>
+<script type="text/babel" src="uds/primitives.jsx"></script>
+<script type="text/babel" src="uds/Starburst.jsx"></script>
+<script type="text/babel" src="uds/data.jsx"></script>
+<script type="text/babel" src="uds/atoms.jsx"></script>
+<script type="text/babel" src="coffeeos/parts.jsx"></script>
+<script type="text/babel" src="coffeeos/Chrome.jsx"></script>
+<script type="text/babel" src="coffeeos/PrivateLabelData.jsx"></script>
+<script type="text/babel" src="coffeeos/ShopAdminData.jsx"></script>
+<script type="text/babel" src="coffeeos/ShopOrderDrawer.jsx"></script>
+<script type="text/babel" src="coffeeos/ShopOrdersAdmin.jsx"></script>
+<script type="text/babel" src="coffeeos/GreenAdmin.jsx"></script>
+<script type="text/babel" src="coffeeos/ShopifySettings.jsx"></script>
+<script type="text/babel" data-presets="react">
+  const ADMIN_NAV = [
+    { label:"Operations", items:[
+      { id:"orders", icon:"cart",  label:"Orders", count:6, live:true },
+      { id:"green",  icon:"beans", label:"Green catalog" },
+    ]},
+  ];
+
+  const HEAD = {
+    orders:   { title:"Orders", subtitle:"Coffee sold through the shop, and what it takes to ship it.", crumbs:"Operations / Orders",
+                actions:<><Btn size="sm" variant="outline" icon={<I2 name="download" size={14}/>}>Export</Btn><Btn size="sm" variant="primary" icon={<I name="plus" size={14}/>}>Manual order</Btn></> },
+    green:    { title:"Green catalog", subtitle:"The coffees customers can put in a blend on the shop page.", crumbs:"Inventory / Green catalog",
+                actions:<Btn size="sm" variant="outline" icon={<I2 name="download" size={14}/>}>Export</Btn> },
+    settings: { title:"Settings", subtitle:"How CoRoasted talks to the Shopify store.", crumbs:"Settings / Shopify",
+                actions:<Btn size="sm" variant="primary">Save changes</Btn> },
+  };
+
+  const Admin = () => {
+    const [section, setSection] = React.useState(()=>{
+      const h = location.hash.slice(1);
+      return ["orders","green","settings"].includes(h) ? h : "orders";
+    });
+    React.useEffect(()=>{ location.hash = section; }, [section]);
+    const head = HEAD[section];
+    return (
+      <div className="admin-shell" data-screen-label={head.title} style={{display:"flex",minHeight:"100vh",background:"var(--canvas)"}}>
+        <Sidebar section={section} setSection={setSection} groups={ADMIN_NAV}/>
+        <main style={{flex:1,minWidth:0,background:"var(--surface)"}}>
+          <TopBar strip={false} title={head.title} subtitle={head.subtitle} breadcrumbs={head.crumbs} actions={head.actions}/>
+          {section==="orders"   && <ShopOrdersView/>}
+          {section==="green"    && <GreenCatalogView/>}
+          {section==="settings" && <SettingsView/>}
+        </main>
+      </div>
+    );
+  };
+  ReactDOM.createRoot(document.getElementById("root")).render(<Admin/>);
+</script>
+</body>
+</html>

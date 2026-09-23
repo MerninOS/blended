@@ -1,0 +1,79 @@
+/* Roaster Portal — mobile/tablet layer. Overrides inline styles, so !important is required. */
+@media (max-width:860px){
+  .pv-page{padding-left:16px!important;padding-right:16px!important;padding-top:22px!important;gap:34px!important}
+  /* each step gets air between its header and its controls */
+  .pv-step{gap:15px!important}
+  .pv-step>div:first-child{margin-bottom:2px}
+
+  /* chrome: tabs wrap onto two rows instead of scrolling sideways */
+  .pc-bar{padding-left:14px!important;padding-right:14px!important;gap:10px!important}
+  .pc-facility,.pc-user-meta{display:none!important}
+  .pc-tabs{flex-wrap:wrap!important;overflow:visible!important;column-gap:15px!important;row-gap:0!important;padding-left:14px!important;padding-right:14px!important}
+  .pc-tabs button{font-size:12.5px!important;padding-bottom:9px!important;flex:0 0 auto}
+
+  /* type scale down one step */
+  .pv-page h1{font-size:25px!important}
+  .pv-page h2{font-size:15px!important}
+  .pv-lede{font-size:12.5px!important}
+  .pv-stepnum{width:20px!important;height:20px!important;font-size:11px!important}
+
+  /* option cards: tighter boxes, smaller text */
+  .opt-card{padding:14px!important;gap:8px!important}
+  .opt-ico{width:26px!important;height:26px!important}
+  .opt-title{font-size:13px!important}
+  .opt-desc{font-size:11.5px!important;line-height:1.45!important}
+  .opt-meta{font-size:9px!important}
+
+  /* purchase bar: one compact line, no oversized figure or icon */
+  .co-confirmbar{flex-wrap:wrap!important;padding:11px 13px!important;gap:10px!important;bottom:12px!important;border-radius:var(--r-md)!important}
+  .co-confirmbar .cb-icon{display:none!important}
+  /* line 1: the name and its meta get the full width; line 2: qty, price, button */
+  .co-confirmbar>div:not(.cb-icon):not(.cb-qty):not(.cb-price){flex:1 1 100%!important;min-width:0!important}
+  .co-confirmbar .cb-qty{margin-right:auto}
+  .cb-title{font-size:13.5px!important;white-space:normal!important;overflow:visible!important}
+  .cb-meta{font-size:11px!important;margin-top:2px!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .cb-figure{font-size:18px!important}
+  .co-confirmbar .cb-price{flex-shrink:0}
+  .co-confirmbar>.co-btn{width:auto!important;height:36px!important;padding:0 12px!important;font-size:12.5px!important}
+
+  /* list rows: children carry flex:1/min-width:0, so wrapping alone can't break them — stack instead */
+  .co-rowlist-row{flex-direction:column!important;align-items:stretch!important;gap:10px!important;padding:14px 15px!important}
+  .co-rowlist-row .co-vrule{display:none!important}
+  .co-rowlist-end{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px;text-align:left!important}
+  .co-rowlist-row>.co-btn{width:100%!important}
+
+  .bv-days{overflow-x:auto;min-width:0;max-width:100%;flex:1 1 100%;scrollbar-width:none}
+  .bv-days::-webkit-scrollbar{display:none}
+  .bv-days button{flex:0 0 auto}
+  .bv-reslabel{width:96px!important}
+
+  /* inline overflow:hidden on the wrapper beats a plain rule — must be !important to scroll */
+  .co-tablewrap{overflow-x:auto!important;overflow-y:visible!important;-webkit-overflow-scrolling:touch}
+  .co-tablewrap table{min-width:520px}
+
+  .pl-cup-col{position:static!important;min-width:0!important;flex:1 1 100%!important}
+  .pl-thumb-wrap{width:72px!important;height:72px!important}
+
+  .co-modal-body{padding:16px!important}
+  .co-modal-foot{padding:12px 16px!important}
+  .co-modal-head{padding:14px 16px!important}
+}
+@media (max-width:860px){
+  /* the bag-count row stacks left-aligned rather than splitting across the width */
+  .pv-page>div[style*="justify-content: space-between"]{justify-content:flex-start!important}
+  /* photos were eating the screen — cap them so the page scrolls less */
+  .sg-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+  .sg-card{padding:9px!important;gap:7px!important}
+  .sg-photo-wrap{aspect-ratio:auto!important;height:108px!important}
+  .pl-pack-wrap{aspect-ratio:auto!important;height:84px!important;margin-bottom:0!important}
+  .pl-cup-col{max-width:400px!important;margin:0 auto!important}
+  .pl-cup-col>div{padding:14px 15px 16px!important}
+}
+@media (max-width:520px){
+  .sg-photo-wrap{height:92px!important}
+  .pl-pack-wrap{height:72px!important}
+  .pv-page{padding-left:14px!important;padding-right:14px!important;gap:30px!important}
+  .pv-page h1{font-size:23px!important}
+  .cb-figure{font-size:17px!important}
+  .pl-thumb-wrap{width:66px!important;height:66px!important}
+}

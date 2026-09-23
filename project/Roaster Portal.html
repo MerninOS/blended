@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" data-product="coroasted-coffee-os">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CoRoasted · Roaster Portal</title>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/fonts.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/colors.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/typography.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/spacing.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/layout.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/base.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/styles.css"/>
+<link rel="stylesheet" href="theme/coroasted-coffeeos.css"/>
+<link rel="stylesheet" href="theme/portal-mobile.css"/>
+<style>
+  html,body{margin:0;padding:0;background:var(--color-bg);font-family:var(--font-body);color:var(--color-text)}
+  *{box-sizing:border-box}
+  @keyframes co-pulse {0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.45;transform:scale(.85)}}
+  @keyframes co-fade  {from{opacity:0} to{opacity:1}}
+  image-slot.pl-thumb::part(empty){padding:3px;gap:1px;font-size:9px;line-height:1.15}
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/_ds_bundle.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script src="image-slot.js"></script>
+<script type="text/babel" src="src/primitives.jsx"></script>
+<script type="text/babel" src="src/Starburst.jsx"></script>
+<script type="text/babel" src="src/data.jsx"></script>
+<script type="text/babel" src="src/atoms.jsx"></script>
+<script type="text/babel" src="src/portal-data.jsx"></script>
+<script type="text/babel" src="coffeeos/parts.jsx"></script>
+<script type="text/babel" src="coffeeos/PortalPrimitives.jsx"></script>
+<script type="text/babel" src="coffeeos/PortalChrome.jsx"></script>
+<script type="text/babel" src="coffeeos/JobRequestFlow.jsx"></script>
+<script type="text/babel" src="coffeeos/BookView.jsx"></script>
+<script type="text/babel" src="coffeeos/PrivateLabelData.jsx"></script>
+<script type="text/babel" src="coffeeos/BlendBuilder.jsx"></script>
+<script type="text/babel" src="coffeeos/PrivateLabelView.jsx"></script>
+<script type="text/babel" src="coffeeos/PortalOther.jsx"></script>
+<script type="text/babel" data-presets="react">
+  const App = () => {
+    const [section, setSection] = React.useState("book");
+    const [confirm, setConfirm] = React.useState(null);
+    const [toast, setToast] = React.useState(null);
+    const [plOrders, setPlOrders] = React.useState([]);
+    const view = ()=>{
+      switch(section){
+        case "book": return <BookView openConfirm={setConfirm}/>;
+        case "private": return <PrivateLabelView openConfirm={setConfirm}/>;
+        case "bookings": return <MyBookingsView plOrders={plOrders}/>;
+        case "shelf": return <MyShelfView/>;
+        case "invoices": return <MyInvoicesView/>;
+      }
+    };
+    const onConfirm = () => {
+      const p = confirm;
+      if (p && p.kind === "pl") {
+        setPlOrders(o => [{ id:"PL-"+(1043+o.length), name:p.productName, lbs:p.lbs, bags:p.q.bags, bag:p.q.bag.label,
+          pack:p.q.pack.title, status:"submitted", eta:"Need by "+p.needBy, total:p.q.total }, ...o]);
+      }
+      setConfirm(null);
+      setToast(p && p.kind === "pl" ? "Private label order placed." : "Booking confirmed.");
+      setTimeout(()=>setToast(null), 2600);
+      setSection("bookings");
+    };
+    return (
+      <div data-screen-label={section}>
+        <PortalChrome section={section} setSection={setSection}/>
+        {view()}
+        <ConfirmModal payload={confirm} onClose={()=>setConfirm(null)} onConfirm={onConfirm}/>
+        {toast && <div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",padding:"12px 18px",background:"var(--ink)",color:"var(--on-ink)",borderRadius:"var(--r-md)",boxShadow:"var(--shadow-pop)",fontFamily:"var(--font-sans)",fontWeight:600,fontSize:13.5,zIndex:1000,display:"flex",alignItems:"center",gap:8}}><span style={{color:"var(--success)"}}><I name="check" size={16} stroke={2.4}/></span>{toast}</div>}
+      </div>
+    );
+  };
+  ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

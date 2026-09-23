@@ -1,0 +1,56 @@
+/* CoffeeOS — color tokens. Role-named so a dark theme can be added later.
+   Two rules govern everything:
+   1. The ROAST RAMP is a data-encoding palette (green→espresso). It appears only
+      in the data layer — markers, chips, meters, chart series, small fills.
+      Never a background, never chrome, never a button fill.
+   2. RED is the live register: "happening now / needs you." Meaningful, at size,
+      on every screen. Never a primary button fill. */
+:root{
+  /* Surfaces — bright, warm. Espresso brown lives ONLY in --ink + roast ramp. */
+  --canvas:#F8F7F5;
+  --surface:#FFFFFF;
+  --surface-sunken:#F1EFEC;   /* filter bars, inset wells, table headers */
+  --surface-hover:#FBFAF8;    /* row / list hover */
+
+  /* Ink */
+  --ink:#241812;
+  --ink-muted:#6E6259;
+  --ink-subtle:#9A8F86;
+  --on-ink:#FFFFFF;
+
+  /* Lines */
+  --hairline:#E6E2DD;
+  --hairline-strong:#D7D1CA;
+
+  /* Brand red — the live register */
+  --brand:#FA3B30;
+  --brand-hover:#E22E25;
+  --brand-soft:#FFF0EE;
+  --brand-ring:rgba(250,59,48,.32);
+
+  /* Action = ink (primary buttons), never red */
+  --action:#241812;
+  --action-hover:#3A2A20;
+  --on-action:#FFFFFF;
+
+  /* Semantic — danger darker/desaturated so it never reads as brand */
+  --danger:#B42318;   --danger-hover:#98180F; --danger-soft:#FBEEEC;
+  --warning:#B26B00;  --warning-soft:#FAF1E2;
+  --success:#1E7A4A;  --success-soft:#E8F3EC;
+  --info:#2F5FA8;     --info-soft:#EBF0F8;
+
+  /* ROAST RAMP — the physical roast continuum. Data layer only. */
+  --roast-0:#8C9A6B;  /* unroasted green */
+  --roast-1:#D9A441;  /* drying / yellow */
+  --roast-2:#C4763C;  /* light / cinnamon */
+  --roast-3:#9A4F26;  /* medium */
+  --roast-4:#6B3018;  /* dark / full city */
+  --roast-5:#2A1710;  /* espresso */
+  --roast-empty:#EAE6E1;
+
+  /* Data-viz — warm muted gridlines/axes; series drawn from the roast ramp,
+     with brand red reserved for the live/highlight series. */
+  --viz-grid:#ECE8E3;
+  --viz-axis:#9A8F86;
+  --viz-highlight:#FA3B30;
+}

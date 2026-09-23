@@ -1,0 +1,47 @@
+/* CoffeeOS — radius, elevation, motion, z-index, layout. Tighter radii than a
+   generic SaaS kit: precision reads as expensive. */
+:root{
+  /* Radius */
+  --r-sm:4px;    /* chips, small controls */
+  --r-md:6px;    /* buttons, inputs, containers */
+  --r-lg:10px;   /* modals, large panels */
+  --r-pill:999px;/* badges only */
+
+  /* Elevation — borders first. Real shadows only for popovers/dropdowns/modals. */
+  --shadow-sm:0 1px 2px rgba(36,24,18,.06);
+  --shadow-pop:0 6px 16px rgba(36,24,18,.12),0 1px 3px rgba(36,24,18,.07);
+  --shadow-modal:0 20px 56px rgba(36,24,18,.22),0 4px 12px rgba(36,24,18,.10);
+
+  /* Motion — 140ms on state changes. Batch-strip pulse is the only ambient anim. */
+  --ease:cubic-bezier(.2,.6,.2,1); /* @kind other */
+  --dur:140ms;                     /* @kind other */
+  --motion:140ms cubic-bezier(.2,.6,.2,1); /* @kind other */
+
+  /* Focus ring — always visible, always brand */
+  --focus-ring:0 0 0 3px var(--brand-ring); /* @kind shadow */
+  --focus-width:2px; /* @kind other */
+
+  /* Z layers */
+  --z-nav:100;     /* @kind other */
+  --z-sticky:200;  /* @kind other */
+  --z-bulkbar:700; /* @kind other */
+  --z-popover:800; /* @kind other */
+  --z-modal:900;   /* @kind other */
+  --z-toast:1000;  /* @kind other */
+  --z-palette:1100;/* @kind other */
+
+  /* Layout */
+  --nav-w:236px;           /* @kind other */
+  --nav-w-collapsed:60px;  /* @kind other */
+  --topbar-h:52px;         /* @kind other */
+  --strip-h:44px;          /* @kind other */
+  --content-max:1400px;    /* @kind other */
+
+  /* Spacing rhythm (worksheet): dense cells, generous section gaps */
+  --gap-cell:12px;    /* @kind other */
+  --gap-stack:16px;   /* @kind other */
+  --gap-section:24px; /* @kind other */
+}
+@media (prefers-reduced-motion:reduce){
+  :root{--dur:0ms; /* @kind other */ --motion:0ms linear; /* @kind other */}
+}

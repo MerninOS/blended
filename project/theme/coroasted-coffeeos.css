@@ -1,0 +1,116 @@
+/* ============================================================
+   CoRoasted — CoffeeOS design-system bridge
+   Loads AFTER the CoffeeOS token stylesheets. Remaps the app's
+   brand token names onto CoffeeOS: bright warm-neutral surfaces,
+   mono-forward type (Martian Mono display/data + Instrument Sans
+   prose), roast-ramp / semantic data hues, and — the two governing
+   rules — ACTION = INK (primary fills), RED = THE LIVE REGISTER
+   (active nav, alerts, live indicators). Borders-first elevation.
+   ============================================================ */
+
+:root {
+  /* ---- motion ---- */
+  --ease-snap: var(--ease);           /* cubic-bezier(.2,.6,.2,1) */
+
+  /* ---- fonts (DS already sets --font-display / --font-mono to Martian) ---- */
+  --font-body: var(--font-sans);      /* Instrument Sans — prose + button labels */
+
+  /* ---- elevation ---- (--shadow-sm passes through from layout.css unchanged) */
+  --shadow-md: var(--shadow-pop);
+
+  /* ---- surfaces (bright, warm — no dark/brown chrome) ---- */
+  --color-bg:         var(--canvas);          /* #F8F7F5 */
+  --color-surface:    var(--surface);         /* #FFFFFF worksheet */
+  --color-surface-2:  var(--surface-sunken);  /* #F1EFEC wells / hover */
+  --color-border:     var(--hairline);        /* #E6E2DD */
+
+  --color-text:       var(--ink);             /* #241812 */
+  --color-text-muted: var(--ink-muted);       /* #6E6259 */
+  --color-text-faint: var(--ink-subtle);      /* #9A8F86 */
+  --fg:  var(--ink-muted);
+  --fg1: var(--ink);
+  --fg2: var(--ink-muted);
+
+  /* ---- RED = live register: active nav + alerts ---- */
+  /* app-level brand override — retunes the DS red for CoRoasted */
+  --brand:        #F8693C;
+  --brand-hover:  #DF5024;
+  --brand-soft:   #FFF3EC;
+  --viz-highlight:#F8693C;
+
+  --color-accent:         var(--brand);        /* #F8693C */
+  --color-accent-subtle:  var(--brand-soft);   /* #FFF3EC */
+  --color-on-accent:      #FFFFFF;
+
+  --color-danger:         var(--danger);       /* #B42318 (never reads as brand) */
+  --color-danger-subtle:  var(--danger-soft);
+
+  /* dark chip rail */
+  --color-rail: var(--ink);
+
+  /* ---- brand color-name ramp (used dynamically as var(--color-<name>)) ----
+     ACTION lands on ink; the rest carry roast-ramp / semantic meaning so the
+     data layer stays encodeable. */
+  --color-tomato:   var(--ink);          /* PRIMARY ACTION = ink (buttons, logo). never red. */
+  --color-honey:    var(--warning);      /* #B26B00 amber */
+  --color-sun:      var(--roast-1);      /* #D9A441 light gold (drying) */
+  --color-sky:      var(--info-soft);    /* #EBF0F8 info (light — pairs w/ ink text) */
+  --color-matcha:   var(--success);      /* #1E7A4A leaf/success (floor-open dot, +deltas) */
+  --color-cream:    #FFFFFF;             /* light fg on dark blocks */
+  --color-chalk:    var(--canvas);       /* #F8F7F5 */
+  --color-espresso: var(--ink);          /* #241812 dark */
+  --color-fog:      var(--surface-sunken); /* #F1EFEC track / storage */
+  --color-roast:    var(--roast-3);      /* #9A4F26 medium roast (avatars/resources) */
+}
+
+/* Flat bright canvas + prose in Instrument Sans. */
+html[data-product="coroasted-coffee-os"],
+html[data-product="coroasted-coffee-os"] body {
+  background: var(--color-bg);
+  min-height: 100vh;
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+/* Type roles applied per element (NOT globally) so data stays condensed and
+   prose stays normal width. Display = wide+heavy readout; data = condensed
+   tabular; overline = uppercase label. */
+[data-product="coroasted-coffee-os"] .co-display{font-family:var(--font-display);font-variation-settings:var(--display-settings);font-weight:var(--display-weight);letter-spacing:var(--display-tracking)}
+[data-product="coroasted-coffee-os"] .co-data{font-family:var(--font-mono);font-variation-settings:var(--data-settings);font-weight:var(--data-weight);font-variant-numeric:tabular-nums}
+[data-product="coroasted-coffee-os"] .co-over{font-family:var(--font-mono);font-variation-settings:var(--overline-settings);font-weight:var(--overline-weight);letter-spacing:var(--overline-tracking);text-transform:uppercase}
+
+/* Display headings read heavy + wide + tight, per CoffeeOS. */
+[data-product="coroasted-coffee-os"] h1,
+[data-product="coroasted-coffee-os"] h2,
+[data-product="coroasted-coffee-os"] h3,
+[data-product="coroasted-coffee-os"] h4 {
+  font-variation-settings: var(--display-settings);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+}
+
+/* Buttons: tight radius (never pill), borders-first — no rest shadow. */
+[data-product="coroasted-coffee-os"] .co-btn {
+  border-radius: var(--r-md) !important;   /* 6px */
+  box-shadow: none !important;
+}
+[data-product="coroasted-coffee-os"] .co-btn:hover  { transform: translateY(-1px); }
+[data-product="coroasted-coffee-os"] .co-btn:active { transform: translateY(1px); }
+
+/* Focus — always a visible brand ring. */
+[data-product="coroasted-coffee-os"] button:focus-visible,
+[data-product="coroasted-coffee-os"] a:focus-visible,
+[data-product="coroasted-coffee-os"] input:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Links — ink shifting to brand on hover. */
+[data-product="coroasted-coffee-os"] a { color: var(--ink); text-decoration: none; }
+[data-product="coroasted-coffee-os"] a:hover { color: var(--brand); text-decoration: underline; }
+
+/* Scrollbar */
+[data-product="coroasted-coffee-os"] ::-webkit-scrollbar { width: 8px; height: 8px; }
+[data-product="coroasted-coffee-os"] ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 999px; }
+[data-product="coroasted-coffee-os"] ::-webkit-scrollbar-thumb:hover { background: var(--color-text-faint); }
+[data-product="coroasted-coffee-os"] ::-webkit-scrollbar-track { background: transparent; }

@@ -1,0 +1,225 @@
+/* ============================================================
+   MERNIN' DESIGN SYSTEM — Colors & Type
+   Source of truth for colors, typography, shadows, radii, motion.
+   Bold, chunky, retro. NOT generic SaaS.
+   ============================================================ */
+
+/* ---- FONT FACES -------------------------------------------- */
+
+@import url("https://fonts.googleapis.com/css2?family=Cal+Sans&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap");
+
+@font-face {
+  font-family: "Adore Cats";
+  src: url("./fonts/AdoreCats.woff2") format("woff2"),
+       url("./fonts/AdoreCats.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* ---- CORE BRAND COLORS -------------------------------- */
+  --color-tomato:   #E8442A; /* primary brand red */
+  --color-cream:    #F5F0D8; /* primary background — warm off-white */
+  --color-espresso: #1C0F05; /* primary text, outlines, thick borders */
+  --color-sun:      #F5C842; /* starbursts, highlights, secondary accent */
+  --color-sky:      #5BC8D5; /* packaging color, info states */
+
+  /* ---- EXTENDED PALETTE --------------------------------- */
+  --color-chalk:    #FDFAF0; /* elevated surfaces, card backgrounds */
+  --color-roast:    #3B1F0A; /* dark brown — logo fill, secondary dark text */
+  --color-honey:    #E8913A; /* warm orange — hover states, accent fills */
+  --color-matcha:   #5A7A3A; /* success / in-stock */
+  --color-fog:      #D8D0B8; /* borders, dividers, muted backgrounds */
+
+  /* ---- SEMANTIC TOKENS ---------------------------------- */
+  /* These define the FAMILY defaults. Products override the
+     accent/surface vars in their own theme.css to give each
+     product a distinct soul without forking the system. */
+  --bg-primary:   var(--color-cream);
+  --bg-elevated:  var(--color-chalk);
+  --bg-loud:      var(--color-tomato);
+  --bg-inverse:   var(--color-espresso);
+  --fg1:          var(--color-espresso);     /* primary text */
+  --fg2:          #7A6A50;                   /* muted warm brown */
+  --fg-inverse:   var(--color-cream);
+
+  /* ---- PRODUCT-OVERRIDABLE ACCENTS ---------------------- */
+  /* Primitives read these — products redefine them in theme.css. */
+  --accent-1:           var(--color-tomato);  /* primary CTA / hot accent */
+  --accent-1-fg:        var(--color-cream);   /* fg on --accent-1 */
+  --accent-1-hover:     var(--color-honey);   /* CTA hover */
+  --accent-2:           var(--color-sun);     /* secondary accent */
+  --accent-2-fg:        var(--color-espresso);
+  --accent-positive:    var(--color-matcha);  /* success / in-stock */
+  --accent-positive-fg: var(--color-cream);
+  --accent-info:        var(--color-sky);     /* info / cool accent */
+  --accent-info-fg:     var(--color-espresso);
+
+  /* Surfaces */
+  --surface-app:    var(--color-cream);   /* main page background */
+  --surface-card:   var(--color-chalk);   /* elevated cards / panels */
+  --surface-rail:   var(--color-cream);   /* sidebars, navs, rails */
+  --surface-loud:   var(--color-tomato);  /* hero / loud sections */
+  --surface-inverse: var(--color-espresso);
+
+  --border-default: var(--color-fog);
+  --border-bold:    var(--color-espresso);
+
+  /* ---- FONT FAMILIES ------------------------------------ */
+  --font-display:  "Adore Cats", "Cal Sans", system-ui, sans-serif;
+  --font-headline: "Adore Cats", "Cal Sans", system-ui, sans-serif;
+  --font-body:     "Cal Sans", "Inter", system-ui, sans-serif;
+  --font-mono:     "JetBrains Mono", monospace;
+
+  /* ---- TYPE SCALE (semantic) ---------------------------- */
+  --fs-hero:     clamp(4rem, 8vw, 7.5rem);   /* 64-120px */
+  --fs-h1:       clamp(3rem, 6vw, 5.5rem);   /* 48-88px */
+  --fs-h2:       clamp(2rem, 4vw, 3.25rem);  /* 32-52px */
+  --fs-h3:       1.5rem;                     /* 24px */
+  --fs-body:     1rem;                       /* 16px */
+  --fs-sm:       0.875rem;                   /* 14px */
+  --fs-xs:       0.75rem;                    /* 12px */
+  --fs-label:    0.6875rem;                  /* 11px - uppercase labels */
+
+  /* ---- BORDER WIDTHS ------------------------------------ */
+  --bw-default: 2px;
+  --bw-bold:    3px;
+  --bw-chunky:  4px;
+  --bw-comic:   5px;
+
+  /* ---- BORDER RADII ------------------------------------- */
+  --radius-sm:     6px;
+  --radius-md:     12px;
+  --radius-lg:     20px;
+  --radius-xl:     32px;
+  --radius-pill:   9999px;
+  --radius-bubble: 40px;
+
+  /* ---- FLAT OFFSET SHADOWS (no blur, ever) -------------- */
+  --shadow-flat-sm:     3px 3px 0px var(--color-espresso);
+  --shadow-flat-md:     5px 5px 0px var(--color-espresso);
+  --shadow-flat-lg:     8px 8px 0px var(--color-espresso);
+  --shadow-flat-tomato: 5px 5px 0px var(--color-tomato);
+  --shadow-flat-sun:    5px 5px 0px var(--color-sun);
+  --shadow-flat-cream:  5px 5px 0px var(--color-cream);
+
+  /* ---- SPACING ------------------------------------------ */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  --container-max: 1280px;
+
+  /* ---- MOTION ------------------------------------------- */
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-snap:   cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 120ms;
+  --duration-base: 220ms;
+  --duration-slow: 380ms;
+}
+
+[data-theme="dark"] {
+  --bg-primary:  var(--color-espresso);
+  --bg-elevated: var(--color-roast);
+  --fg1:         var(--color-cream);
+  --fg2:         #A09070;
+  --border-default: #2A1A0A;
+  --border-bold:    var(--color-tomato);
+}
+
+/* ============================================================
+   SEMANTIC ELEMENT STYLES
+   ============================================================ */
+
+.h1, h1 {
+  font-family: var(--font-headline);
+  font-size: var(--fs-h1);
+  line-height: 0.9;
+  text-transform: uppercase;
+  color: var(--fg1);
+  margin: 0;
+}
+
+.h2, h2 {
+  font-family: var(--font-headline);
+  font-size: var(--fs-h2);
+  line-height: 0.95;
+  text-transform: uppercase;
+  color: var(--fg1);
+  margin: 0;
+}
+
+.h3, h3 {
+  font-family: var(--font-body);
+  font-size: var(--fs-h3);
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--fg1);
+  margin: 0;
+}
+
+.hero-display {
+  font-family: var(--font-display);
+  font-size: var(--fs-hero);
+  line-height: 0.9;
+  text-transform: uppercase;
+  color: var(--fg1);
+}
+
+.p, p {
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: 1.55;
+  color: var(--fg1);
+  margin: 0;
+}
+
+.label {
+  font-family: var(--font-body);
+  font-size: var(--fs-label);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg1);
+}
+
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: var(--fs-label);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-tomato);
+}
+
+code, .code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--color-fog);
+  padding: 0.125em 0.375em;
+  border-radius: var(--radius-sm);
+  color: var(--color-espresso);
+}
+
+/* The signature sticker/outline headline treatment */
+.sticker-text {
+  font-family: var(--font-display);
+  color: var(--color-cream);
+  -webkit-text-stroke: 6px var(--color-espresso);
+  paint-order: stroke fill;
+  text-shadow:
+    3px 3px 0 var(--color-espresso),
+    -3px 3px 0 var(--color-espresso),
+    3px -3px 0 var(--color-espresso),
+    -3px -3px 0 var(--color-espresso),
+    5px 5px 0 var(--color-espresso);
+}

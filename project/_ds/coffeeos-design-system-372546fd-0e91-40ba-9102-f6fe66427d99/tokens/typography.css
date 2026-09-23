@@ -1,0 +1,41 @@
+/* CoffeeOS — typography. Mono-forward: Martian Mono (variable wdth+wght) is the
+   voice for display AND data; Instrument Sans carries prose. No serifs.
+   The width axis is the personality — display runs WIDE, data runs CONDENSED. */
+:root{
+  --font-display:'Martian Mono',ui-monospace,'SF Mono',monospace; /* @kind font */
+  --font-mono:'Martian Mono',ui-monospace,'SF Mono',monospace;    /* @kind font */
+  --font-sans:'Instrument Sans',system-ui,-apple-system,'Segoe UI',sans-serif; /* @kind font */
+
+  /* Axis settings applied per role via font-variation-settings */
+  --display-settings:'wdth' 112.5; /* @kind other */
+  --display-weight:700;            /* @kind other */
+  --display-tracking:-0.02em;      /* @kind other */
+  --data-settings:'wdth' 87.5;     /* @kind other */
+  --data-weight:450;               /* @kind other */
+  --overline-settings:'wdth' 100;  /* @kind other */
+  --overline-weight:600;           /* @kind other */
+  --overline-tracking:0.08em;      /* @kind other */
+
+  /* Fluid clamp scale. Dramatic hierarchy: hero ~76px down to 10px labels (>5x). */
+  --fs-overline:clamp(10px, 9.6px + 0.11vw, 11px);   /* @kind other */
+  --fs-caption:clamp(11px, 10.6px + 0.12vw, 12px);   /* @kind other */
+  --fs-label:clamp(12px, 11.6px + 0.12vw, 13px);     /* @kind other */
+  --fs-body:clamp(13px, 12.6px + 0.14vw, 14px);      /* @kind other */
+  --fs-body-lg:clamp(14px, 13.2px + 0.22vw, 16px);   /* @kind other */
+  --fs-data:clamp(13px, 12.4px + 0.2vw, 15px);       /* @kind other */
+  --fs-data-lg:clamp(20px, 16.8px + 0.9vw, 28px);    /* @kind other */
+  --fs-title:clamp(15px, 13.8px + 0.33vw, 18px);     /* @kind other */
+  --fs-h2:clamp(20px, 17.6px + 0.66vw, 26px);        /* @kind other */
+  --fs-display:clamp(26px, 20px + 1.7vw, 40px);      /* @kind other */
+  --fs-hero:clamp(44px, 30px + 4.2vw, 76px);         /* @kind other */
+
+  /* Line heights */
+  --lh-tight:1.05; /* @kind other */
+  --lh-snug:1.25;  /* @kind other */
+  --lh-body:1.5;   /* @kind other */
+
+  /* Weights */
+  --fw-regular:400;  /* @kind other */
+  --fw-medium:500;   /* @kind other */
+  --fw-semibold:600; /* @kind other */
+}

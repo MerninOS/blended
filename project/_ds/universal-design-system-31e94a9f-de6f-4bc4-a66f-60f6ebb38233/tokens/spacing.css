@@ -1,0 +1,27 @@
+/* Fluid spacing & radius — same clamp logic as type. Per DESIGN.md §3. */
+:root {
+  --space-3xs: clamp(0.25rem, 0.24rem + 0.05vw, 0.3125rem); /* 4→5 */
+  --space-2xs: clamp(0.5rem,  0.48rem + 0.10vw, 0.625rem);  /* 8→10 */
+  --space-xs:  clamp(0.75rem, 0.71rem + 0.19vw, 0.9375rem); /* 12→15 */
+  --space-s:   clamp(1rem,    0.95rem + 0.24vw, 1.25rem);   /* 16→20 */
+  --space-m:   clamp(1.5rem,  1.40rem + 0.48vw, 2rem);      /* 24→32 */
+  --space-l:   clamp(2rem,    1.81rem + 0.95vw, 3rem);      /* 32→48 */
+  --space-xl:  clamp(3rem,    2.62rem + 1.90vw, 5rem);      /* 48→80 */
+  --space-2xl: clamp(4rem,    3.24rem + 3.81vw, 8rem);      /* 64→128 section gaps */
+
+  --radius-sm:   6px;   /* inputs, small buttons, chips */
+  --radius-md:   10px;  /* buttons, dropdowns */
+  --radius-lg:   16px;  /* cards, modals */
+  --radius-xl:   24px;  /* feature panels, sheets */
+  --radius-full: 999px; /* pills, avatars */
+
+  /* Shadow system — minimal at rest, elevation only for overlays */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.08);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.14);
+}
+[data-theme="dark"] {
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.45);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.55);
+}

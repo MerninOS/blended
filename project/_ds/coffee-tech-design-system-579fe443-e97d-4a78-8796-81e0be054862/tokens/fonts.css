@@ -1,0 +1,4 @@
+/* Coffee-ops DS — Webfonts (Google Fonts CDN)
+   Display: Fraunces (optical sizing) · UI/body: Hanken Grotesk · Data: IBM Plex Mono
+   Replace with locally-hosted licensed files for production. */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');

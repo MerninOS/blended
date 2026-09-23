@@ -1,0 +1,8 @@
+/* CoffeeOS webfonts. Mono-forward: one variable monospace (Martian Mono) carries
+   both display and data along its WIDTH axis; Instrument Sans carries prose.
+   The wdth axis is requested explicitly (below) — required, or width settings
+   render at default width (the silent failure the brief warns about).
+   NOTE: no self-hosted binaries were provided — these load from Google Fonts.
+   Flagged: supply .woff2 files to self-host and replace these @imports. */
+@import url('https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..112.5,100..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wdth,wght@0,75..100,400..700;1,75..100,400..700&display=swap');

@@ -1,0 +1,25 @@
+/* ============================================================
+   CoffeeOS — product theme
+   The roaster admin OS. Densest of the three. Tomato-forward,
+   classic Mernin' palette, no major palette twists.
+   ============================================================ */
+
+[data-product="coffeeos"], .product-coffeeos {
+  /* Palette stays canonical Mernin'. Just affirm the defaults. */
+  --accent-1:           var(--color-tomato);
+  --accent-1-fg:        var(--color-cream);
+  --accent-1-hover:     var(--color-honey);
+  --accent-2:           var(--color-sun);
+  --accent-2-fg:        var(--color-espresso);
+  --accent-positive:    var(--color-matcha);
+  --accent-positive-fg: var(--color-cream);
+  --accent-info:        var(--color-sky);
+  --accent-info-fg:     var(--color-espresso);
+
+  --surface-app:    var(--color-cream);
+  --surface-card:   var(--color-chalk);
+  --surface-rail:   var(--color-cream);
+
+  /* CoffeeOS runs denser than the marketing siblings */
+  --product-density: compact;
+}

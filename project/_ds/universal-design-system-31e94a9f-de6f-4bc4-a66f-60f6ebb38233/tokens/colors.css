@@ -1,0 +1,70 @@
+/* Color system — semantic tokens only. Per DESIGN.md §4.
+   OKLCH throughout. Light + dark tuned separately (dark is not inverted light). */
+
+:root {
+  color-scheme: light dark;
+
+  /* ---- Accent palettes (all four from the brief; active one selected below) ---- */
+  /* Indigo — trustworthy SaaS default (ACTIVE) */
+  --indigo-500: oklch(63% 0.19 275);
+  --indigo-600: oklch(52% 0.21 275);
+  /* Emerald — growth / commerce */
+  --emerald-500: oklch(68% 0.15 160);
+  --emerald-600: oklch(54% 0.15 160);
+  /* Amber-copper — warm, craft brands */
+  --amber-500: oklch(72% 0.14 60);
+  --amber-600: oklch(58% 0.15 55);
+  /* Crimson — bold, high-energy */
+  --crimson-500: oklch(62% 0.20 20);
+  --crimson-600: oklch(52% 0.21 20);
+
+  /* Selected accent — swap these two lines to re-brand a product */
+  --accent-500: var(--indigo-500);
+  --accent-600: var(--indigo-600);
+
+  /* ---- Neutrals (light) ---- */
+  --color-bg:         oklch(98.5% 0.003 90); /* near-white, faint warmth */
+  --color-surface:    oklch(100% 0 0);       /* cards */
+  --color-surface-2:  oklch(96.5% 0.004 90); /* wells, inputs, hover rows */
+  --color-border:     oklch(90% 0.005 90);
+  --color-text:       oklch(21% 0.01 90);    /* near-black, not #000 */
+  --color-text-muted: oklch(48% 0.01 90);
+  --color-text-faint: oklch(65% 0.008 90);
+
+  /* ---- Accent (semantic) ---- */
+  --color-accent:        var(--accent-600);
+  --color-accent-hover:  color-mix(in oklch, var(--color-accent), black 8%);
+  --color-accent-subtle: color-mix(in oklch, var(--color-accent), var(--color-bg) 90%);
+  --color-on-accent:     white;
+
+  /* ---- Status — consistent across all products ---- */
+  --color-success: oklch(58% 0.14 150);
+  --color-warning: oklch(70% 0.15 75);
+  --color-danger:  oklch(55% 0.19 25);
+  --color-info:    oklch(58% 0.12 240);
+
+  --color-success-subtle: color-mix(in oklch, var(--color-success), var(--color-bg) 88%);
+  --color-warning-subtle: color-mix(in oklch, var(--color-warning), var(--color-bg) 88%);
+  --color-danger-subtle:  color-mix(in oklch, var(--color-danger), var(--color-bg) 88%);
+  --color-info-subtle:    color-mix(in oklch, var(--color-info), var(--color-bg) 88%);
+}
+
+[data-theme="dark"] {
+  --color-bg:         oklch(17% 0.008 260);
+  --color-surface:    oklch(21% 0.009 260);
+  --color-surface-2:  oklch(25% 0.010 260);
+  --color-border:     oklch(31% 0.010 260);
+  --color-text:       oklch(93% 0.005 260);
+  --color-text-muted: oklch(70% 0.008 260);
+  --color-text-faint: oklch(55% 0.008 260);
+
+  /* Accents brighten one step in dark mode for contrast */
+  --color-accent:        var(--accent-500);
+  --color-accent-hover:  color-mix(in oklch, var(--color-accent), white 8%);
+  --color-accent-subtle: color-mix(in oklch, var(--color-accent), var(--color-bg) 82%);
+
+  --color-success-subtle: color-mix(in oklch, var(--color-success), var(--color-bg) 78%);
+  --color-warning-subtle: color-mix(in oklch, var(--color-warning), var(--color-bg) 78%);
+  --color-danger-subtle:  color-mix(in oklch, var(--color-danger), var(--color-bg) 78%);
+  --color-info-subtle:    color-mix(in oklch, var(--color-info), var(--color-bg) 78%);
+}

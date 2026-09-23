@@ -1,0 +1,83 @@
+/* ============================================================
+   CoRoasted — Coffee Tech ("Ledger & Roast") design-system bridge
+   Loads AFTER the Coffee-ops token stylesheets. Remaps the app's
+   brand token names onto the warm precision-instrument palette:
+   warm neutrals, one botanical-green accent, Fraunces / Hanken /
+   IBM Plex Mono, borders-first elevation.
+   ============================================================ */
+
+:root {
+  /* ---- motion ---- */
+  --ease-snap:   var(--ease-out);
+  --ease-bounce: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --duration-base: var(--duration-normal);
+
+  /* ---- app semantic aliases -> Coffee-ops tokens ----
+     (the views reference these UDS-style names directly) */
+  --color-bg:             var(--paper);        /* #FBFAF8 warm paper */
+  --color-surface:        var(--surface);      /* #FFFFFF cards / tables */
+  --color-surface-2:      var(--panel);        /* #F4F2ED hover / sunken */
+  --color-border:         var(--hairline);     /* #E8E3DA */
+  --color-text:           var(--ink);          /* #1F1B16 warm near-black */
+  --color-text-muted:     var(--muted);        /* #6B6459 */
+  --color-text-faint:     var(--neutral-500);  /* #8B8273 */
+
+  --color-accent:         var(--accent);       /* botanical green */
+  --color-accent-hover:   var(--accent-hover);
+  --color-accent-subtle:  var(--accent-soft);  /* #EAF0EC */
+  --color-on-accent:      #FFFFFF;
+
+  --color-danger:         var(--danger);
+  --color-danger-subtle:  var(--danger-soft);
+
+  /* dark chip rail (unpaid / on-floor badges) */
+  --color-rail:           var(--ink);
+
+  /* ---- brand color-name ramp (used dynamically as var(--color-<name>)) ----
+     Drawn from the warm coffee system: green accent, amber/gold,
+     leaf, roast browns, warm neutrals. */
+  --color-tomato:   var(--accent);        /* primary — botanical green (switchable) */
+  --color-honey:    #B8760C;              /* warm gold  (amber-500) */
+  --color-sun:      #E3B341;              /* light gold */
+  --color-sky:      #3A5A78;              /* info blue  */
+  --color-matcha:   #5C7C4A;              /* leaf green */
+  --color-roast:    #6B4423;              /* roast brown */
+  --color-cream:    #FFFFFF;              /* light — chip fg on dark blocks */
+  --color-chalk:    var(--paper);         /* #FBFAF8 */
+  --color-espresso: var(--ink);           /* dark — chip fg on light blocks */
+  --color-fog:      var(--hairline);      /* #E8E3DA track / storage */
+
+  --fg1: var(--color-text);
+  --fg2: var(--color-text-muted);
+}
+
+/* Flat warm-paper canvas. */
+html[data-product="coroasted-coffee"],
+html[data-product="coroasted-coffee"] body {
+  background: var(--color-bg);
+  min-height: 100vh;
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+/* Borders-first hover; subtle press. */
+[data-product="coroasted-coffee"] .co-btn:hover  { transform: translateY(-1px); }
+[data-product="coroasted-coffee"] .co-btn:active { transform: translateY(1px); }
+
+/* Focus — 3px botanical-green ring. */
+[data-product="coroasted-coffee"] button:focus-visible,
+[data-product="coroasted-coffee"] a:focus-visible,
+[data-product="coroasted-coffee"] input:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* Links */
+[data-product="coroasted-coffee"] a { color: var(--text-link); text-decoration: none; }
+[data-product="coroasted-coffee"] a:hover { color: var(--accent-hover); text-decoration: underline; }
+
+/* Scrollbar */
+[data-product="coroasted-coffee"] ::-webkit-scrollbar { width: 8px; height: 8px; }
+[data-product="coroasted-coffee"] ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 999px; }
+[data-product="coroasted-coffee"] ::-webkit-scrollbar-thumb:hover { background: var(--color-text-faint); }
+[data-product="coroasted-coffee"] ::-webkit-scrollbar-track { background: transparent; }

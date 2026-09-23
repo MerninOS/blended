@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en" data-product="coroasted-coffee-os">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CoRoasted · Storefront</title>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/fonts.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/colors.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/typography.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/spacing.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/layout.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/tokens/base.css"/>
+<link rel="stylesheet" href="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/styles.css"/>
+<link rel="stylesheet" href="theme/coroasted-coffeeos.css"/>
+<link rel="stylesheet" href="theme/blended.css"/>
+<link rel="stylesheet" href="theme/portal-mobile.css"/>
+<style>
+  html,body{margin:0;padding:0;background:var(--color-bg);font-family:var(--font-body);color:var(--color-text)}
+  *{box-sizing:border-box}
+  a{color:var(--brand);text-decoration:none}a:hover{color:var(--brand-hover)}
+  @keyframes co-pulse {0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.45;transform:scale(.85)}}
+  @media (max-width:860px){.bc-preview{grid-template-columns:minmax(0,1fr)!important}}
+  @media (max-width:520px){.bc-card > div > div:nth-child(2){grid-template-columns:minmax(0,1fr)!important}}
+  @keyframes bx-cue{0%{transform:scaleY(0);opacity:1}60%{transform:scaleY(1);opacity:1}100%{transform:scaleY(1);opacity:0}}
+  @media (max-width:640px){.bx-desc{display:none}.bx-opt{padding:12px!important}}
+  @keyframes cart-in{from{transform:translateX(100%)}to{transform:none}}
+  .cart-btn:hover{background:var(--surface-sunken)!important}
+  .sf-burger{display:none;appearance:none;border:0;background:none;width:40px;height:40px;margin-left:-8px;align-items:center;justify-content:center;cursor:pointer;color:var(--ink);border-radius:var(--r-md)}
+  .sf-burger-lines{position:relative;width:18px;height:12px;display:block}
+  .sf-burger-lines span{position:absolute;left:0;right:0;height:1.75px;background:currentColor;border-radius:1px;transition:transform 200ms var(--ease),opacity 150ms var(--ease),top 200ms var(--ease)}
+  .sf-burger-lines span:nth-child(1){top:0}.sf-burger-lines span:nth-child(2){top:5px}.sf-burger-lines span:nth-child(3){top:10px}
+  .sf-burger-lines[data-open="true"] span:nth-child(1){top:5px;transform:rotate(45deg)}
+  .sf-burger-lines[data-open="true"] span:nth-child(2){opacity:0}
+  .sf-burger-lines[data-open="true"] span:nth-child(3){top:5px;transform:rotate(-45deg)}
+  .sf-menu-scrim{position:fixed;inset:var(--topbar-h) 0 0 0;background:rgba(26,26,24,.32);animation:co-fade 180ms var(--ease)}
+  .sf-menu{position:absolute;left:0;right:0;top:100%;background:var(--surface);border-bottom:1px solid var(--hairline);box-shadow:var(--shadow-pop);display:flex;flex-direction:column;padding:6px 0;animation:sf-drop 200ms var(--ease)}
+  .sf-menu-item{appearance:none;border:0;background:none;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:4px;padding:14px 18px 14px 15px;min-height:56px;border-left:3px solid transparent;font-family:var(--font-display);font-variation-settings:var(--display-settings);font-weight:700;text-transform:uppercase;font-size:17px;color:var(--ink);line-height:1}
+  .sf-menu-item[aria-current="page"]{border-left-color:var(--brand);background:var(--brand-soft)}
+  .sf-menu-note{font-family:var(--font-sans);font-variation-settings:normal;font-weight:400;text-transform:none;font-size:12.5px;color:var(--ink-muted);letter-spacing:0}
+  @keyframes sf-drop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  @media (max-width:720px){
+    .sf-burger{display:inline-flex}
+    .sf-tabs{display:none!important}
+    .pc-bar{gap:8px!important}
+    .cart-btn{padding:0 10px!important;height:40px!important}
+    .cart-btn .cart-label{display:none}
+    .cart-drawer-head{padding:14px 16px!important}
+    .cart-drawer-body{padding:4px 16px!important}
+    .cart-drawer-foot{padding:14px 16px calc(16px + env(safe-area-inset-bottom))!important}
+    .cart-drawer-note{margin:12px 16px 0!important}
+  }
+  @keyframes co-fade  {from{opacity:0} to{opacity:1}}
+  image-slot.pl-thumb::part(empty){padding:3px;gap:1px;font-size:9px;line-height:1.15}
+  .sf-tab{appearance:none;border:0;background:none;cursor:pointer;padding:0 2px;height:var(--topbar-h);position:relative;font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--ink-subtle)}
+  .sf-tab:hover{color:var(--ink)}
+  .sf-tab[aria-selected="true"]{color:var(--ink)}
+  .sf-tab[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--brand)}
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="_ds/coffeeos-design-system-372546fd-0e91-40ba-9102-f6fe66427d99/_ds_bundle.js"></script>
+<script src="https://unpkg.com/three@0.149.0/build/three.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script src="image-slot.js"></script>
+<script type="text/babel" src="src/primitives.jsx"></script>
+<script type="text/babel" src="src/Starburst.jsx"></script>
+<script type="text/babel" src="src/data.jsx"></script>
+<script type="text/babel" src="src/atoms.jsx"></script>
+<script type="text/babel" src="src/portal-data.jsx"></script>
+<script type="text/babel" src="coffeeos/parts.jsx"></script>
+<script type="text/babel" src="coffeeos/PortalPrimitives.jsx"></script>
+<script type="text/babel" src="coffeeos/PrivateLabelData.jsx"></script>
+<script type="text/babel" src="coffeeos/CoffeeReviews.jsx"></script>
+<script type="text/babel" src="coffeeos/BlendBuilder.jsx"></script>
+<script type="text/babel" src="coffeeos/PrivateLabelView.jsx"></script>
+<script type="text/babel" src="coffeeos/BoxHero.jsx"></script>
+<script type="text/babel" src="coffeeos/BlendCard.jsx"></script>
+<script type="text/babel" src="coffeeos/CartDrawer.jsx"></script>
+<script type="text/babel" src="coffeeos/ShopView.jsx"></script>
+<script type="text/babel" src="coffeeos/PortalOther.jsx"></script>
+<script type="text/babel" data-presets="react">
+  const TABS = [{id:"retail",label:"Retail"},{id:"wholesale",label:"Wholesale"}];
+
+  const StorefrontChrome = ({ tab, setTab }) => {
+    const [menu, setMenu] = React.useState(false);
+    React.useEffect(()=>{ if(!menu) return; const k=e=>{ if(e.key==="Escape") setMenu(false); }; addEventListener("keydown",k); return ()=>removeEventListener("keydown",k); },[menu]);
+    const go = (id) => { setTab(id); setMenu(false); };
+    return (
+    <div style={{position:"sticky",top:0,zIndex:50,background:"var(--surface)",borderBottom:"1px solid var(--hairline)"}}>
+      <div className="pc-bar" style={{maxWidth:"var(--content-max)",margin:"0 auto",display:"flex",alignItems:"center",gap:24,height:"var(--topbar-h)",padding:"0 24px"}}>
+        <button className="sf-burger" aria-label={menu?"Close menu":"Open menu"} aria-expanded={menu} onClick={()=>setMenu(m=>!m)}>
+          <span className="sf-burger-lines" data-open={menu}><span></span><span></span><span></span></span>
+        </button>
+        <span className="co-wordmark" style={{fontFamily:"var(--font-logo)",fontWeight:800,fontSize:17,color:"var(--ink)",letterSpacing:"-0.01em",display:"flex",alignItems:"center",gap:8}}><img src="assets/blended-mark.png" alt="" style={{width:22,height:22,flexShrink:0}}/><span style={{fontWeight:800}}>BLENDED</span></span>
+        <div role="tablist" className="sf-tabs" style={{display:"flex",gap:20}}>
+          {TABS.map(t=>(
+            <button key={t.id} role="tab" className="sf-tab" aria-selected={tab===t.id} onClick={()=>setTab(t.id)}>{t.label}</button>
+          ))}
+        </div>
+        <span style={{flex:1}}/>
+        <span className="pc-facility" style={{fontFamily:"var(--font-mono)",fontVariationSettings:"var(--data-settings)",fontSize:11.5,color:"var(--ink-muted)"}}>
+          {tab==="retail" ? "Free shipping over $50" : "Minimum 5 lb per order"}
+        </span>
+        {tab==="retail" && <CartButton/>}
+      </div>
+      {menu && <>
+        <div className="sf-menu-scrim" onClick={()=>setMenu(false)}></div>
+        <nav className="sf-menu" aria-label="Storefront">
+          {TABS.map(t=>(
+            <button key={t.id} className="sf-menu-item" aria-current={tab===t.id?"page":undefined} onClick={()=>go(t.id)}>
+              <span>{t.label}</span>
+              <span className="sf-menu-note">{t.id==="retail" ? "Bags for home · free shipping over $50" : "Cafés and private label · 5 lb minimum"}</span>
+            </button>
+          ))}
+        </nav>
+      </>}
+    </div>
+    );
+  };
+
+  const App = () => {
+    const [tab, setTab] = React.useState(()=> (location.hash.slice(1)==="wholesale" ? "wholesale" : "retail"));
+    const [confirm, setConfirm] = React.useState(null);
+    const [toast, setToast] = React.useState(null);
+    React.useEffect(()=>{ location.hash = tab; }, [tab]);
+    const onConfirm = () => {
+      setConfirm(null);
+      setToast("Private label order placed.");
+      setTimeout(()=>setToast(null), 2600);
+    };
+    return (
+      <div data-screen-label={tab}>
+        <StorefrontChrome tab={tab} setTab={setTab}/>
+        {tab==="retail" ? <ShopView/> : <PrivateLabelView openConfirm={setConfirm}/>}
+        {tab==="retail" && <CartDrawer onNewBlend={()=>window.__shopNewBlend && window.__shopNewBlend()}/>}
+        <ConfirmModal payload={confirm} onClose={()=>setConfirm(null)} onConfirm={onConfirm}/>
+        {toast && <div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",padding:"12px 18px",background:"var(--ink)",color:"var(--on-ink)",borderRadius:"var(--r-md)",boxShadow:"var(--shadow-pop)",fontFamily:"var(--font-sans)",fontWeight:600,fontSize:13.5,zIndex:1000,display:"flex",alignItems:"center",gap:8}}><span style={{color:"var(--success)"}}><I name="check" size={16} stroke={2.4}/></span>{toast}</div>}
+      </div>
+    );
+  };
+  ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
