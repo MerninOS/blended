@@ -24,6 +24,15 @@ const SHOP = gql`
     }
   }
 `;
+const SCOPES = gql`
+  query GrantedScopes { currentAppInstallation { accessScopes { handle } } }
+`;
+/** Admin API scopes the app uses (write_x also grants read_x). */
+export const REQUIRED_SCOPES = [
+  "write_products", "write_inventory", "read_locations", "write_publications", "write_files", "read_metaobjects",
+  "read_orders", "write_orders", "write_draft_orders", "write_merchant_managed_fulfillment_orders", "write_fulfillments",
+  "read_customers", "read_payment_terms",
+];
 const SETUP_STATE = gql`
   query SetupState {
     greenFields: metafieldDefinitions(first: 1, ownerType: PRODUCT, namespace: "blended", key: "green_price") { nodes { id } }
@@ -107,13 +116,20 @@ export async function getConnection(): Promise<ConnectionInfo> {
   const base: ConnectionInfo = { demo: isDemo(), shop: null, apiVersion: env.apiVersion, checks, hooks: WEBHOOKS.map((h) => ({ topic: h.topic, use: h.use, active: false, last: null })), activity: [], setupDone: null, legacyGreen: 0 };
   if (!hasAdmin()) return base;
   try {
-    const [s, h, a, st] = await Promise.all([
+    const [s, h, a, st, sc] = await Promise.all([
       admin<ShopRes>(SHOP),
       admin<{ webhookSubscriptions: { nodes: { topic: string; uri: string; updatedAt: string }[] } }>(HOOKS),
       admin<{ orders: { nodes: { name: string; createdAt: string; tags: string[]; displayFinancialStatus: string | null; totalPriceSet: { shopMoney: { amount: string } } }[] };
         draftOrders: { nodes: { name: string; updatedAt: string; status: string }[] } }>(ACTIVITY),
       admin<SetupRes>(SETUP_STATE).catch(() => null),
+      admin<{ currentAppInstallation: { accessScopes: { handle: string }[] } }>(SCOPES).catch(() => null),
     ]);
+    if (sc) {
+      const granted = new Set(sc.currentAppInstallation.accessScopes.map((x) => x.handle));
+      const missing = REQUIRED_SCOPES.filter((x) => !granted.has(x) && !granted.has(x.replace(/^read_/, "write_")));
+      checks.push({ label: "App permissions", ok: !missing.length,
+        hint: `Missing on the store: ${missing.join(", ")}. Add them to the app, release a new version, then approve it on the store.` });
+    }
     const mine = h.webhookSubscriptions.nodes.filter((n) => n.uri === webhookUri());
     const time = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
     return {

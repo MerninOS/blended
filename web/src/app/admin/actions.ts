@@ -101,5 +101,10 @@ export async function setupStoreAction(seed: boolean): Promise<Result & { log?: 
     });
     updateTag(CACHE_TAGS.catalog); revalidatePath("/admin", "layout");
     return { ok: true, log: lines };
-  } catch (e) { return { ...fail(e), log: lines }; }
+  } catch (e) {
+    const r = fail(e);
+    if (!r.ok && /access denied/i.test(r.error))
+      r.error += " — the Shopify app hasn't been granted a permission it needs. See the setup checklist above for which.";
+    return { ...r, log: lines };
+  }
 }

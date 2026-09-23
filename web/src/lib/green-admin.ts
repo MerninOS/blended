@@ -19,7 +19,7 @@ export const adminQ: AdminQ = (query, variables) => admin(query, { variables });
 let location: Promise<string> | null = null;
 /** Inventory location green is counted at (cached per server instance). */
 export function greenLocation() {
-  location ??= resolveLocation((q, variables) => admin(q, { variables, revalidate: 3600 }), env.locationId).catch((e) => { location = null; throw e; });
+  location ??= resolveLocation(adminQ, env.locationId).catch((e) => { location = null; throw e; });
   return location;
 }
 

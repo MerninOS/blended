@@ -60,9 +60,17 @@ async function adminToken(): Promise<string> {
   return cached.token;
 }
 
-export async function admin<T>(query: string, o: FetchOpts = {}) {
-  const token = await adminToken();
-  return post<T>(`https://${env.storeDomain}/admin/api/${env.apiVersion}/graphql.json`, { "X-Shopify-Access-Token": token }, query, o);
+export async function admin<T>(query: string, o: FetchOpts = {}): Promise<T> {
+  const url = `https://${env.storeDomain}/admin/api/${env.apiVersion}/graphql.json`;
+  try {
+    return await post<T>(url, { "X-Shopify-Access-Token": await adminToken() }, query, o);
+  } catch (e) {
+    // A token issued before new scopes were approved keeps the old scopes until it
+    // expires (up to 24 h). On "access denied", get a fresh token and try once more.
+    if (env.adminToken || !(e instanceof ShopifyError) || !/access denied/i.test(e.message)) throw e;
+    cached = null;
+    return post<T>(url, { "X-Shopify-Access-Token": await adminToken() }, query, { ...o, cache: "no-store", tags: undefined, revalidate: undefined });
+  }
 }
 
 type UserError = { field?: string[] | null; message: string };
