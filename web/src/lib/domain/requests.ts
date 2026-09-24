@@ -26,6 +26,5 @@ export interface WholesaleOrderRequest {
   ownEta?: string;
   needBy: string;
   ship: ShipTo;
-  payMethod: "terms" | "card";
   po?: string;
 }

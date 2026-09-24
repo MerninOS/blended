@@ -1,7 +1,6 @@
 import "server-only";
 // Private label (wholesale) orders → Shopify draft orders for a signed-in
-// wholesale customer. Net 30 completes the draft into an order on payment
-// terms; card hands the buyer Shopify's hosted checkout for the draft.
+// wholesale customer, paid by card on Shopify's hosted checkout for the draft.
 import type { Catalog } from "@/lib/domain/types";
 import type { WholesaleOrderRequest } from "@/lib/domain/requests";
 import {
@@ -43,23 +42,10 @@ export function priceWholesale(r: WholesaleOrderRequest, cat: Catalog) {
 
 const money = (n: number) => ({ amount: round2(n).toFixed(2), currencyCode: env.currency });
 
-const TERMS = gql`
-  query NetTerms {
-    paymentTermsTemplates(paymentTermsType: NET) { id dueInDays }
-  }
-`;
 const CREATE = gql`
   mutation WholesaleDraftCreate($input: DraftOrderInput!) {
     draftOrderCreate(input: $input) {
       draftOrder { id name invoiceUrl }
-      userErrors { field message }
-    }
-  }
-`;
-const COMPLETE = gql`
-  mutation WholesaleDraftComplete($id: ID!) {
-    draftOrderComplete(id: $id, paymentPending: true) {
-      draftOrder { id order { id name } }
       userErrors { field message }
     }
   }
@@ -112,18 +98,9 @@ export async function placeWholesaleOrder(r: WholesaleOrderRequest, p: ReturnTyp
     tags: ["blended", "channel:wholesale", "private-label"],
     visibleToCustomer: true,
   };
-  if (r.payMethod === "terms") {
-    const t = await admin<{ paymentTermsTemplates: { id: string; dueInDays: number | null }[] }>(TERMS);
-    const net30 = t.paymentTermsTemplates.find((x) => x.dueInDays === 30);
-    if (!net30) throw new CheckoutError("Net 30 terms aren't enabled on the store.");
-    input.paymentTerms = { paymentTermsTemplateId: net30.id, paymentSchedules: [{ issuedAt: new Date().toISOString() }] };
-  }
   const c = await admin<{ draftOrderCreate: { draftOrder: { id: string; name: string; invoiceUrl: string } | null; userErrors: { message: string }[] } }>(CREATE, { variables: { input } });
   assertNoUserErrors(c.draftOrderCreate, "Could not create the order");
   const draft = c.draftOrderCreate.draftOrder!;
   await waitForDraftReady(draft.id);
-  if (r.payMethod === "card") return { url: draft.invoiceUrl, orderName: draft.name };
-  const done = await admin<{ draftOrderComplete: { draftOrder: { order: { name: string } | null } | null; userErrors: { message: string }[] } }>(COMPLETE, { variables: { id: draft.id } });
-  assertNoUserErrors(done.draftOrderComplete, "Could not place the order");
-  return { orderName: done.draftOrderComplete.draftOrder?.order?.name ?? draft.name };
+  return { url: draft.invoiceUrl, orderName: draft.name };
 }

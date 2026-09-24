@@ -1,7 +1,6 @@
 "use client";
 // Private label review + checkout (ConfirmModal "pl" in PortalOther.jsx).
-// Net 30 places the order on account; card hands off to Shopify's hosted
-// checkout — card numbers never touch this app.
+// Payment is by card on Shopify's hosted checkout — card numbers never touch this app.
 import { useEffect, useState } from "react";
 import type { SelItem } from "@/lib/domain/types";
 import type { CheckoutResponse, ShipTo, WholesaleOrderRequest } from "@/lib/domain/requests";
@@ -33,7 +32,6 @@ export function WholesaleCheckout({ payload, account, onClose, onPlaced }: {
   const { idx } = useCatalog();
   const blank: ShipTo = { company: account.company, contact: "", phone: "", line1: "", line2: "", city: "", state: "", zip: "" };
   const [ship, setShip] = useState<ShipTo>(account.address ? { ...account.address, company: account.address.company || account.company } : blank);
-  const [payMethod, setPayMethod] = useState<"terms" | "card">("terms");
   const [po, setPo] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -52,7 +50,7 @@ export function WholesaleCheckout({ payload, account, onClose, onPlaced }: {
     setBusy(true); setErr(null);
     const body: WholesaleOrderRequest = {
       mode: p.mode, skuId: p.skuId, sel: p.sel, roast: p.roast, blendName: p.blendName, lbs: p.lbs, bagId: p.bagId, packId: p.packId,
-      labelSize: p.labelSize, artwork: p.art, ownBags: p.ownBags, ownEta: p.ownEta, needBy: p.needBy, ship, payMethod, po,
+      labelSize: p.labelSize, artwork: p.art, ownBags: p.ownBags, ownEta: p.ownEta, needBy: p.needBy, ship, po,
     };
     try {
       const res = await fetch("/api/wholesale/order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -98,22 +96,14 @@ export function WholesaleCheckout({ payload, account, onClose, onPlaced }: {
             </div>
 
             <CheckoutHead label="Payment" />
-            <div role="radiogroup" aria-label="Payment" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {[{ id: "terms" as const, title: "Invoice on account", sub: "Net 30 · billed after the run ships" },
-                { id: "card" as const, title: "Credit card", sub: "Pay now on Shopify's secure checkout" }].map((m) => {
-                const on = payMethod === m.id;
-                return (
-                  <label key={m.id} style={{ display: "flex", alignItems: "flex-start", gap: 11, padding: "12px 14px", cursor: "pointer", borderRadius: "var(--r-md)", border: on ? "1.5px solid var(--brand)" : "1px solid var(--hairline)", background: on ? "var(--brand-soft)" : "var(--surface)" }}>
-                    <input type="radio" name="pl-pay" checked={on} onChange={() => setPayMethod(m.id)} style={{ marginTop: 2, accentColor: "var(--brand)" }} />
-                    <span style={{ minWidth: 0 }}>
-                      <span style={{ display: "block", fontFamily: "var(--font-sans)", fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}>{m.title}</span>
-                      <span style={{ display: "block", ...mono, fontSize: 11.5, color: "var(--ink-muted)", marginTop: 3 }}>{m.sub}</span>
-                    </span>
-                  </label>
-                );
-              })}
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 11, padding: "12px 14px", borderRadius: "var(--r-md)", border: "1px solid var(--hairline)", background: "var(--surface)" }}>
+              <span style={{ color: "var(--ink-muted)", marginTop: 1 }}><Icon name="check" size={15} stroke={2} /></span>
+              <span style={{ minWidth: 0 }}>
+                <span style={{ display: "block", fontFamily: "var(--font-sans)", fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}>Credit card</span>
+                <span style={{ display: "block", ...mono, fontSize: 11.5, color: "var(--ink-muted)", marginTop: 3 }}>Pay on Shopify&apos;s secure checkout</span>
+              </span>
             </div>
-            <Field label="Purchase order / reference"><input value={po} onChange={(e) => setPo(e.target.value)} maxLength={60} placeholder="Optional — prints on the invoice" style={inp} /></Field>
+            <Field label="Purchase order / reference"><input value={po} onChange={(e) => setPo(e.target.value)} maxLength={60} placeholder="Optional — shows on your order" style={inp} /></Field>
 
             <div style={{ padding: 14, background: "var(--surface-sunken)", border: "1px solid var(--hairline)", borderRadius: "var(--r-md)", marginTop: 4 }}>
               <SumRow k={`${p.lbs} lb × ${money(p.pricePerLb)}/lb`} v={q.coffee} />
@@ -123,13 +113,13 @@ export function WholesaleCheckout({ payload, account, onClose, onPlaced }: {
               <SumRow k="Fill, seal, date-stamp" v={q.fill} />
               <div style={{ borderTop: "1px solid var(--hairline)", margin: "10px 0" }} />
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}><span style={{ ...over, fontSize: 11, color: "var(--ink-muted)" }}>Estimated total</span><span style={{ ...disp, fontSize: 28, color: "var(--ink)" }}>${q.total.toFixed(0)}</span></div>
-              <div style={{ fontSize: 11, color: "var(--ink-subtle)", marginTop: 8, fontFamily: "var(--font-sans)" }}>{payMethod === "terms" ? "Billed on your account terms after the run ships." : "Shipping and tax are added on Shopify checkout."} {q.pack.id === "label" ? "A printed proof comes back before we run the labels." : "Green price is locked for 60 days."}</div>
+              <div style={{ fontSize: 11, color: "var(--ink-subtle)", marginTop: 8, fontFamily: "var(--font-sans)" }}>Shipping and tax are added on Shopify checkout. {q.pack.id === "label" ? "A printed proof comes back before we run the labels." : "Green price is locked for 60 days."}</div>
             </div>
             {err && <p role="alert" style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: 12.5, lineHeight: 1.45, color: "var(--danger)" }}>{err}</p>}
           </div>
           <div className="co-modal-foot" style={{ padding: "14px 22px", borderTop: "1px solid var(--hairline)", display: "flex", gap: 10, justifyContent: "flex-end" }}>
             <Btn variant="ghost" onClick={onClose} disabled={busy}>Cancel</Btn>
-            <Btn variant="primary" type="submit" disabled={busy}>{busy ? "Placing…" : payMethod === "card" ? "Continue to payment" : "Place order"}</Btn>
+            <Btn variant="primary" type="submit" disabled={busy}>{busy ? "Starting checkout…" : "Continue to payment"}</Btn>
           </div>
         </form>
       </div>

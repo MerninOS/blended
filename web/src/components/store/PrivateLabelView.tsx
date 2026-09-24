@@ -275,7 +275,7 @@ export function PrivateLabelView({ account }: { account: { company: string; emai
           <span style={{ ...mono, fontSize: 12, color: "var(--ink-subtle)" }}>{money(q.perLb)}/lb · {money(q.unit)}/bag</span>
           <span style={{ ...disp, fontSize: 30, color: "var(--ink)", lineHeight: 1 }}>{money0(q.total)}</span>
         </div>
-        <p style={{ margin: "10px 0 0", fontFamily: "var(--font-sans)", fontSize: 12, lineHeight: 1.55, color: "var(--ink-subtle)", maxWidth: "70ch" }}>Billed on your account terms after the run ships. Green price is locked for 60 days from order; packaging is billed at actual bag count, which can move by up to 2% on fill.</p>
+        <p style={{ margin: "10px 0 0", fontFamily: "var(--font-sans)", fontSize: 12, lineHeight: 1.55, color: "var(--ink-subtle)", maxWidth: "70ch" }}>Paid by card at checkout. Green price is locked for 60 days from order; packaging is billed at actual bag count, which can move by up to 2% on fill.</p>
       </section>
 
       <div className="co-confirmbar" style={{ position: "sticky", bottom: 16, background: "var(--surface)", border: "1px solid var(--hairline)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-pop)", padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>

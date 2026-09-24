@@ -31,7 +31,7 @@ const SCOPES = gql`
 export const REQUIRED_SCOPES = [
   "write_products", "write_inventory", "read_locations", "write_publications", "write_files", "read_metaobjects",
   "read_orders", "write_orders", "write_draft_orders", "write_merchant_managed_fulfillment_orders", "write_fulfillments",
-  "read_customers", "read_payment_terms",
+  "read_customers",
 ];
 const SETUP_STATE = gql`
   query SetupState {

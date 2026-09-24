@@ -18,7 +18,7 @@ export function WholesaleGate({ state, available, email, error }: { state: "sign
           </p>
         ) : (
           <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: 14, lineHeight: 1.6, color: "var(--ink)" }}>
-            Sign in with your wholesale account to build private label runs, order on Net 30 terms, and reorder your blends. 5 lb minimum per run.
+            Sign in with your wholesale account to build private label runs and reorder your blends. 5 lb minimum per run.
           </p>
         )}
         {error && <p role="alert" style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--danger)" }}>{error}</p>}

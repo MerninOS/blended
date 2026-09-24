@@ -7,7 +7,7 @@ fulfillment and inventory.
 | Route | What it is |
 | --- | --- |
 | `/` | **Retail / Coffee Lab**: 3D carton hero, "Our coffees" or "Build your own blend", cart drawer, Shopify checkout |
-| `/wholesale` | **Private label** for signed-in wholesale accounts: stocked coffee or custom blend, packaging, run size, Net 30 or card |
+| `/wholesale` | **Private label** for signed-in wholesale accounts: stocked coffee or custom blend, packaging, run size, card checkout |
 | `/admin/orders` | Orders board: to fulfil / roast list / all orders, order drawer with gram-level roast sheet, stage → fulfillment |
 | `/admin/green` | Green catalog: the lots customers can blend (photo, cupping scores, prices, stock, min grams, roast) |
 | `/admin/settings` | Shopify connection, setup checklist, checkout switches, webhooks, recent activity |
@@ -32,14 +32,14 @@ Admin edits are kept in memory and checkout says it's in demo. Admin is open loc
 2. **Admin API:** create an app (Dev Dashboard) for your store with these scopes:
    `write_products, write_inventory, read_locations, write_publications, write_files, read_metaobjects,
    read_orders, write_orders, write_draft_orders, write_merchant_managed_fulfillment_orders,
-   write_fulfillments, read_customers, read_payment_terms`. Put its client ID/secret, or a static token, in `.env.local`.
+   write_fulfillments, read_customers`. Put its client ID/secret, or a static token, in `.env.local`.
 3. **Set up the store once:** Admin → Settings → **Set up store** creates the `blended.*` product
    metafield definitions and the `our-coffees` collection. It also moves green lots saved by older
    versions (`green_lot` metaobjects) into products.
    **Set up + add sample coffees** also loads the design's sample catalog with photos. Then click
    **Register webhooks**. You can also run it locally: `npm run setup:shopify` (add `-- --seed` for
    the samples, `-- --webhooks` for webhooks to `APP_URL`).
-4. Tag wholesale customers `wholesale`. Turn on **Net 30** payment terms in Shopify.
+4. Tag wholesale customers `wholesale`.
 5. Deploy (e.g. Vercel, project root `web/`) with the same env vars, plus `SESSION_SECRET` and `ADMIN_PASSWORD`.
 
 ## How it maps onto Shopify
@@ -63,9 +63,8 @@ Admin edits are kept in memory and checkout says it's in demo. Admin is open loc
   Custom blends are custom line items priced from their ratios. The recipe travels as line-item
   properties: visible `Coffees`, `Roast`, `Size`, plus a hidden `_blend` JSON.
 - **Wholesale**: Shopify customer-account sign-in (OAuth + PKCE), gated on the `wholesale` tag. The tag
-  is re-checked with the Admin API on every order. **Net 30** creates a draft order with payment terms
-  and completes it (payment pending). **Card** hands off to the draft's hosted checkout, so card
-  numbers never touch this app. Label artwork uploads straight from the browser to Shopify Files.
+  is re-checked with the Admin API on every order. Orders are paid by card: the app creates a draft
+  order and hands off to its hosted checkout, so card numbers never touch this app. Label artwork uploads straight from the browser to Shopify Files.
 - **Orders board**: reads orders tagged `blended`. Stage = `stage:roasting` / `stage:packing` tags.
   **Mark shipped** creates a real fulfillment (optional tracking; the customer email is a Settings toggle).
 - **Webhooks** (`/api/webhooks/shopify`, HMAC-verified): product and inventory changes refresh the catalog

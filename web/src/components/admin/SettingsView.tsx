@@ -45,7 +45,7 @@ function ToggleRow({ title, desc, on, onChange }: { title: string; desc: string;
 
 const ROUTES = [
   { id: "retailCheckout" as const, channel: "Retail · Coffee Lab", target: "Draft order → checkout", detail: "Shopify hosted checkout", pay: "Captured at checkout by Shopify Payments", tag: "channel:retail", roast: "On the Orders board once paid" },
-  { id: "wholesaleCheckout" as const, channel: "Wholesale · Private label", target: "Draft order", detail: "Net 30 on account, or card", pay: "Payment terms on the order, or card checkout", tag: "channel:wholesale · private-label", roast: "On the Orders board when placed" },
+  { id: "wholesaleCheckout" as const, channel: "Wholesale · Private label", target: "Draft order → checkout", detail: "Shopify hosted checkout", pay: "Card, captured at checkout by Shopify Payments", tag: "channel:wholesale · private-label", roast: "On the Orders board once paid" },
 ];
 const MAP = [
   { from: "Green lot", to: "Product tagged blended-green", note: "Stock is Shopify inventory in grams. Listed = active, hidden = draft, never on a sales channel." },
@@ -124,7 +124,7 @@ export function SettingsView({ conn, initial }: { conn: ConnectionInfo; initial:
         )}
       </Section>
 
-      <Section title="Checkout routing" note="Nothing is billed here. Both storefront tabs hand off to Shopify — retail as a checkout, wholesale as a draft order on account terms — and the order comes back to the Orders board as a roast job.">
+      <Section title="Checkout routing" note="Nothing is billed here. Both storefront tabs hand off to Shopify’s hosted checkout, and the paid order comes back to the Orders board as a roast job.">
         <div style={{ border: "1px solid var(--hairline)", borderRadius: "var(--r-md)", overflow: "hidden" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1.2fr 44px", gap: 16, padding: "9px 16px", background: "var(--surface-sunken)", borderBottom: "1px solid var(--hairline)" }}>
             <span style={over()}>Storefront tab</span><span style={over()}>Becomes</span><span style={over()}>Payment</span><span />

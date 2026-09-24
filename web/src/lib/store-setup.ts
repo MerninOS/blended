@@ -18,7 +18,7 @@ export const WEBHOOKS: { topic: string; use: string; filter?: string }[] = [
   { topic: "ORDERS_CANCELLED", use: "Puts that green back when an order is cancelled" },
   { topic: "ORDERS_PAID", use: "Puts custom blends on QC hold" },
   { topic: "ORDERS_FULFILLED", use: "Moves the order to shipped" },
-  { topic: "DRAFT_ORDERS_UPDATE", use: "Tracks wholesale invoices as they're paid" },
+  { topic: "DRAFT_ORDERS_UPDATE", use: "Tracks draft checkouts as they're paid" },
   { topic: "PRODUCTS_UPDATE", use: "Refreshes Our coffees and the green catalog" },
   { topic: "INVENTORY_LEVELS_UPDATE", use: "Refreshes green stock on the blend builder" },
 ];
