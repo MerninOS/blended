@@ -5,9 +5,12 @@ import { getCustomer } from "@/lib/customer-account";
 import type { CheckoutResponse, WholesaleOrderRequest } from "@/lib/domain/requests";
 import { isDemo } from "@/lib/env";
 import { getSettings } from "@/lib/settings";
+import { guard } from "@/lib/guard";
 import { isWholesaleCustomer, placeWholesaleOrder, priceWholesale } from "@/lib/wholesale";
 
 export async function POST(req: NextRequest): Promise<NextResponse<CheckoutResponse>> {
+  const blocked = await guard(req, "wholesale-order", { max: 8 });
+  if (blocked) return blocked;
   const customer = await getCustomer();
   if (!customer) return NextResponse.json({ error: "Sign in with your wholesale account to order." }, { status: 401 });
 

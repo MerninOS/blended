@@ -4,10 +4,13 @@ import { CheckoutError, createRetailDraft, priceRetailCart } from "@/lib/checkou
 import type { CheckoutResponse, RetailCheckoutRequest } from "@/lib/domain/requests";
 import { env, isDemo } from "@/lib/env";
 import { getSettings } from "@/lib/settings";
+import { guard } from "@/lib/guard";
 
 const DRAFT_COOKIE = "blended_draft";
 
 export async function POST(req: NextRequest): Promise<NextResponse<CheckoutResponse>> {
+  const blocked = await guard(req, "checkout", { max: 12 });
+  if (blocked) return blocked;
   let body: RetailCheckoutRequest;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Bad request" }, { status: 400 }); }
 

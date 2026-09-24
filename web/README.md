@@ -71,6 +71,23 @@ Admin edits are kept in memory and checkout says it's in demo. Admin is open loc
   cache. `orders/create` / `orders/cancelled` move green stock (above). `orders/paid` adds a `qc-hold` tag
   to custom blends. Both are Settings toggles.
 
+## Analytics, SEO and marketing
+
+- **Consent banner** (first visit, re-open from the footer): analytics and marketing are off until the
+  visitor accepts. With `SHOPIFY_STOREFRONT_PUBLIC_TOKEN` set, the choice is shared with Shopify
+  checkout through the Customer Privacy API.
+- **Shopify analytics**: page views, coffee views and add-to-carts are sent to Shopify
+  (`@shopify/hydrogen-react`), so Analytics shows sessions and the funnel for this storefront. Needs
+  analytics consent; set `SHOPIFY_STOREFRONT_ID` to attribute them to the Headless storefront.
+- **Vercel Web Analytics + Speed Insights**: cookieless, always on. Turn both on in the Vercel project.
+  Custom events: `add_to_cart`, `begin_checkout`.
+- **Klaviyo** (`KLAVIYO_PUBLIC_KEY`): onsite script with marketing consent; `Viewed Product`,
+  `Added to Cart`, `Started Checkout` events; footer signup posts to `KLAVIYO_LIST_ID`.
+- **SEO**: a page per coffee (`/coffees/[handle]`) with Product structured data, canonical URLs and
+  share images; `sitemap.xml`, `robots.txt` (previews are noindex), `/policies/[handle]` from
+  Shopify's policies (Settings → Policies).
+- **Abuse protection**: Vercel BotID on checkout, wholesale and signup endpoints, plus a per-IP limit.
+
 ## Checks
 
 ```bash

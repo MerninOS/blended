@@ -362,3 +362,20 @@ html[data-product="coroasted-coffee-os"] body {
   .co-titleblock h1 { font-size: 21px !important }
   .co-sidebar > div:first-child span { font-size: 15px !important }
 }
+
+/* ---- storefront footer + a11y helpers ---- */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+@media (max-width: 720px) {
+  .sf-footer { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; }
+  .sf-footer > :first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 720px) {
+  .consent-banner { left: 12px !important; right: 12px; bottom: 12px !important; width: auto !important; }
+}
+
+/* ---- policy pages (HTML from Shopify admin) ---- */
+.policy-body { font-family: var(--font-sans); font-size: 15px; line-height: 1.65; color: var(--ink); overflow-wrap: anywhere; }
+.policy-body h2, .policy-body h3 { font-family: var(--font-sans); font-weight: 700; margin: 1.6em 0 .5em; line-height: 1.25; }
+.policy-body h2 { font-size: 19px; } .policy-body h3 { font-size: 16px; }
+.policy-body p, .policy-body ul, .policy-body ol { margin: 0 0 1em; }
+.policy-body a { color: var(--ink); text-decoration: underline; }

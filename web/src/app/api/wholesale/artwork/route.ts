@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getCustomer } from "@/lib/customer-account";
 import { isDemo } from "@/lib/env";
+import { guard } from "@/lib/guard";
 import { finalizeUpload, stageUpload } from "@/lib/shopify/files";
 
 // Label artwork goes straight from the browser to Shopify's staged upload
@@ -9,6 +10,8 @@ const OK_TYPES = ["application/pdf", "image/svg+xml", "image/png", "application/
 const MAX = 50 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
+  const blocked = await guard(req, "artwork", { max: 20 });
+  if (blocked) return blocked;
   const customer = await getCustomer();
   if (!customer?.wholesale) return NextResponse.json({ error: "Wholesale sign-in required." }, { status: 401 });
   const b = await req.json().catch(() => null) as { step: "stage"; filename: string; mimeType: string; size: number } | { step: "finalize"; resourceUrl: string; filename: string } | null;

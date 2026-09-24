@@ -8,6 +8,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Btn, Stepper, disp, mono, over } from "@/components/ui/primitives";
 import { cartStore, useCart } from "./cart-store";
 import { BC_COLORS } from "./BlendCard";
+import { trackCheckoutStarted } from "@/components/tracking/analytics";
 
 export function CartButton() {
   const { items } = useCart();
@@ -54,7 +55,10 @@ export function CartDrawer({ onNewBlend }: { onNewBlend?: () => void }) {
     try {
       const res = await fetch("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lines }) });
       const j = await res.json() as CheckoutResponse;
-      if (j.url) { window.location.assign(j.url); return; }
+      if (j.url) {
+        trackCheckoutStarted(items.reduce((a, x) => a + x.unit * x.qty, 0), items.map((x) => x.name), "retail");
+        window.location.assign(j.url); return;
+      }
       setErr(j.error || "Checkout failed. Please try again.");
     } catch { setErr("Couldn't reach checkout. Check your connection and try again."); }
     setBusy(false);

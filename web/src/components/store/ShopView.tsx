@@ -1,7 +1,7 @@
 "use client";
 // Retail ("Coffee Lab"): buy one of our coffees by the bag, or build a blend
 // (ShopView.jsx). Checkout happens from the cart drawer.
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SelItem, ShopSizeId, StockCoffee } from "@/lib/domain/types";
 import {
   G_PER_LB, MAX_BAGS, SHIP_FREE, SHOP_SIZES, bagPrice, minsFit, minsTotalG, money, rampColor, retailSel,
@@ -16,11 +16,17 @@ import { BlendCard, BoxViewer } from "./BlendCard";
 import { CartDrawer } from "./CartDrawer";
 import { CoffeeReviews } from "./CoffeeReviews";
 import { cartStore } from "./cart-store";
+import { trackAddToCart, trackProductView } from "@/components/tracking/analytics";
 
-export function ShopView() {
+/** `initialSkuId` preselects a coffee (its /coffees/[handle] page); choosing another updates the URL. */
+export function ShopView({ initialSkuId, productPage = false, intro }: { initialSkuId?: string; productPage?: boolean; intro?: React.ReactNode } = {}) {
   const { stock, idx } = useCatalog();
   const [mode, setMode] = useState<"shop" | "blend">("shop");
-  const [skuId, setSkuId] = useState(stock[0]?.id ?? "");
+  const [skuId, setSkuIdState] = useState(initialSkuId ?? stock[0]?.id ?? "");
+  const setSkuId = (id: string) => {
+    setSkuIdState(id);
+    if (productPage && id !== skuId) history.replaceState(history.state, "", `/coffees/${id}`);
+  };
   const [sel, setSel] = useState<SelItem[]>([]);
   const [roast, setRoast] = useState<number | null>(null);
   const [blendName, setBlendName] = useState("");
@@ -54,6 +60,22 @@ export function ShopView() {
     : soldOut ? `${sku?.name} is sold out in ${size.label}.`
     : null;
 
+  // Links from emails and the footer: /?mode=blend opens the builder, /?cart=open the cart.
+  useEffect(() => {
+    const q = new URLSearchParams(location.search);
+    if (q.get("mode") === "blend") setMode("blend"); // eslint-disable-line react-hooks/set-state-in-effect -- one-time read of the URL on mount
+    if (q.get("cart") === "open") cartStore.setOpen(true);
+  }, []);
+
+  // A coffee counts as viewed when it's the one on screen in "Our coffees".
+  const viewedKey = !isBlend && sku ? `${sku.id}-${size.id}` : null;
+  useEffect(() => {
+    if (!viewedKey || !sku) return;
+    const v = sku.variants[size.id];
+    trackProductView({ kind: "stock", name: sku.name, price: stockBagPrice(sku, size), productGid: sku.gid, variantGid: v?.id || undefined,
+      variantName: size.label, image: sku.image, url: `${location.origin}/coffees/${sku.id}` });
+  }, [viewedKey]); // eslint-disable-line react-hooks/exhaustive-deps -- fire once per coffee+size shown
+
   const pageRef = useRef<HTMLDivElement>(null), blendTopRef = useRef<HTMLDivElement>(null);
   const scrollToEl = (el: HTMLElement | null, pad: number) => requestAnimationFrame(() => {
     if (!el) return;
@@ -68,6 +90,10 @@ export function ShopView() {
     } else if (sku) {
       cartStore.add({ kind: "stock", key: `${sku.id}-${sizeId}`, skuId: sku.id, sizeId, sizeLabel: size.label, name, qty, unit, roast: effRoast });
     }
+    const items = cartStore.get().items;
+    trackAddToCart({ kind: isBlend ? "blend" : "stock", name, price: unit, quantity: qty, variantName: size.label,
+      productGid: isBlend ? undefined : sku?.gid, variantGid: isBlend ? undefined : sku?.variants[size.id]?.id || undefined, image: isBlend ? null : sku?.image },
+      items.reduce((a, x) => a + x.unit * x.qty, 0), items.map((x) => x.name));
     setJustAdded(true); setTimeout(() => setJustAdded(false), 1600);
     if (isBlend) setTimeout(() => { setSel([]); setRoast(null); setBlendName(""); setQty(1); }, 320);
     else setQty(1);
@@ -98,7 +124,7 @@ export function ShopView() {
   );
 
   return (<>
-    <BoxHero mode={mode} onPick={pick} options={options} />
+    {intro && mode === "shop" ? intro : <BoxHero mode={mode} onPick={pick} options={options} />}
     <div ref={pageRef} className="pv-page" style={{ maxWidth: "var(--content-max)", margin: "0 auto", padding: "24px 24px 96px", display: "flex", flexDirection: "column", gap: 40 }}>
       {isBlend ? <>
         <div ref={blendTopRef} />
@@ -192,7 +218,9 @@ function ShopGrid({ stock, skuId, setSkuId, size }: { stock: StockCoffee[]; skuI
             <Photo src={s.image} alt={s.name} cls="sg-photo" placeholder={s.name} style={{ aspectRatio: "1 / 1" }} />
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ width: 10, height: 10, borderRadius: "var(--r-sm)", flexShrink: 0, background: rampColor(s.roast), boxShadow: "inset 0 0 0 1px rgba(0,0,0,.14)" }} />
-              <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-sans)", fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}>{s.name}</span>
+              {/* A real link so crawlers find each coffee's page; a click still just selects it. */}
+              <a href={`/coffees/${s.id}`} onClick={(e) => { if (!e.metaKey && !e.ctrlKey && !e.shiftKey) e.preventDefault(); }} tabIndex={-1}
+                style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-sans)", fontSize: 13.5, fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{s.name}</a>
               {s.tag && <Pill variant="tomato" dot pulse>{s.tag}</Pill>}
             </div>
             <div style={{ ...over, fontSize: 9, color: "var(--ink-subtle)" }}>{roastName(s.roast)} · {s.sub.split(" · ")[0]}</div>

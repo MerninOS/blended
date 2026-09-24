@@ -8,6 +8,7 @@ import { money, rampColor, roastName, type PlQuote } from "@/lib/domain/coffee";
 import { Btn, Field, disp, inp, mono, over } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
 import { useCatalog } from "./catalog-context";
+import { trackCheckoutStarted } from "@/components/tracking/analytics";
 
 export interface PlPayload {
   mode: "stock" | "blend"; skuId?: string; sel: SelItem[]; roast: number | null; blendName: string;
@@ -55,7 +56,7 @@ export function WholesaleCheckout({ payload, account, onClose, onPlaced }: {
     try {
       const res = await fetch("/api/wholesale/order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const j = await res.json() as CheckoutResponse;
-      if (j.url) { window.location.assign(j.url); return; }
+      if (j.url) { trackCheckoutStarted(q.total, [p.productName], "wholesale"); window.location.assign(j.url); return; }
       if (res.ok) { setBusy(false); onPlaced(j.demo ? "demo — not sent to Shopify" : j.orderName); return; }
       setErr(j.error || "We couldn't place the order.");
     } catch { setErr("Couldn't reach the server. Check your connection and try again."); }

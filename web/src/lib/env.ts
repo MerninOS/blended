@@ -23,6 +23,11 @@ export const env = {
   locationId: v("SHOPIFY_LOCATION_ID"),                   // where green is counted; default: primary location
   wholesaleTag: v("SHOPIFY_WHOLESALE_TAG") || "wholesale",
   currency: v("SHOPIFY_CURRENCY") || "USD",
+  // Storefront analytics + consent (public values, sent to the browser)
+  storefrontId: v("SHOPIFY_STOREFRONT_ID"),                // Headless channel → storefront ID (Shopify analytics)
+  storefrontPublicToken: v("SHOPIFY_STOREFRONT_PUBLIC_TOKEN"), // Headless channel public token (Customer Privacy API)
+  klaviyoPublicKey: v("KLAVIYO_PUBLIC_KEY"),               // 6-character site ID
+  klaviyoListId: v("KLAVIYO_LIST_ID"),                     // newsletter signups
   isProd: process.env.NODE_ENV === "production",
 };
 
