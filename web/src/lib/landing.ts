@@ -14,7 +14,8 @@ type Slot = { image?: string; video?: string };
 const CDN = "https://cdn.shopify.com/s/files/1/0880/3935/8739/files/";
 const HOSTED = {
   heroVideo: "https://cdn.shopify.com/videos/c/o/v/c0e2100b3f5143edb9bf587bdabf73c6.mp4",
-  lab: `${CDN}9c9e3a10-bf00-4797-8855-b256af55f3b8.jpg?v=1790443112`,
+  heroPoster: `${CDN}hero_fallback.png?v=1790460336`,
+  lab: `${CDN}bag.jpg?v=1790459699`,
   brazil: `${CDN}Untitled_design_21.png?v=1790444034`,
   colombia: `${CDN}exploring-colombia-coffee-region.jpg?v=1790443112`,
   ethiopia: `${CDN}coffee_cherry.jpg?v=1790443191`,
@@ -107,7 +108,7 @@ export function landingData(green: GreenLot[], coffeeCount: number): LandingData
     merchUrl: env.landingMerchUrl ?? null, gearUrl: env.landingGearUrl ?? null,
     media: {
       heroVideo: media.hero?.video ?? HOSTED.heroVideo,
-      heroPoster: img("hero") ?? "/images/coffee/s-counter.webp",
+      heroPoster: img("hero") ?? HOSTED.heroPoster,
       labVideo: media.lab?.video ?? null, labImage: img("lab") ?? HOSTED.lab,
       origins: {
         brazil: img("origin-brazil") ?? HOSTED.brazil,

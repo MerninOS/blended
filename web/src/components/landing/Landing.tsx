@@ -30,14 +30,19 @@ const PROCESS = [
 
 function HeroVideo({ src, poster }: { src: string | null; poster: string }) {
   const v = useRef<HTMLVideoElement>(null);
-  const [ok, setOk] = useState(!!src), [playing, setPlaying] = useState(true);
+  const [ok, setOk] = useState(!!src), [playing, setPlaying] = useState(true), [ready, setReady] = useState(false);
   useEffect(() => {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches && v.current) { v.current.pause(); setPlaying(false); }
   }, []);
   const toggle = () => { const el = v.current; if (!el) return; if (el.paused) { void el.play(); setPlaying(true); } else { el.pause(); setPlaying(false); } };
-  if (!src || !ok) return <Image src={poster} alt="" fill priority sizes="100vw" className="lp-fill" style={{ objectFit: "cover" }} />;
+  // The still shows immediately and stays up until the video is actually playing (or if it fails).
+  const still = <Image src={poster} alt="" fill priority sizes="100vw" className="lp-fill" style={{ objectFit: "cover" }} />;
+  if (!src || !ok) return still;
   return (<>
-    <video ref={v} className="lp-fill" src={src} poster={poster} autoPlay muted loop playsInline preload="auto" onError={() => setOk(false)} />
+    {still}
+    <video ref={v} className="lp-fill" src={src} autoPlay muted loop playsInline preload="auto"
+      onPlaying={() => setReady(true)} onError={() => setOk(false)}
+      style={{ opacity: ready ? 1 : 0, transition: "opacity 500ms var(--ease)" }} />
     <button type="button" onClick={toggle} aria-label={playing ? "Pause video" : "Play video"} className="lp-over"
       style={{ position: "absolute", right: "clamp(18px,4vw,48px)", bottom: 18, zIndex: 3, background: "transparent", border: "1px solid rgba(255,255,255,.6)", color: "#fff", height: 32, padding: "0 12px", borderRadius: "var(--r-sm)", fontSize: 10, cursor: "pointer" }}>
       {playing ? "Pause" : "Play"}
