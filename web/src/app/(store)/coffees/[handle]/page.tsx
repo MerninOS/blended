@@ -40,7 +40,7 @@ export default async function CoffeePage({ params }: PageProps<"/coffees/[handle
   const intro = (
     <section style={{ maxWidth: "var(--content-max)", margin: "0 auto", padding: "28px 24px 4px", display: "flex", flexDirection: "column", gap: 10 }}>
       <nav aria-label="Breadcrumb" style={{ ...over, fontSize: 10, color: "var(--ink-subtle)" }}>
-        <Link href="/" style={{ color: "inherit", textDecoration: "none" }}>Our coffees</Link> / {c.name}
+        <Link href="/lab#coffees" style={{ color: "inherit", textDecoration: "none" }}>Our coffees</Link> / {c.name}
       </nav>
       <h1 style={{ ...disp, fontSize: "clamp(28px, 4vw, 44px)", margin: 0, color: "var(--ink)", lineHeight: 1 }}>{c.name}</h1>
       <p style={{ margin: 0, ...mono, fontSize: 12.5, color: "var(--ink-muted)" }}>{roastLabel(c.roast)} roast · {c.sub} · from {money(from)}</p>

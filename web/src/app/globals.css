@@ -189,6 +189,8 @@ html[data-product="coroasted-coffee-os"] body {
   --brand: #D93D18;
   --brand-hover: #B22F10;
   --brand-soft: #FBEAE3;
+  /* the tan stage the bag is shot on (hero, checkout preview, landing) */
+  --bag-stage: #D6CCC2;
   --brand-ring: rgba(217, 61, 24, .32);
   --viz-highlight: #D93D18;
   --focus-ring: 0 0 0 2px #FFFFFF, 0 0 0 4px #D93D18;

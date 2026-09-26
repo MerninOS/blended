@@ -1,6 +1,6 @@
 "use client";
-// Retail hero: the turnable BLENDED carton, fitted between the title and the
-// two buying paths, which show on load (BoxHero.jsx).
+// Retail hero: the turnable BLENDED bag on the tan stage, fitted between the
+// title and the two buying paths (BoxHero.jsx).
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { disp, over } from "@/components/ui/primitives";
@@ -15,10 +15,10 @@ export function BoxHero({ mode, onPick, options }: { mode: string; onPick: (id: 
   useEffect(() => {
     const host = canvasHost.current; if (!host) return;
     let cleanup: (() => void) | null = null, cancelled = false;
-    mountBox(host, {
+    void mountBox(host, {
       cam: [0, .5, 8], look: [0, 0, 0], baseRot: -.45,
       onReady: () => setReady(true),
-      // fit the carton into the gap between the title and the options
+      // fit the bag into the gap between the title and the options
       layout: ({ three, camera, rig }) => {
         const vh = host.clientHeight || 1, vw = host.clientWidth || 1;
         const top = titleRef.current ? titleRef.current.offsetTop + titleRef.current.offsetHeight + 16 : 80;
@@ -29,12 +29,12 @@ export function BoxHero({ mode, onPick, options }: { mode: string; onPick: (id: 
         rig.scale.setScalar(sc);
         rig.position.y = (vh / 2 - (top + bot) / 2) * wpp - sc * BOX_H / 2;
       },
-    }).then((c) => { if (cancelled) c(); else cleanup = c; });
+    }).then((h) => { if (cancelled) h.dispose(); else cleanup = h.dispose; });
     return () => { cancelled = true; cleanup?.(); };
   }, []);
 
   return (
-    <section className="bx-hero" aria-label="Coffee Lab" style={{ position: "relative", background: "var(--surface-sunken)" }}>
+    <section className="bx-hero" aria-label="Coffee Lab" style={{ position: "relative", background: "var(--bag-stage)" }}>
       <div className="bx-stage" style={{ position: "relative", height: "calc(100svh - var(--topbar-h))", minHeight: 520, overflow: "hidden", display: "flex", flexDirection: "column" }}>
         <div ref={titleRef} style={{ textAlign: "center", padding: "clamp(16px,4vh,44px) 24px 0", flexShrink: 0, position: "relative", zIndex: 2 }}>
           <h1 style={{ ...disp, fontSize: "clamp(32px,4.4vw,64px)", lineHeight: 1, margin: 0, color: "var(--ink)" }}>COFFEE LAB</h1>

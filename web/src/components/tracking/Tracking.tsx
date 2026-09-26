@@ -18,7 +18,7 @@ type PrivacyApi = { setTrackingConsent: (c: Record<string, unknown>, cb: (r?: { 
 declare global { interface Window { Shopify?: { customerPrivacy?: PrivacyApi } } }
 
 const pageTypeOf = (path: string): PageType =>
-  path === "/" ? "index" : path.startsWith("/coffees/") ? "product" : path.startsWith("/policies/") ? "policy" : "page";
+  path === "/" ? "index" : path === "/lab" ? "collection" : path.startsWith("/coffees/") ? "product" : path.startsWith("/policies/") ? "policy" : "page";
 
 export function Tracking({ config, privacyHref }: { config: TrackingConfig; privacyHref: string | null }) {
   const consent = useConsent();

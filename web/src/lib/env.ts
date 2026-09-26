@@ -28,6 +28,9 @@ export const env = {
   storefrontPublicToken: v("SHOPIFY_STOREFRONT_PUBLIC_TOKEN"), // Headless channel public token (Customer Privacy API)
   klaviyoPublicKey: v("KLAVIYO_PUBLIC_KEY"),               // 6-character site ID
   klaviyoListId: v("KLAVIYO_LIST_ID"),                     // newsletter signups
+  // Landing page "Merch" / "Brew gear" tiles link here; hidden when unset
+  landingMerchUrl: v("LANDING_MERCH_URL"),
+  landingGearUrl: v("LANDING_GEAR_URL"),
   isProd: process.env.NODE_ENV === "production",
 };
 

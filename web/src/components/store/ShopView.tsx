@@ -12,7 +12,7 @@ import { Icon } from "@/components/ui/Icon";
 import { useCatalog } from "./catalog-context";
 import { BlendRatios, TastingWheel } from "./BlendBuilder";
 import { BoxHero, type HeroOption } from "./BoxHero";
-import { BlendCard, BoxViewer } from "./BlendCard";
+import { BlendCard, BoxViewer, bcCardData } from "./BlendCard";
 import { CartDrawer } from "./CartDrawer";
 import { CoffeeReviews } from "./CoffeeReviews";
 import { cartStore } from "./cart-store";
@@ -60,12 +60,6 @@ export function ShopView({ initialSkuId, productPage = false, intro }: { initial
     : soldOut ? `${sku?.name} is sold out in ${size.label}.`
     : null;
 
-  // Links from emails and the footer: /?mode=blend opens the builder, /?cart=open the cart.
-  useEffect(() => {
-    const q = new URLSearchParams(location.search);
-    if (q.get("mode") === "blend") setMode("blend"); // eslint-disable-line react-hooks/set-state-in-effect -- one-time read of the URL on mount
-    if (q.get("cart") === "open") cartStore.setOpen(true);
-  }, []);
 
   // A coffee counts as viewed when it's the one on screen in "Our coffees".
   const viewedKey = !isBlend && sku ? `${sku.id}-${size.id}` : null;
@@ -99,6 +93,16 @@ export function ShopView({ initialSkuId, productPage = false, intro }: { initial
     else setQty(1);
   };
   const pick = (id: "shop" | "blend") => { setMode(id); scrollToEl(pageRef.current, 8); };
+  // Deep links: #build (or ?mode=blend) opens the builder, #coffees the roster, ?cart=open the cart,
+  // ?blend=lotA:70,lotB:30 starts the builder from a recipe (the landing page's house blend).
+  useEffect(() => {
+    const q = new URLSearchParams(location.search), h = location.hash.slice(1);
+    const preset = (q.get("blend") || "").split(",").map((x) => x.split(":")).filter(([id, p]) => idx.has(id) && Number(p) > 0).map(([id, p]) => ({ id, pct: Math.round(Number(p)) }));
+    const usePreset = preset.length > 0 && preset.length <= 4 && preset.reduce((a, s) => a + s.pct, 0) === 100;
+    const m = usePreset || h === "build" || q.get("mode") === "blend" ? "blend" : h === "coffees" ? "shop" : null;
+    if (m) setTimeout(() => { if (usePreset) setSel(preset); pick(m); }, 350);
+    if (q.get("cart") === "open") cartStore.setOpen(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- one-time read of the URL on mount
   const minBag = stock.length ? Math.min(...stock.map((s) => stockBagPrice(s, SHOP_SIZES[0]))) : 0;
   const options: HeroOption[] = [
     { id: "shop", icon: "pkg", title: "Our coffees", desc: "Single origins and house blends we roast every week. Pick one and pick a size.", meta: `${stock.length} on the roster · from ${money(minBag)} a bag` },
@@ -162,7 +166,7 @@ export function ShopView({ initialSkuId, productPage = false, intro }: { initial
       <Step n={isBlend ? 5 : 4} title="Checkout">
         {isBlend && !emptyBlend && (
           <div className="bc-preview" style={{ display: "grid", gridTemplateColumns: "minmax(220px,1fr) minmax(0,2fr)", gap: 24, alignItems: "stretch", marginBottom: 8 }}>
-            <div style={{ background: "var(--surface-sunken)", borderRadius: "var(--r-lg)", minHeight: 280, overflow: "hidden", position: "relative" }}><div style={{ position: "absolute", inset: 0 }}><BoxViewer /></div></div>
+            <div style={{ background: "var(--bag-stage)", borderRadius: "var(--r-lg)", minHeight: 280, overflow: "hidden", position: "relative" }}><div style={{ position: "absolute", inset: 0 }}><BoxViewer card={bcCardData({ sel, vals, name, sizeLabel: size.label, roast: effRoast, idx })} /></div></div>
             <div className="bc-card" style={{ minWidth: 0 }}><BlendCard sel={sel} vals={vals} name={name} sizeLabel={size.label} roast={effRoast} /></div>
           </div>
         )}

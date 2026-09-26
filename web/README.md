@@ -6,7 +6,8 @@ fulfillment and inventory.
 
 | Route | What it is |
 | --- | --- |
-| `/` | **Retail / Coffee Lab**: 3D carton hero, "Our coffees" or "Build your own blend", cart drawer, Shopify checkout |
+| `/` | **Landing** (Blended Landing v2): video hero, the Coffee Lab, the farms, cherry to cup, house blend, lineup. "Build your blend" deals a deck of sample blend cards, then opens the lab |
+| `/lab` | **Retail / Coffee Lab**: 3D bag hero, "Our coffees" or "Build your own blend", cart drawer, Shopify checkout. `#build`, `#coffees`, `?blend=lotA:70,lotB:30` deep links |
 | `/wholesale` | **Private label** for signed-in wholesale accounts: stocked coffee or custom blend, packaging, run size, card checkout |
 | `/admin/orders` | Orders board: to fulfil / roast list / all orders, order drawer with gram-level roast sheet, stage → fulfillment |
 | `/admin/green` | Green catalog: the lots customers can blend (photo, cupping scores, prices, stock, min grams, roast) |
@@ -87,6 +88,13 @@ Admin edits are kept in memory and checkout says it's in demo. Admin is open loc
   share images; `sitemap.xml`, `robots.txt` (previews are noindex), `/policies/[handle]` from
   Shopify's policies (Settings → Policies).
 - **Abuse protection**: Vercel BotID on checkout, wholesale and signup endpoints, plus a per-IP limit.
+
+## Landing media
+
+Photos and video for the landing page go in `web/public/landing/` (slot names in its README):
+`hero.mp4`, `lab.mp4`/`lab.jpg`, `origin-brazil|colombia|ethiopia`, `step-01…04`, `band`, `merch`, `gear`.
+`npm run build` lists that folder first (`scripts/landing-media.mjs`); empty slots fall back to catalog photos.
+The lineup, house blend and intro cards come from the live green catalog.
 
 ## Checks
 

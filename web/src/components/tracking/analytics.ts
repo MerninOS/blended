@@ -54,7 +54,7 @@ function cartGid() {
   } catch { return "gid://shopify/Cart/anonymous"; }
 }
 
-export type PageType = "index" | "product" | "policy" | "page";
+export type PageType = "index" | "collection" | "product" | "policy" | "page";
 export function trackPageView(pageType: PageType, resourceId?: string) {
   whenKnown(() => {
     shopify(AnalyticsEventName.PAGE_VIEW_2, { pageType, resourceId, canonicalUrl: location.origin + location.pathname });
@@ -97,7 +97,7 @@ export function trackAddToCart(i: TrackedItem, cartValue: number, cartNames: str
     klaviyo("track", "Added to Cart", {
       $value: cartValue, AddedItemProductName: i.name, AddedItemProductID: i.productGid ?? i.name, AddedItemSKU: i.sku,
       AddedItemPrice: i.price, AddedItemQuantity: i.quantity ?? 1, AddedItemImageURL: i.image ?? undefined, ItemNames: cartNames,
-      CheckoutURL: location.origin + "/?cart=open",
+      CheckoutURL: location.origin + "/lab?cart=open",
     });
     vercelTrack("add_to_cart", { kind: i.kind, value: Math.round(i.price * (i.quantity ?? 1)) });
   });
@@ -105,7 +105,7 @@ export function trackAddToCart(i: TrackedItem, cartValue: number, cartNames: str
 
 export function trackCheckoutStarted(value: number, names: string[], channel: "retail" | "wholesale") {
   whenKnown(() => {
-    klaviyo("track", "Started Checkout", { $value: value, ItemNames: names, CheckoutURL: location.origin + (channel === "retail" ? "/?cart=open" : "/wholesale") });
+    klaviyo("track", "Started Checkout", { $value: value, ItemNames: names, CheckoutURL: location.origin + (channel === "retail" ? "/lab?cart=open" : "/wholesale") });
     vercelTrack("begin_checkout", { channel, value: Math.round(value) });
   });
 }

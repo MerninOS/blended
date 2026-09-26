@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { CartButton } from "./CartDrawer";
 
 const TABS = [
-  { href: "/", id: "retail", label: "Retail", note: "Bags for home · free shipping over $50" },
+  { href: "/lab", id: "retail", label: "Retail", note: "Bags for home · free shipping over $50" },
   { href: "/wholesale", id: "wholesale", label: "Wholesale", note: "Cafés and private label · 5 lb minimum" },
 ] as const;
 
