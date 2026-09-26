@@ -205,7 +205,7 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
               <div className="lp-wrap" style={{ width: "100%" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 22, maxWidth: 560, alignItems: "flex-start" }}>
                   <span className="lp-over" style={{ color: "rgba(255,255,255,.8)" }}>House blend · This month</span>
-                  <h2 id="lp-house-h" className="lp-disp" style={disp("clamp(52px,7vw,112px)")}>{data.house.title.split(" + ")[0]}<br />+ {data.house.title.split(" + ")[1]}</h2>
+                  <h2 id="lp-house-h" className="lp-disp lp-band-title" style={disp("clamp(52px,7vw,112px)")}>{data.house.title.split(" + ")[0]}<br />+ {data.house.title.split(" + ")[1]}</h2>
                   {data.house.notes.length > 0 && <div className="lp-notes" style={{ color: "#fff" }}>{data.house.notes.map((n) => <span key={n}>{n}</span>)}</div>}
                   <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: "rgba(255,255,255,.86)", maxWidth: "44ch" }}>{data.house.copy}</p>
                   <Link className="lp-btn lg light" href={data.house.href}>Start from this blend <Arrow /></Link>

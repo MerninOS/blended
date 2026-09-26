@@ -97,6 +97,8 @@
   .lp-band-copy { align-items: flex-end; padding-bottom: 40px; }
 }
 @media (max-width: 560px) { .lp-steps { grid-template-columns: minmax(0,1fr); } }
+/* House-blend names can be long single words; keep them inside a phone screen. */
+@media (max-width: 640px) { .lp-root .lp-band-title { font-size: clamp(30px, 10.5vw, 52px) !important; overflow-wrap: anywhere; } }
 @media (prefers-reduced-motion: reduce) { .lp-tick-row { animation: none; } }
 
 /* ---- "Opening the Coffee Lab" intro: a deck of sample blend cards ---- */

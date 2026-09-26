@@ -8,6 +8,21 @@ import { env } from "@/lib/env";
 import manifest from "@/lib/landing-media.json";
 
 type Slot = { image?: string; video?: string };
+
+// Landing media hosted on Shopify's CDN. A file of the same slot name in
+// public/landing/ takes precedence (see its README).
+const CDN = "https://cdn.shopify.com/s/files/1/0880/3935/8739/files/";
+const HOSTED = {
+  heroVideo: "https://cdn.shopify.com/videos/c/o/v/c0e2100b3f5143edb9bf587bdabf73c6.mp4",
+  lab: `${CDN}9c9e3a10-bf00-4797-8855-b256af55f3b8.jpg?v=1790443112`,
+  brazil: `${CDN}Untitled_design_21.png?v=1790444034`,
+  colombia: `${CDN}exploring-colombia-coffee-region.jpg?v=1790443112`,
+  ethiopia: `${CDN}coffee_cherry.jpg?v=1790443191`,
+  steps: [`${CDN}Coffee_cherries_Ripe.jpg?v=1790443112`, `${CDN}coffee_processing.webp?v=1790443241`, `${CDN}aillio_roasting.jpg?v=1790443256`, `${CDN}pour_over.jpg?v=1790443178`],
+  band: `${CDN}coffee_farm_1.png?v=1790443204`,
+  merch: `${CDN}blended_tee.jpg?v=1790443146`,
+  gear: `${CDN}gear_lamarz.webp?v=1790443164`,
+};
 const media = manifest as Record<string, Slot>;
 
 export interface LineupRow { id: string; code: string; name: string; origin: string; process: string; roast: number; color: string; label: string }
@@ -91,20 +106,17 @@ export function landingData(green: GreenLot[], coffeeCount: number): LandingData
     lineup, house, intro, coffeeCount,
     merchUrl: env.landingMerchUrl ?? null, gearUrl: env.landingGearUrl ?? null,
     media: {
-      heroVideo: media.hero?.video ?? null,
+      heroVideo: media.hero?.video ?? HOSTED.heroVideo,
       heroPoster: img("hero") ?? "/images/coffee/s-counter.webp",
-      labVideo: media.lab?.video ?? null, labImage: img("lab") ?? "/images/coffee/s-counter.webp",
+      labVideo: media.lab?.video ?? null, labImage: img("lab") ?? HOSTED.lab,
       origins: {
-        brazil: img("origin-brazil") ?? "/images/coffee/s-cerrado.webp",
-        colombia: img("origin-colombia") ?? "/images/coffee/s-huila.webp",
-        ethiopia: img("origin-ethiopia") ?? "/images/coffee/s-guji.webp",
+        brazil: img("origin-brazil") ?? HOSTED.brazil,
+        colombia: img("origin-colombia") ?? HOSTED.colombia,
+        ethiopia: img("origin-ethiopia") ?? HOSTED.ethiopia,
       },
-      steps: [
-        img("step-01") ?? "/images/coffee/s-straw.webp", img("step-02") ?? "/images/coffee/s-decaf.webp",
-        img("step-03") ?? "/images/coffee/s-counter.webp", img("step-04") ?? "/images/coffee/s-coldbrew.webp",
-      ],
-      band: img("band") ?? "/images/coffee/s-sixounce.webp",
-      merch: img("merch"), gear: img("gear"),
+      steps: HOSTED.steps.map((u, i) => img(`step-0${i + 1}`) ?? u),
+      band: img("band") ?? HOSTED.band,
+      merch: img("merch") ?? HOSTED.merch, gear: img("gear") ?? HOSTED.gear,
     },
   };
 }

@@ -1,6 +1,7 @@
 # Landing page media
 
-Drop files here named after the slot they fill; the next deploy picks them up
+Every slot already has a photo/video hosted on Shopify's CDN (see `HOSTED` in
+`src/lib/landing.ts`). To override one, drop a file here named after the slot; the next deploy picks them up
 (`npm run build` lists this folder first). Any image type works: .jpg, .png, .webp, .avif.
 Videos: .mp4 or .webm. Empty slots fall back to catalog photos.
 
