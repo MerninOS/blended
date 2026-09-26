@@ -9,7 +9,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import type { LandingData } from "@/lib/landing";
 import type { ShopPolicy } from "@/lib/shop";
-import { mountBox } from "@/components/store/box3d";
 import { CookiePrefsLink } from "@/components/store/FooterClient";
 import { LabIntro } from "./LabIntro";
 
@@ -46,20 +45,11 @@ function HeroVideo({ src, poster }: { src: string | null; poster: string }) {
   </>);
 }
 
-/** The Coffee Lab panel: a video or photo if one is dropped in, otherwise the live 3D bag. */
-function LabMedia({ video, image }: { video: string | null; image: string | null }) {
-  const host = useRef<HTMLDivElement>(null);
+/** The Coffee Lab panel: a video if one is dropped in, otherwise the bag photo. */
+function LabMedia({ video, image }: { video: string | null; image: string }) {
   const [ok, setOk] = useState(true);
-  useEffect(() => {
-    if (video || image) return;
-    const el = host.current; if (!el) return;
-    let cancelled = false, dispose: (() => void) | null = null;
-    void mountBox(el, { cam: [0, .9, 6.2], look: [0, .86, 0], baseRot: -.5 }).then((h) => { if (cancelled) h.dispose(); else dispose = h.dispose; });
-    return () => { cancelled = true; dispose?.(); };
-  }, [video, image]);
-  if (video && ok) return <video className="lp-fill" src={video} autoPlay muted loop playsInline preload="auto" onError={() => setOk(false)} />;
-  if (image) return <Image src={image} alt="A finished Blended bag" fill sizes="(max-width:900px) 100vw, 50vw" style={{ objectFit: "cover" }} />;
-  return <div ref={host} style={{ position: "absolute", inset: 0 }} />;
+  if (video && ok) return <video className="lp-fill" src={video} poster={image} autoPlay muted loop playsInline preload="auto" onError={() => setOk(false)} />;
+  return <Image src={image} alt="A Blended bag with its blend card" fill sizes="(max-width:900px) 100vw, 50vw" style={{ objectFit: "cover" }} />;
 }
 
 export function Landing({ data, policies }: { data: LandingData; policies: ShopPolicy[] }) {

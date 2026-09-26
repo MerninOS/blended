@@ -15,7 +15,7 @@ export interface IntroBlend { name: string; parts: { name: string; origin: strin
 export interface HouseBlend { title: string; notes: string[]; copy: string; href: string }
 export interface LandingMedia {
   heroVideo: string | null; heroPoster: string;
-  labVideo: string | null; labImage: string | null;
+  labVideo: string | null; labImage: string;
   origins: Record<"brazil" | "colombia" | "ethiopia", string>;
   steps: string[]; band: string; merch: string | null; gear: string | null;
 }
@@ -93,7 +93,7 @@ export function landingData(green: GreenLot[], coffeeCount: number): LandingData
     media: {
       heroVideo: media.hero?.video ?? null,
       heroPoster: img("hero") ?? "/images/coffee/s-counter.webp",
-      labVideo: media.lab?.video ?? null, labImage: img("lab"),
+      labVideo: media.lab?.video ?? null, labImage: img("lab") ?? "/images/coffee/s-counter.webp",
       origins: {
         brazil: img("origin-brazil") ?? "/images/coffee/s-cerrado.webp",
         colombia: img("origin-colombia") ?? "/images/coffee/s-huila.webp",

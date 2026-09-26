@@ -29,8 +29,8 @@ export const env = {
   klaviyoPublicKey: v("KLAVIYO_PUBLIC_KEY"),               // 6-character site ID
   klaviyoListId: v("KLAVIYO_LIST_ID"),                     // newsletter signups
   // Landing page "Merch" / "Brew gear" tiles link here; hidden when unset
-  landingMerchUrl: v("LANDING_MERCH_URL"),
-  landingGearUrl: v("LANDING_GEAR_URL"),
+  landingMerchUrl: v("LANDING_MERCH_URL") || "https://blendedcoffeeclab.com/collections/merch",
+  landingGearUrl: v("LANDING_GEAR_URL") || "https://blendedcoffeeclab.com/collections/gear",
   isProd: process.env.NODE_ENV === "production",
 };
 
