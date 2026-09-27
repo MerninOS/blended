@@ -82,7 +82,10 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
   useEffect(() => {
     if (!menu) return;
     const k = (e: KeyboardEvent) => { if (e.key === "Escape") setMenu(false); };
-    addEventListener("keydown", k); return () => removeEventListener("keydown", k);
+    // The menu only exists below the desktop breakpoint; widening the window closes it.
+    const wide = matchMedia("(min-width: 1101px)"), w = () => { if (wide.matches) setMenu(false); };
+    addEventListener("keydown", k); wide.addEventListener("change", w);
+    return () => { removeEventListener("keydown", k); wide.removeEventListener("change", w); };
   }, [menu]);
 
   useEffect(() => {

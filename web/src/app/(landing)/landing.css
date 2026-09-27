@@ -115,6 +115,8 @@
   .lp-band .lp-shade { background: linear-gradient(180deg, rgba(20,12,8,.2) 0%, rgba(20,12,8,.85) 100%); }
   .lp-band-copy { align-items: flex-end; padding-bottom: 40px; }
 }
+/* The menu button only appears once the nav links fold away (tablet and phone). */
+@media (min-width: 1101px) { .lp-burger, .lp-menu, .lp-menu-scrim { display: none !important; } }
 @media (max-width: 1100px) { .lp-nav { display: none; } .lp-nav + .lp-actions { margin-left: auto; padding-left: 0; border-left: 0; } }
 @media (max-width: 640px) {
   .lp-bar .lp-wrap { gap: 12px; }
