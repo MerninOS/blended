@@ -7,6 +7,7 @@ import "server-only";
 import { env, isDemo } from "@/lib/env";
 import { CACHE_TAGS, gql, storefront } from "@/lib/shopify/client";
 import { DEMO_MERCH } from "@/lib/merch-fixtures";
+import { prepareRichText } from "@/lib/rich-text";
 import { isColorOption, type MerchCat, type MerchProduct } from "@/lib/merch-types";
 
 export type { MerchCat, MerchProduct } from "@/lib/merch-types";
@@ -68,7 +69,7 @@ function fromNode(n: Node, cat: MerchCat): MerchProduct {
   }));
   return {
     gid: n.id, handle: n.handle, name: n.title, cat, type: n.productType || (cat === "gear" ? "Brew gear" : "Merch"),
-    blurb: n.description.split(/\n\s*\n/)[0]?.trim() ?? "", descriptionHtml: n.descriptionHtml,
+    blurb: n.description.split(/\n\s*\n/)[0]?.trim() ?? "", descriptionHtml: prepareRichText(n.descriptionHtml),
     price: variants.length ? Math.min(...variants.map((v) => v.price)) : 0,
     flag: n.badge?.value?.trim() || null,
     images: n.images.nodes.map((i) => ({ url: i.url, alt: i.altText || n.title })),

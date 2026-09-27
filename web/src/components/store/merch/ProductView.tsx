@@ -137,7 +137,7 @@ export function ProductView({ p, related }: { p: MerchProduct; related: MerchPro
               {p.details.length > 0
                 ? <details open><summary className="sh-over">Details</summary><div className="body"><ul>{p.details.map((d) => <li key={d}>{d}</li>)}</ul></div></details>
                 : p.descriptionHtml.replace(/<[^>]+>/g, "").trim().length > p.blurb.length + 1 &&
-                  <details open><summary className="sh-over">Details</summary><div className="body" dangerouslySetInnerHTML={{ __html: p.descriptionHtml }} /></details>}
+                  <details open><summary className="sh-over">Details</summary><div className="body rt" dangerouslySetInnerHTML={{ __html: p.descriptionHtml }} /></details>}
               {p.care && <details><summary className="sh-over">Care</summary><div className="body">{p.care}</div></details>}
               <details><summary className="sh-over">Shipping &amp; returns</summary><div className="body">Orders over $50 ship free in the US. Merch and gear ship separately from coffee, which is roasted to order. Unused items can be returned within 30 days.</div></details>
             </div>
