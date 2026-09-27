@@ -15,7 +15,7 @@ const CDN = "https://cdn.shopify.com/s/files/1/0880/3935/8739/files/";
 const HOSTED = {
   heroVideo: "https://cdn.shopify.com/videos/c/o/v/c0e2100b3f5143edb9bf587bdabf73c6.mp4",
   heroPoster: `${CDN}hero_fallback.png?v=1790460336`,
-  lab: `${CDN}bag.jpg?v=1790459699`,
+  lab: `${CDN}Blended_bag.png?v=1790529049`,
   brazil: `${CDN}Untitled_design_21.png?v=1790444034`,
   colombia: `${CDN}exploring-colombia-coffee-region.jpg?v=1790443112`,
   ethiopia: `${CDN}coffee_cherry.jpg?v=1790443191`,

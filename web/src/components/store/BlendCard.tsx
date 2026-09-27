@@ -9,7 +9,6 @@ import { useCatalog } from "./catalog-context";
 import { mountBox, type BagCard, type BoxHandle } from "./box3d";
 
 export const BC_COLORS = ["#EE8A1E", "#C43C7C", "#D93D18", "#8E2F52"];
-const bcLogo = { fontFamily: "var(--font-logo)", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1, color: "#1A1A18" } as const;
 const bcTrack = { fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: ".14em", color: "#1A1A18" } as const;
 
 /** What the bag's printed card shows for a blend. */
@@ -54,10 +53,7 @@ export function BlendCard({ sel, vals, name, sizeLabel, roast }: { sel: SelItem[
   return (
     <div style={{ background: "#F0EDE5", border: "1px solid rgba(26,26,24,.08)", borderRadius: "var(--r-sm)", boxShadow: "0 1px 0 rgba(26,26,24,.04), 0 10px 24px -12px rgba(26,26,24,.28)", padding: "clamp(16px,2.2vw,24px)", display: "flex", flexDirection: "column", gap: "clamp(12px,1.6vw,18px)", minWidth: 0, height: "100%", boxSizing: "border-box" }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ ...bcLogo, fontSize: "clamp(36px,4.6vw,60px)", lineHeight: .9, textTransform: "uppercase" }}>Blended</div>
-          <div style={{ ...bcTrack, fontSize: "clamp(13px,1.5vw,18px)", marginTop: 10, color: "#D93D18", overflowWrap: "anywhere" }}>{name || "Custom blend"}</div>
-        </div>
+        <div style={{ ...bcTrack, fontSize: "clamp(20px,2.8vw,36px)", fontWeight: 500, lineHeight: 1.15, letterSpacing: ".08em", color: "#D93D18", overflowWrap: "anywhere", textWrap: "balance", minWidth: 0 }}>{name || "Custom blend"}</div>
         {/* eslint-disable-next-line @next/next/no-img-element -- small static brand mark */}
         <img src="/brand/blended-mark.png" alt="" style={{ width: "clamp(64px,7.4vw,100px)", height: "auto", mixBlendMode: "multiply", flexShrink: 0 }} />
       </div>

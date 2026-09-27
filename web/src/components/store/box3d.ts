@@ -1,6 +1,7 @@
 "use client";
 // The BLENDED coffee bag, drawn in the browser with three.js (BoxHero.jsx):
-// a frosted flat-bottom pouch with the blend card clipped to the front. The
+// a matte white flat-bottom pouch with a vertical BLENDED label panel and the
+// blend card slipped on at a slight tilt over the lower label. The
 // card is painted from the blend (components, ratios, cup radar, roast, size),
 // so the checkout preview shows the customer's own blend on the bag.
 // Loaded lazily so three stays out of the main bundle.
@@ -8,7 +9,7 @@ import type * as THREE_NS from "three";
 
 type Three = typeof THREE_NS;
 export const BOX_PAPER = "#F0EDE5", BOX_INK = "#1A1A18", BOX_RED = "#D93D18";
-export const BOX_W = 1.6, BOX_H = 1.8, BOX_D = .7;
+export const BOX_W = 1.2, BOX_H = 1.9, BOX_D = .56;
 
 /** What the card on the front of the bag shows. Radar points are unit offsets from the centre. */
 export interface BagCard {
@@ -53,51 +54,66 @@ function assets() {
 
 // ---- bag shape: pillowed front, gusseted bottom, tapering to the seal ----
 const sm = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-const bagDepth = (t: number) => 1 - .94 * sm(.52, .9, t);
-const bagBulge = (x: number, t: number) => { const u = x / (BOX_W / 2); return .05 * (1 - u * u) * Math.sin(Math.PI * Math.min(1, t / .92)) * (1 - sm(.72, .9, t)); };
+const bagDepth = (t: number) => 1 - .94 * sm(.55, .92, t);
+const bagBulge = (x: number, t: number) => { const u = x / (BOX_W / 2); return .04 * (1 - u * u) * Math.sin(Math.PI * Math.min(1, t / .92)) * (1 - sm(.75, .92, t)); };
 const bagSurfZ = (x: number, t: number) => (BOX_D / 2) * bagDepth(t) * (1 - .32 * Math.pow(Math.min(1, Math.abs(x / (BOX_W / 2))), 10)) + bagBulge(x, t);
 function bagDeform(geo: THREE_NS.BufferGeometry) {
   const p = geo.attributes.position;
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i), y = p.getY(i), z = p.getZ(i), t = y / BOX_H, u = x / (BOX_W / 2), zn = z / (BOX_D / 2);
     const nz = zn * (BOX_D / 2) * bagDepth(t) * (1 - .32 * Math.pow(Math.min(1, Math.abs(u)), 10)) + zn * bagBulge(x, t);
-    p.setXYZ(i, x * (1 - .025 * t), y, nz);
+    p.setXYZ(i, x * (1 - .02 * t), y, nz);
   }
   geo.computeVertexNormals(); return geo;
 }
 
-/** Frosted film: heat seal at the top, tear notch + zip on the front. */
-function filmCanvas(w: number, h: number, kind: "front" | "back" | "side", mono: string) {
-  const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d")!;
-  g.fillStyle = kind === "side" ? "#D0C6BB" : "#D9CFC4"; g.fillRect(0, 0, w, h);
-  const seal = h * .1; g.fillStyle = "rgba(244,243,240,.88)"; g.fillRect(0, 0, w, seal);
-  g.fillStyle = "rgba(255,255,255,.4)"; for (let x = 0; x < w; x += 7) g.fillRect(x, 0, 2, seal);
-  g.fillStyle = "rgba(244,243,240,.8)"; g.fillRect(0, h - h * .025, w, h * .025);
+/** Matte white film: crimped top seal and fold crease; the front adds the degassing valve and the BLENDED label panel. */
+function drawFilm(g: CanvasRenderingContext2D, w: number, h: number, kind: "front" | "back" | "side", logo: string) {
+  g.clearRect(0, 0, w, h);
+  g.fillStyle = kind === "side" ? "#DEDDDA" : "#E7E6E3"; g.fillRect(0, 0, w, h);
+  // soft film mottling
+  for (let i = 0; i < 90; i++) {
+    const x = Math.random() * w, y = Math.random() * h, r = 40 + Math.random() * 140, gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, Math.random() > .5 ? "rgba(255,255,255,.18)" : "rgba(120,118,112,.05)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  const seal = h * .065; g.fillStyle = "rgba(246,245,243,.8)"; g.fillRect(0, 0, w, seal);
+  g.fillStyle = "rgba(150,148,142,.12)"; for (let x = 0; x < w; x += 6) g.fillRect(x, 0, 2, seal);
+  g.fillStyle = "rgba(140,138,132,.14)"; g.fillRect(0, seal, w, 3);
+  g.fillStyle = "rgba(140,138,132,.08)"; g.fillRect(0, h * .17, w, 4); g.fillStyle = "rgba(255,255,255,.35)"; g.fillRect(0, h * .17 + 4, w, 6);
+  g.fillStyle = "rgba(246,245,243,.7)"; g.fillRect(0, h - h * .02, w, h * .02);
   if (kind === "front") {
-    const zy = h * .2;
-    g.fillStyle = "rgba(250,250,248,.95)"; g.fillRect(0, zy - 16, w, 32);
-    g.fillStyle = "#A3232B"; for (let x = 150; x < w - 30; x += 38) { g.beginPath(); g.arc(x, zy, 3.5, 0, 7); g.fill(); }
-    g.beginPath(); g.arc(40, zy, 12, 0, 7); g.fill();
-    text(g, "PULL TAB TO OPEN ▸", 60, zy, `600 13px ${mono}`, "#A3232B", "left", 1);
-    g.strokeStyle = "#A3232B"; g.lineWidth = 2.5; g.beginPath();
-    for (let x = 0; x <= w; x += 6) g.lineTo(x, zy + 42 + (x / 6 % 2 ? 2.5 : -2.5)); g.stroke();
-    g.fillStyle = "rgba(250,250,248,.5)"; g.fillRect(0, zy + 52, w, 8);
-  } else { g.fillStyle = "rgba(250,250,248,.7)"; g.fillRect(0, h * .2 - 12, w, 24); }
-  const eg = g.createLinearGradient(0, 0, w, 0), ew = Math.min(.08, 36 / w);
-  eg.addColorStop(0, "rgba(250,250,248,.85)"); eg.addColorStop(ew, "rgba(250,250,248,0)"); eg.addColorStop(1 - ew, "rgba(250,250,248,0)"); eg.addColorStop(1, "rgba(250,250,248,.85)");
+    const vx = w * .86, vy = h * .155; g.strokeStyle = "rgba(120,118,112,.35)"; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(vx - 10, vy - 26); g.lineTo(vx - 10, vy + 6); g.arc(vx + 4, vy + 6, 14, Math.PI, Math.PI * 1.9, true); g.stroke();
+    const lx = w * .24, ly = h * .23, lw = w * .51, lh = h * .66;
+    g.fillStyle = "rgba(0,0,0,.05)"; g.fillRect(lx + 2, ly + 3, lw, lh);
+    g.fillStyle = "#EFEEEB"; g.fillRect(lx, ly, lw, lh);
+    g.strokeStyle = "rgba(26,26,24,.07)"; g.lineWidth = 2; g.strokeRect(lx, ly, lw, lh);
+    // BLENDED, set vertically reading bottom → top
+    g.save(); g.translate(w * .5, ly + lh * .52); g.rotate(-Math.PI / 2);
+    if ("letterSpacing" in g) (g as unknown as { letterSpacing: string }).letterSpacing = "0px";
+    g.font = `800 300px ${logo}`; const fs = 300 * (lh * .9) / g.measureText("BLENDED").width;
+    text(g, "BLENDED", 0, 0, `800 ${fs}px ${logo}`, BOX_INK); g.restore();
+  }
+  const eg = g.createLinearGradient(0, 0, w, 0), ew = Math.min(.08, 30 / w);
+  eg.addColorStop(0, "rgba(250,250,248,.7)"); eg.addColorStop(ew, "rgba(250,250,248,0)"); eg.addColorStop(1 - ew, "rgba(250,250,248,0)"); eg.addColorStop(1, "rgba(250,250,248,.7)");
   g.fillStyle = eg; g.fillRect(0, 0, w, h);
-  return c;
+}
+function filmCanvas(w: number, h: number, kind: "front" | "back" | "side", logo: string) {
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  drawFilm(c.getContext("2d")!, w, h, kind, logo); return c;
 }
 
-/** The blend card clipped to the bag: wordmark, blend name, components, radar, roast, size. */
+/** The blend card on the bag: blend name, components, radar, roast, size. */
 async function paintCard(d: BagCard) {
-  const { logo, mono: monoFam, mark } = await assets();
+  const { mono: monoFam, mark } = await assets();
   const w = 1762, h = 824, c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d")!;
   g.fillStyle = BOX_PAPER; g.fillRect(0, 0, w, h);
   const mono = (wt: number, px: number) => `${wt} ${px}px ${monoFam}`;
-  let fs = 150; g.font = `800 ${fs}px ${logo}`; while (g.measureText("BLENDED").width > 1380 && fs > 40) { fs -= 2; g.font = `800 ${fs}px ${logo}`; }
-  text(g, "BLENDED", 44, 104, g.font, BOX_INK, "left", -2);
-  text(g, String(d.name || "Custom blend").toUpperCase().slice(0, 40), 48, 212, mono(500, 42), BOX_RED, "left", 6);
+  const name = String(d.name || "Custom blend").toUpperCase().slice(0, 40);
+  let fs = 84; g.font = mono(500, fs); if ("letterSpacing" in g) (g as unknown as { letterSpacing: string }).letterSpacing = "8px";
+  while (g.measureText(name).width > 1400 && fs > 36) { fs -= 2; g.font = mono(500, fs); }
+  text(g, name, 48, 120, mono(500, fs), BOX_RED, "left", 8);
   if (mark) { g.save(); g.globalCompositeOperation = "multiply"; g.drawImage(mark, 1540, 40, 176, 176 * mark.height / mark.width); g.restore(); }
   const n = Math.max(1, d.parts.length), rh = Math.min(128, 380 / n), y0 = 470 - (rh * n) / 2;
   d.parts.forEach((p, i) => {
@@ -189,18 +205,21 @@ export async function mountBox(host: HTMLElement, opts: {
   const rig = new THREE.Group(); scene.add(rig); rig.add(ground);
 
   // the bag
-  const { mono } = await assets();
+  const { logo } = await assets();
   if (dead) return { dispose: () => {}, setCard: () => {} };
   const shellGeo = own(bagDeform(new THREE.BoxGeometry(BOX_W, BOX_H, BOX_D, 24, 48, 12).translate(0, BOX_H / 2, 0)));
   const film = (c: HTMLCanvasElement) => own(new THREE.MeshPhysicalMaterial({ map: tex(c), color: 0xffffff, metalness: 0, clearcoat: 0, roughness: .95, sheen: .15, sheenRoughness: .9, sheenColor: new THREE.Color(0xffffff) }));
-  const side = film(filmCanvas(448, 1152, "side", mono)), plain = film(filmCanvas(256, 256, "back", mono));
-  const outer = new THREE.Mesh(shellGeo, [side, side, plain, plain, film(filmCanvas(1024, 1152, "front", mono)), film(filmCanvas(1024, 1152, "back", mono))]);
+  const side = film(filmCanvas(480, 1620, "side", logo)), plain = film(filmCanvas(256, 256, "back", logo));
+  const outer = new THREE.Mesh(shellGeo, [side, side, plain, plain, film(filmCanvas(1024, 1620, "front", logo)), film(filmCanvas(1024, 1620, "back", logo))]);
   outer.castShadow = true; outer.receiveShadow = true;
 
-  // blend card, curved to sit on the pillowed front panel
-  const cw = 1.34, ch = cw * 824 / 1762, cyc = BOX_H * .4;
+  // tasting card: slipped on at a slight clockwise tilt over the lower label, curved to the pillowed front
+  const cw = BOX_W * .72, ch = cw * 824 / 1762, cxc = BOX_W * .07, cyc = BOX_H * .38, ang = -.11, ca = Math.cos(ang), sa = Math.sin(ang);
   const cg = own(new THREE.PlaneGeometry(cw, ch, 24, 8)), cp = cg.attributes.position;
-  for (let i = 0; i < cp.count; i++) { const x = cp.getX(i), y = cp.getY(i) + cyc; cp.setXYZ(i, x * (1 - .025 * y / BOX_H), y, bagSurfZ(x, y / BOX_H) + .006); }
+  for (let i = 0; i < cp.count; i++) {
+    const lx = cp.getX(i), ly = cp.getY(i), x = lx * ca - ly * sa + cxc, y = lx * sa + ly * ca + cyc;
+    cp.setXYZ(i, x * (1 - .02 * y / BOX_H), y, bagSurfZ(x, y / BOX_H) + .008);
+  }
   cg.computeVertexNormals();
   const cardMat = own(new THREE.MeshPhysicalMaterial({ color: BOX_PAPER, roughness: .75, clearcoat: 0 }));
   const cardFront = new THREE.Mesh(cg, cardMat); cardFront.receiveShadow = true;
