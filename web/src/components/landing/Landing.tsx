@@ -10,7 +10,22 @@ import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from
 import type { LandingData } from "@/lib/landing";
 import type { ShopPolicy } from "@/lib/shop";
 import { CookiePrefsLink } from "@/components/store/FooterClient";
+import { CartDrawer } from "@/components/store/CartDrawer";
+import { cartStore, useCart } from "@/components/store/cart-store";
+import { Icon } from "@/components/ui/Icon";
 import { LabIntro } from "./LabIntro";
+
+function LandingCart() {
+  const { items } = useCart();
+  const n = items.reduce((a, x) => a + x.qty, 0);
+  return (
+    <button type="button" className="lp-cart lp-over" onClick={() => cartStore.setOpen(true)} aria-label={`Cart, ${n} item${n === 1 ? "" : "s"}`}>
+      <Icon name="pkg" size={15} stroke={2} />
+      <span className="lp-cart-label">Cart</span>
+      <span className="lp-cart-n" data-n={n}>{n}</span>
+    </button>
+  );
+}
 
 const LAB = "/lab", BUILD = "/lab#build", SHOP = "/lab#coffees";
 
@@ -61,7 +76,14 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
   const router = useRouter();
   const [solid, setSolid] = useState(false);
   const [intro, setIntro] = useState(false);
+  const [menu, setMenu] = useState(false);
   const busy = useRef(false);
+
+  useEffect(() => {
+    if (!menu) return;
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") setMenu(false); };
+    addEventListener("keydown", k); return () => removeEventListener("keydown", k);
+  }, [menu]);
 
   useEffect(() => {
     const f = () => setSolid(scrollY > innerHeight - 120);
@@ -92,6 +114,14 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
     data.merchUrl && { id: "merch", t: "Merch", d: "Hats, tees and patches from the roastery.", cta: "Shop merch", href: data.merchUrl, img: data.media.merch },
     data.gearUrl && { id: "gear", t: "Brew gear", d: "The grinders, kettles and drippers we use on our own bar.", cta: "Shop gear", href: data.gearUrl, img: data.media.gear },
   ].filter(Boolean) as { id: string; t: string; d: string; cta: string; href: string; img: string | null }[];
+  const menuItems: { t: string; d: string; href: string; lab?: boolean }[] = [
+    { t: "Build a blend", d: "Mix up to four coffees, set the roast", href: LAB, lab: true },
+    { t: "Our coffees", d: "Single origins and house blends", href: SHOP },
+    ...(data.merchUrl ? [{ t: "Merch", d: "Caps, tees and mugs from the roastery", href: data.merchUrl }] : []),
+    ...(data.gearUrl ? [{ t: "Brew gear", d: "The gear we use on our own bar", href: data.gearUrl }] : []),
+    { t: "Farmers", d: "Where our green coffee comes from", href: "#farmers" },
+    { t: "Wholesale", d: "Cafés and private label · 5 lb minimum", href: "/wholesale" },
+  ];
   const disp = (fontSize: string): CSSProperties => ({ fontSize });
 
   return (
@@ -108,7 +138,7 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
         </div>
       )}
 
-      <header className={"lp-bar" + (solid ? " solid" : "")}>
+      <header className={"lp-bar" + (solid || menu ? " solid" : "") + (solid ? " scrolled" : "")}>
         <div className="lp-wrap">
           <Link className="lp-logo" href="/" aria-label="Blended home">
             <Image src="/brand/blended-mark.png" alt="" width={24} height={24} />BLENDED
@@ -119,10 +149,26 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
             {data.merchUrl && <a className="lp-link" href={data.merchUrl}>Merch</a>}
             {data.gearUrl && <a className="lp-link" href={data.gearUrl}>Gear</a>}
             <Link className="lp-link" href="/wholesale">Wholesale</Link>
-            <a className="lp-btn sm" href={LAB} onClick={toLab}>Build a blend</a>
           </nav>
+          <div className="lp-actions">
+            <a className="lp-btn sm lp-cta" href={LAB} onClick={toLab}>Build a blend</a>
+            <LandingCart />
+            <button type="button" className="lp-burger" aria-label={menu ? "Close menu" : "Open menu"} aria-expanded={menu} aria-controls="lp-menu" onClick={() => setMenu((m) => !m)}>
+              <span className="sf-burger-lines" data-open={menu}><span></span><span></span><span></span></span>
+            </button>
+          </div>
         </div>
+        {menu && <>
+          <nav id="lp-menu" className="lp-menu" aria-label="Menu">
+            {menuItems.map((m) => (
+              <a key={m.t} className="lp-menu-item" href={m.href} onClick={(e) => { setMenu(false); if (m.lab) toLab(e); }}>
+                <span>{m.t}</span><span className="lp-menu-note">{m.d}</span>
+              </a>
+            ))}
+          </nav>
+        </>}
       </header>
+      {menu && <div className="lp-menu-scrim" onClick={() => setMenu(false)} />}
 
       <main>
         <section className="lp-hero" aria-label="Build your blend">
@@ -277,6 +323,7 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
           </span>
         </div>
       </footer>
+      <CartDrawer />
       {intro && <LabIntro blends={data.intro} onDone={() => router.push(LAB)} />}
     </div>
   );

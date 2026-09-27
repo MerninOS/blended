@@ -51,10 +51,10 @@ export function CollectionView({ filter, products }: { filter: CollectionFilter;
           </nav>
           <label className="sh-sort sh-over">
             <span>Sort</span>
-            <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Sort products">
+            <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Sort products" data-active={sort !== "feat"} title="Sort products">
               <option value="feat">Featured</option>
-              <option value="low">Price, low to high</option>
-              <option value="high">Price, high to low</option>
+              <option value="low">Price: low–high</option>
+              <option value="high">Price: high–low</option>
             </select>
           </label>
         </div>
