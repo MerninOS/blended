@@ -68,10 +68,11 @@ function OrdersTable({ rows, onOpen, onExport }: { rows: AdminOrder[]; onOpen: (
                     <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                       {o.items.map((it, i) => (
                         <div key={i} style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                          <span style={{ width: 10, height: 10, borderRadius: "var(--r-sm)", flexShrink: 0, background: rampColor(it.roast), boxShadow: "inset 0 0 0 1px rgba(0,0,0,.14)" }} />
+                          <span style={{ width: 10, height: 10, borderRadius: "var(--r-sm)", flexShrink: 0, background: it.kind === "item" ? "var(--surface-sunken)" : rampColor(it.roast), boxShadow: "inset 0 0 0 1px rgba(0,0,0,.14)" }} />
                           <span style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink)", whiteSpace: "nowrap" }}>{it.name}</span>
                           <span style={CO.data({ fontSize: 11.5, color: "var(--ink-subtle)", whiteSpace: "nowrap" })}>{it.qty} × {it.sizeLabel}</span>
                           {it.kind === "blend" && <Pill variant="cream">Blend</Pill>}
+                          {it.kind === "item" && <Pill variant="matcha">Merch</Pill>}
                         </div>
                       ))}
                     </div>
@@ -203,7 +204,7 @@ export function OrdersView({ orders }: { orders: AdminOrder[] }) {
   };
   const exportCsv = () => downloadCsv(`orders-${new Date().toISOString().slice(0, 10)}.csv`, [
     ["Order", "Placed", "Channel", "Customer", "Email", "Status", "Item", "Kind", "Qty", "Size", "Roast", "Components", "Lbs", "Total"],
-    ...rows.flatMap((o) => o.items.map((it) => [o.name, o.placed, o.channel, o.customer.name, o.customer.email, o.status, it.name, it.kind, it.qty, it.sizeLabel, roastName(it.roast),
+    ...rows.flatMap((o) => o.items.map((it) => [o.name, o.placed, o.channel, o.customer.name, o.customer.email, o.status, it.name, it.kind, it.qty, it.sizeLabel, it.kind === "item" ? "" : roastName(it.roast),
       (it.sel ?? []).map((s) => `${s.pct}% ${s.name}`).join(" / "), itemLbs(it), o.money.total.toFixed(2)])),
   ]);
 

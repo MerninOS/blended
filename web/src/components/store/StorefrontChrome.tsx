@@ -6,12 +6,18 @@ import { CartButton } from "./CartDrawer";
 
 const TABS = [
   { href: "/lab", id: "retail", label: "Retail", note: "Bags for home · free shipping over $50" },
+  { href: "/collections/merch", id: "merch", label: "Merch", note: "Caps, tees and mugs from the roastery" },
+  { href: "/collections/gear", id: "gear", label: "Gear", note: "The brew gear we use on our own bar" },
   { href: "/wholesale", id: "wholesale", label: "Wholesale", note: "Cafés and private label · 5 lb minimum" },
 ] as const;
+type TabId = (typeof TABS)[number]["id"] | null;
+const tabOf = (path: string): TabId =>
+  path.startsWith("/wholesale") ? "wholesale" : path.startsWith("/collections/merch-and-gear") || path.startsWith("/products/") ? null
+    : path.startsWith("/collections/merch") ? "merch" : path.startsWith("/collections/gear") ? "gear" : "retail";
 
 export function StorefrontChrome() {
   const path = usePathname();
-  const tab = path.startsWith("/wholesale") ? "wholesale" : "retail";
+  const tab = tabOf(path);
   const [menu, setMenu] = useState(false);
   const [lastPath, setLastPath] = useState(path);
   if (path !== lastPath) { setLastPath(path); setMenu(false); }
@@ -39,9 +45,9 @@ export function StorefrontChrome() {
         </nav>
         <span style={{ flex: 1 }} />
         <span className="pc-facility" style={{ fontFamily: "var(--font-mono)", fontVariationSettings: "var(--data-settings)", fontSize: 11.5, color: "var(--ink-muted)" }}>
-          {tab === "retail" ? "Free shipping over $50" : "Minimum 5 lb per order"}
+          {tab === "wholesale" ? "Minimum 5 lb per order" : "Free shipping over $50"}
         </span>
-        {tab === "retail" && <CartButton />}
+        {tab !== "wholesale" && <CartButton />}
       </div>
       {menu && <>
         <div className="sf-menu-scrim" onClick={() => setMenu(false)}></div>

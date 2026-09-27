@@ -3,7 +3,7 @@
 // Roast sheet weights are grams — easier to measure at the roaster.
 import { useEffect, useState } from "react";
 import type { AdminOrder } from "@/lib/domain/orders";
-import { GREEN_LOSS, STAGES, grams, itemLbs, orderBags, orderLbs, packPlan, stageIdx } from "@/lib/domain/orders";
+import { GREEN_LOSS, STAGES, grams, isCoffee, itemLbs, orderBags, orderExtras, orderLbs, packPlan, stageIdx } from "@/lib/domain/orders";
 import { AGTRON, DROP_F, money, rampColor, roastName } from "@/lib/domain/coffee";
 import { Btn, CO, Pill, inp } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
@@ -50,7 +50,7 @@ export function OrderDrawer({ order, busy, onClose, onAdvance }: {
     addEventListener("keydown", k); return () => removeEventListener("keydown", k);
   }, [order, onClose]);
   if (!order) return null;
-  const o = order, lbs = orderLbs(o), bags = orderBags(o);
+  const o = order, lbs = orderLbs(o), bags = orderBags(o), coffee = o.items.filter(isCoffee), extras = orderExtras(o);
   const next = STAGES[stageIdx(o.status) + 1];
   const action = next ? ({ roasting: o.qcHold ? "Release hold · start roast" : "Start roast", packing: "Move to packing", shipped: "Mark shipped" } as Record<string, string>)[next.id] : null;
 
@@ -86,9 +86,9 @@ export function OrderDrawer({ order, busy, onClose, onAdvance }: {
           )}
 
           <section>
-            <Head label="Roast sheet" right={`${o.items.length} ${o.items.length === 1 ? "item" : "items"} · ${lbs.toFixed(1)} lb roasted`} />
+            <Head label="Roast sheet" right={`${coffee.length} ${coffee.length === 1 ? "item" : "items"} · ${lbs.toFixed(1)} lb roasted`} />
             <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 14 }}>
-              {o.items.map((it, i) => {
+              {coffee.map((it, i) => {
                 const l = itemLbs(it), r = Math.round(it.roast);
                 return (
                   <div key={i} style={{ border: "1px solid var(--hairline)", borderRadius: "var(--r-md)", background: "var(--surface)", overflow: "hidden" }}>
@@ -159,13 +159,22 @@ export function OrderDrawer({ order, busy, onClose, onAdvance }: {
           </section>
 
           <section>
-            <Head label="Packing" right={`${bags} bags`} />
+            <Head label="Packing" right={`${bags} bags${extras.length ? ` + ${extras.reduce((a, x) => a + x.qty, 0)} merch` : ""}`} />
             {packPlan(o).map((p, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderBottom: "1px solid var(--hairline)" }}>
                 <span style={{ width: 30, height: 30, borderRadius: "var(--r-md)", background: "var(--surface-sunken)", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--roast-3)", flexShrink: 0 }}><Icon name="bag" size={15} stroke={2} /></span>
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: "block", fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink)" }}>{p.qty} × {p.sizeLabel} · {p.grind}</span>
                   <span style={CO.data({ fontSize: 11, color: "var(--ink-subtle)" })}>{p.names.join(" · ")}</span>
+                </span>
+              </div>
+            ))}
+            {extras.map((it, i) => (
+              <div key={`x${i}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderBottom: "1px solid var(--hairline)" }}>
+                <span style={{ width: 30, height: 30, borderRadius: "var(--r-md)", background: "var(--surface-sunken)", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--ink-muted)", flexShrink: 0 }}><Icon name="pkg" size={15} stroke={2} /></span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "block", fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink)" }}>{it.qty} × {it.name}</span>
+                  <span style={CO.data({ fontSize: 11, color: "var(--ink-subtle)" })}>{it.sizeLabel} · merch &amp; gear</span>
                 </span>
               </div>
             ))}

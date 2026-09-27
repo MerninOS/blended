@@ -7,7 +7,7 @@ import { shopSize } from "@/lib/domain/coffee";
 import { env, isDemo } from "@/lib/env";
 import { admin, assertNoUserErrors, gql } from "@/lib/shopify/client";
 import { sizeFromOption } from "@/lib/shopify/mapping";
-import { BLEND_PROP, type BlendRecipe } from "@/lib/checkout";
+import { BLEND_PROP, ITEM_PROP, type BlendRecipe } from "@/lib/checkout";
 import { demoStore } from "@/lib/demo-store";
 import { getSettings } from "@/lib/settings";
 
@@ -87,6 +87,14 @@ function toAdmin(o: RawOrder): AdminOrder {
     if (recipe) {
       const size = shopSize(recipe.sizeId);
       items.push({ kind: "blend", name: recipe.name, sizeLabel: size.label, sizeLb: size.lb, qty: li.quantity, unit, roast: recipe.roast, grind: attr(li.customAttributes, "Grind") ?? "Whole bean", sel: recipe.sel });
+      continue;
+    }
+    // Merch and gear: marked by our checkout, or (orders placed elsewhere) a product with
+    // no roast level whose options aren't a bag size.
+    const opts = li.variant?.selectedOptions ?? [];
+    if (attr(li.customAttributes, ITEM_PROP) || (!li.product?.roast?.value && !opts.some((x) => sizeFromOption(x.value)))) {
+      items.push({ kind: "item", name: li.title, sizeLabel: opts.filter((x) => x.value !== "Default Title").map((x) => x.value).join(" · ") || "Merch",
+        sizeLb: 0, qty: li.quantity, unit, roast: 0, grind: "" });
       continue;
     }
     const opt = li.variant?.selectedOptions.find((x) => /size|weight/i.test(x.name)) ?? li.variant?.selectedOptions[0];

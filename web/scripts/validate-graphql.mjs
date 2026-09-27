@@ -13,7 +13,7 @@ const load = (f) => {
   return buildClientSchema(j.data ?? j, { assumeValid: true });
 };
 const schemas = { admin: load("admin-2026-07.json"), storefront: load("storefront.json"), customer: load("customer-account.json") };
-const STOREFRONT = ["src/lib/catalog.ts"];
+const STOREFRONT = ["src/lib/catalog.ts", "src/lib/merch.ts"];
 const CUSTOMER = ["src/lib/customer-account.ts"];
 
 const files = [];

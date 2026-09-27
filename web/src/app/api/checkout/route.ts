@@ -5,6 +5,7 @@ import type { CheckoutResponse, RetailCheckoutRequest } from "@/lib/domain/reque
 import { env, isDemo } from "@/lib/env";
 import { getSettings } from "@/lib/settings";
 import { guard } from "@/lib/guard";
+import { getMerch } from "@/lib/merch";
 
 const DRAFT_COOKIE = "blended_draft";
 
@@ -15,7 +16,9 @@ export async function POST(req: NextRequest): Promise<NextResponse<CheckoutRespo
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Bad request" }, { status: 400 }); }
 
   try {
-    const priced = priceRetailCart(body.lines, await getCatalog(), { demo: isDemo() });
+    const hasItems = Array.isArray(body.lines) && body.lines.some((l) => l?.kind === "item");
+    const [catalog, merch] = await Promise.all([getCatalog(), hasItems ? getMerch() : Promise.resolve([])]);
+    const priced = priceRetailCart(body.lines, catalog, { demo: isDemo(), merch });
     if (isDemo()) {
       return NextResponse.json({ demo: true, error: "Demo mode — connect a Shopify store to take real orders." }, { status: 503 });
     }

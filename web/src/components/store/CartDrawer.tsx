@@ -1,12 +1,22 @@
 "use client";
 // Retail cart drawer + header button (CartDrawer.jsx). Checkout hands the cart
 // to the server, which re-prices it and returns Shopify's hosted checkout URL.
+import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { money, rampColor, roastName, shippingFor, SHIP_FREE } from "@/lib/domain/coffee";
 import type { CheckoutResponse, RetailLine } from "@/lib/domain/requests";
 import { Icon } from "@/components/ui/Icon";
 import { Btn, Stepper, disp, mono, over } from "@/components/ui/primitives";
-import { cartStore, useCart } from "./cart-store";
+import { cartStore, useCart, type CartLine } from "./cart-store";
+
+/** "3 bags", "2 items", "1 bag + 2 items" */
+function countLabel(items: CartLine[]) {
+  const n = (f: (x: CartLine) => boolean) => items.filter(f).reduce((a, x) => a + x.qty, 0);
+  const bags = n((x) => x.kind !== "item"), things = n((x) => x.kind === "item");
+  const b = `${bags} bag${bags === 1 ? "" : "s"}`, t = `${things} item${things === 1 ? "" : "s"}`;
+  return bags && things ? `${b} + ${t}` : things ? t : b;
+}
 import { BC_COLORS } from "./BlendCard";
 import { trackCheckoutStarted } from "@/components/tracking/analytics";
 
@@ -49,9 +59,11 @@ export function CartDrawer({ onNewBlend }: { onNewBlend?: () => void }) {
 
   const checkout = async () => {
     setBusy(true); setErr(null);
-    const lines: RetailLine[] = items.map((it) => it.kind === "stock"
-      ? { kind: "stock", skuId: it.skuId!, sizeId: it.sizeId, qty: it.qty }
-      : { kind: "blend", name: it.name, sel: it.sel ?? [], roast: it.roastOverride ?? null, sizeId: it.sizeId, qty: it.qty });
+    const lines: RetailLine[] = items.map((it) => it.kind === "item"
+      ? { kind: "item", variantId: it.variantId!, qty: it.qty }
+      : it.kind === "stock"
+        ? { kind: "stock", skuId: it.skuId!, sizeId: it.sizeId!, qty: it.qty }
+        : { kind: "blend", name: it.name, sel: it.sel ?? [], roast: it.roastOverride ?? null, sizeId: it.sizeId!, qty: it.qty });
     try {
       const res = await fetch("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lines }) });
       const j = await res.json() as CheckoutResponse;
@@ -71,7 +83,7 @@ export function CartDrawer({ onNewBlend }: { onNewBlend?: () => void }) {
         transform: open ? "none" : "translateX(100%)", transition: "transform 260ms cubic-bezier(.2,.7,.2,1)", animation: "cart-in 260ms cubic-bezier(.2,.7,.2,1)" }}>
         <div className="cart-drawer-head" style={{ display: "flex", alignItems: "center", gap: 12, padding: "18px 20px", borderBottom: "1px solid var(--hairline)" }}>
           <span style={{ ...disp, fontSize: 20, color: "var(--ink)", lineHeight: 1, flex: 1 }}>Your cart</span>
-          <span style={{ ...mono, fontSize: 11.5, color: "var(--ink-subtle)" }}>{items.reduce((a, x) => a + x.qty, 0)} bags</span>
+          <span style={{ ...mono, fontSize: 11.5, color: "var(--ink-subtle)" }}>{countLabel(items)}</span>
           <button ref={closeRef} type="button" onClick={close} aria-label="Close cart" style={{ width: 44, height: 44, marginRight: -10, border: "none", background: "none", cursor: "pointer", color: "var(--ink-muted)", fontSize: 18, lineHeight: 1 }}>×</button>
         </div>
 
@@ -86,19 +98,27 @@ export function CartDrawer({ onNewBlend }: { onNewBlend?: () => void }) {
           {items.length === 0 ? (
             <div style={{ padding: "48px 0", textAlign: "center", display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
               <span style={{ ...disp, fontSize: 16, color: "var(--ink)" }}>Cart is empty</span>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink-muted)" }}>Pick one of our coffees or build a blend.</span>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink-muted)" }}>Pick one of our coffees, build a blend, or grab some <Link href="/collections/merch-and-gear" onClick={close} style={{ color: "var(--ink)" }}>merch and gear</Link>.</span>
             </div>
           ) : items.map((it) => (
             <div key={it.id} style={{ display: "flex", gap: 12, padding: "16px 0", borderBottom: "1px solid var(--hairline)", animation: "co-fade 240ms var(--ease)" }}>
-              <div style={{ width: 44, height: 52, flexShrink: 0, borderRadius: "var(--r-sm)", background: "#F0EDE5", border: "1px solid var(--hairline)", display: "flex", flexDirection: "column", justifyContent: "flex-end", overflow: "hidden" }}>
-                {(it.parts?.length ? it.parts : [{ pct: 100 }]).map((p, i) => <span key={i} style={{ flex: `${Math.max(6, p.pct)} 1 0`, maxHeight: it.parts ? "none" : 10, background: it.parts ? BC_COLORS[i % BC_COLORS.length] : rampColor(it.roast) }} />)}
-              </div>
+              {it.kind === "item" ? (
+                <div style={{ position: "relative", width: 44, height: 55, flexShrink: 0, borderRadius: "var(--r-sm)", background: "var(--surface-sunken)", overflow: "hidden" }}>
+                  {it.image && <Image src={it.image} alt="" fill sizes="44px" style={{ objectFit: "cover" }} />}
+                </div>
+              ) : (
+                <div style={{ width: 44, height: 52, flexShrink: 0, borderRadius: "var(--r-sm)", background: "#F0EDE5", border: "1px solid var(--hairline)", display: "flex", flexDirection: "column", justifyContent: "flex-end", overflow: "hidden" }}>
+                  {(it.parts?.length ? it.parts : [{ pct: 100 }]).map((p, i) => <span key={i} style={{ flex: `${Math.max(6, p.pct)} 1 0`, maxHeight: it.parts ? "none" : 10, background: it.parts ? BC_COLORS[i % BC_COLORS.length] : rampColor(it.roast ?? 3) }} />)}
+                </div>
+              )}
               <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                  <span style={{ ...disp, fontSize: 14.5, color: "var(--ink)", lineHeight: 1.15, flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>{it.name}</span>
+                  {it.kind === "item" && it.handle
+                    ? <Link href={`/products/${it.handle}`} onClick={close} style={{ ...disp, fontSize: 14.5, color: "var(--ink)", lineHeight: 1.15, flex: 1, minWidth: 0, overflowWrap: "anywhere", textDecoration: "none" }}>{it.name}</Link>
+                    : <span style={{ ...disp, fontSize: 14.5, color: "var(--ink)", lineHeight: 1.15, flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>{it.name}</span>}
                   <span style={{ ...mono, fontSize: 13, color: "var(--ink)" }}>{money(it.unit * it.qty)}</span>
                 </div>
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ink-muted)" }}>{it.kind === "blend" ? "Custom blend" : "Our coffee"} · {it.sizeLabel} · {roastName(it.roast)} roast</span>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ink-muted)" }}>{it.kind === "item" ? it.sizeLabel : `${it.kind === "blend" ? "Custom blend" : "Our coffee"} · ${it.sizeLabel} · ${roastName(it.roast ?? 3)} roast`}</span>
                 {it.parts && <span style={{ ...mono, fontSize: 11, color: "var(--ink-subtle)", lineHeight: 1.45 }}>{it.parts.map((p) => `${p.pct}% ${p.name}`).join(" · ")}</span>}
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 2 }}>

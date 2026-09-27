@@ -116,8 +116,8 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
           <nav className="lp-nav lp-over" aria-label="Main">
             <Link className="lp-link" href={SHOP}>Coffees</Link>
             <a className="lp-link" href="#farmers">Farmers</a>
-            {data.merchUrl && <a className="lp-link" href="#shop-more">Merch</a>}
-            {data.gearUrl && <a className="lp-link" href="#shop-more">Gear</a>}
+            {data.merchUrl && <a className="lp-link" href={data.merchUrl}>Merch</a>}
+            {data.gearUrl && <a className="lp-link" href={data.gearUrl}>Gear</a>}
             <Link className="lp-link" href="/wholesale">Wholesale</Link>
             <a className="lp-btn sm" href={LAB} onClick={toLab}>Build a blend</a>
           </nav>

@@ -1,22 +1,26 @@
 "use client";
 // Retail cart: a small persisted store (localStorage "blended-cart-v1").
 // Lines carry only what the server needs to re-price at checkout, plus the
-// display fields the drawer shows.
+// display fields the drawer shows. Coffee lines are "stock" or "blend";
+// merch and brew gear are "item" lines keyed by Shopify variant.
 import { useSyncExternalStore } from "react";
 import type { SelItem, ShopSizeId } from "@/lib/domain/types";
 import { MAX_BAGS } from "@/lib/domain/coffee";
 
 export interface CartLine {
   id: string;
-  kind: "stock" | "blend";
-  key: string | null;          // stock lines merge by sku+size
+  kind: "stock" | "blend" | "item";
+  key: string | null;          // stock lines merge by sku+size, items by variant
   skuId?: string;
-  sizeId: ShopSizeId;
-  sizeLabel: string;
+  sizeId?: ShopSizeId;
+  sizeLabel: string;           // items: the variant ("Ink · M"), or the product type
   name: string;
   qty: number;
   unit: number;                // display price; the server re-prices
-  roast: number;
+  roast?: number;
+  variantId?: string;
+  handle?: string;
+  image?: string | null;
   roastOverride?: number | null;
   sel?: SelItem[];
   parts?: { id: string; pct: number; name: string }[];
@@ -40,12 +44,12 @@ function hydrate() {
 export const cartStore = {
   get: () => state,
   subscribe: (f: () => void) => { hydrate(); subs.add(f); queueMicrotask(emit); return () => { subs.delete(f); }; },
-  add(it: Omit<CartLine, "id">, fresh = false) {
-    const same = it.kind === "stock" && state.items.find((x) => x.kind === "stock" && x.key === it.key);
+  add(it: Omit<CartLine, "id">, fresh = false, open = true) {
+    const same = it.kind !== "blend" && state.items.find((x) => x.kind === it.kind && x.key === it.key);
     const items = same
       ? state.items.map((x) => (x === same ? { ...x, qty: Math.min(MAX_BAGS, x.qty + it.qty), unit: it.unit } : x))
       : [...state.items, { ...it, id: "ci-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }];
-    set({ items, open: true, freshId: fresh && !same ? items[items.length - 1].id : null });
+    set({ items, open: open || state.open, freshId: fresh && !same ? items[items.length - 1].id : null });
   },
   qty(id: string, q: number) { set({ items: state.items.map((x) => (x.id === id ? { ...x, qty: Math.max(1, Math.min(MAX_BAGS, q)) } : x)) }); },
   remove(id: string) { set({ items: state.items.filter((x) => x.id !== id) }); },

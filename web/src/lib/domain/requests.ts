@@ -4,7 +4,8 @@ import type { SelItem, ShopSizeId } from "./types";
 
 export type RetailLine =
   | { kind: "stock"; skuId: string; sizeId: ShopSizeId; qty: number }
-  | { kind: "blend"; name: string; sel: SelItem[]; roast: number | null; sizeId: ShopSizeId; qty: number };
+  | { kind: "blend"; name: string; sel: SelItem[]; roast: number | null; sizeId: ShopSizeId; qty: number }
+  | { kind: "item"; variantId: string; qty: number };
 
 export interface RetailCheckoutRequest { lines: RetailLine[] }
 export interface CheckoutResponse { url?: string; orderName?: string; error?: string; demo?: boolean }

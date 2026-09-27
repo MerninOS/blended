@@ -15,7 +15,7 @@ export const stageIdx = (id: Stage) => Math.max(0, STAGES.findIndex((s) => s.id 
 
 export interface BlendComponent { id: string; name: string; lot: string; pct: number; roast: number }
 export interface OrderItem {
-  kind: "blend" | "stock";
+  kind: "blend" | "stock" | "item";   // item: merch / brew gear, packed but not roasted
   name: string;
   sizeLabel: string;
   sizeLb: number;
@@ -43,7 +43,10 @@ export interface AdminOrder {
 
 export const itemLbs = (it: OrderItem) => it.sizeLb * it.qty;
 export const orderLbs = (o: AdminOrder) => o.items.reduce((a, it) => a + itemLbs(it), 0);
-export const orderBags = (o: AdminOrder) => o.items.reduce((a, it) => a + it.qty, 0);
+export const isCoffee = (it: OrderItem) => it.kind !== "item";
+export const orderBags = (o: AdminOrder) => o.items.filter(isCoffee).reduce((a, it) => a + it.qty, 0);
+/** Merch and gear that go in the box alongside the coffee. */
+export const orderExtras = (o: AdminOrder) => o.items.filter((it) => !isCoffee(it));
 export const grams = (lb: number) => Math.round(lb * G_PER_LB).toLocaleString("en-US") + " g";
 export const GREEN_LOSS = ROAST_LOSS;
 
@@ -51,7 +54,7 @@ export const GREEN_LOSS = ROAST_LOSS;
 export function roastPlan(orders: AdminOrder[]) {
   const roasted = new Map<string, { key: string; kind: OrderItem["kind"]; name: string; roast: number; lbs: number; orders: Set<string>; sel?: BlendComponent[] }>();
   const green = new Map<string, { id: string; name: string; lot: string; roast: number; lbs: number }>();
-  orders.forEach((o) => o.items.forEach((it) => {
+  orders.forEach((o) => o.items.filter(isCoffee).forEach((it) => {
     const lbs = itemLbs(it);
     const key = `${it.kind}:${it.name}:${it.roast}`;
     const r = roasted.get(key) ?? { key, kind: it.kind, name: it.name, roast: it.roast, lbs: 0, orders: new Set<string>(), sel: it.sel };
@@ -71,7 +74,7 @@ export function roastPlan(orders: AdminOrder[]) {
 // grind + bag breakdown for the packing bench
 export function packPlan(o: AdminOrder) {
   const by = new Map<string, { grind: string; sizeLabel: string; qty: number; names: string[] }>();
-  o.items.forEach((it) => {
+  o.items.filter(isCoffee).forEach((it) => {
     const k = `${it.grind}|${it.sizeLabel}`;
     const e = by.get(k) ?? { grind: it.grind, sizeLabel: it.sizeLabel, qty: 0, names: [] };
     e.qty += it.qty; e.names.push(it.name); by.set(k, e);

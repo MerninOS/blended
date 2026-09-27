@@ -9,11 +9,13 @@ import {
 } from "@/lib/domain/coffee";
 import { env } from "@/lib/env";
 import { admin, assertNoUserErrors, gql } from "@/lib/shopify/client";
+import type { MerchProduct } from "@/lib/merch-types";
 
 export class CheckoutError extends Error {}
 
 export const BLEND_PROP = "_blend";         // hidden (underscore) line property with the recipe JSON
 export const BLEND_VERSION = 1;
+export const ITEM_PROP = "_item";           // hidden line property marking merch / gear ("merch" | "gear")
 export interface BlendRecipe { v: number; name: string; roast: number; sizeId: string; sel: { id: string; name: string; lot: string; pct: number; roast: number }[] }
 
 /** Validate a blend against the catalog and batch size; returns the clean selection. */
@@ -63,7 +65,7 @@ const money = (amount: number) => ({ amount: round2(amount).toFixed(2), currency
 type DraftLine = Record<string, unknown>;
 export interface PricedCart { lines: DraftLine[]; goods: number; shipping: number }
 
-export function priceRetailCart(lines: RetailLine[], cat: Catalog, opts: { demo?: boolean } = {}): PricedCart {
+export function priceRetailCart(lines: RetailLine[], cat: Catalog, opts: { demo?: boolean; merch?: MerchProduct[] } = {}): PricedCart {
   if (!Array.isArray(lines) || !lines.length) throw new CheckoutError("Your cart is empty.");
   if (lines.length > 30) throw new CheckoutError("Too many lines in the cart.");
   const idx = indexLots(cat.green);
@@ -72,6 +74,14 @@ export function priceRetailCart(lines: RetailLine[], cat: Catalog, opts: { demo?
   const out: DraftLine[] = lines.map((l) => {
     const qty = Math.round(Number(l.qty));
     if (!(qty >= 1 && qty <= MAX_BAGS)) throw new CheckoutError(`Quantity must be between 1 and ${MAX_BAGS}.`);
+    if (l.kind === "item") {
+      const p = opts.merch?.find((m) => m.variants.some((v) => v.id === l.variantId));
+      const v = p?.variants.find((x) => x.id === l.variantId);
+      if (!p || !v) throw new CheckoutError("An item in your cart is no longer available.");
+      if (!v.available) throw new CheckoutError(`${p.name} is sold out${Object.keys(v.options).length ? ` in ${Object.values(v.options).join(" / ")}` : ""}.`);
+      goods += v.price * qty;
+      return { variantId: v.id, quantity: qty, customAttributes: [{ key: ITEM_PROP, value: p.cat }] };
+    }
     const size = shopSize(l.sizeId);
     if (l.kind === "stock") {
       const sku = cat.stock.find((s) => s.id === l.skuId);

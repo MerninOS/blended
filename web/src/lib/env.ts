@@ -20,6 +20,8 @@ export const env = {
   sessionSecret: v("SESSION_SECRET"),
   adminPassword: v("ADMIN_PASSWORD"),
   stockCollection: v("SHOPIFY_STOCK_COLLECTION") || "our-coffees",
+  merchCollection: v("SHOPIFY_MERCH_COLLECTION") || "merch",       // /collections/merch
+  gearCollection: v("SHOPIFY_GEAR_COLLECTION") || "gear",          // /collections/gear
   locationId: v("SHOPIFY_LOCATION_ID"),                   // where green is counted; default: primary location
   wholesaleTag: v("SHOPIFY_WHOLESALE_TAG") || "wholesale",
   currency: v("SHOPIFY_CURRENCY") || "USD",
@@ -28,9 +30,9 @@ export const env = {
   storefrontPublicToken: v("SHOPIFY_STOREFRONT_PUBLIC_TOKEN"), // Headless channel public token (Customer Privacy API)
   klaviyoPublicKey: v("KLAVIYO_PUBLIC_KEY"),               // 6-character site ID
   klaviyoListId: v("KLAVIYO_LIST_ID"),                     // newsletter signups
-  // Landing page "Merch" / "Brew gear" tiles link here; hidden when unset
-  landingMerchUrl: v("LANDING_MERCH_URL") || "https://blendedcoffeelab.com/collections/merch",
-  landingGearUrl: v("LANDING_GEAR_URL") || "https://blendedcoffeelab.com/collections/gear",
+  // Landing page "Merch" / "Brew gear" tiles link here (default: our own collection pages)
+  landingMerchUrl: v("LANDING_MERCH_URL") || "/collections/merch",
+  landingGearUrl: v("LANDING_GEAR_URL") || "/collections/gear",
   isProd: process.env.NODE_ENV === "production",
 };
 

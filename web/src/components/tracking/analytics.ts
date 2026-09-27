@@ -71,11 +71,12 @@ export interface TrackedItem {
   sku?: string;
   image?: string | null;
   url?: string;
-  kind: "stock" | "blend";
+  kind: "stock" | "blend" | "item";
+  category?: string;       // defaults to "Coffee"
 }
 const toShopify = (i: TrackedItem): ShopifyAnalyticsProduct | null => i.productGid ? {
   productGid: i.productGid, variantGid: i.variantGid, name: i.name, variantName: i.variantName,
-  brand: "Blended", category: "Coffee", price: i.price.toFixed(2), sku: i.sku, quantity: i.quantity ?? 1,
+  brand: "Blended", category: i.category ?? "Coffee", price: i.price.toFixed(2), sku: i.sku, quantity: i.quantity ?? 1,
 } : null;
 
 export function trackProductView(i: TrackedItem) {
@@ -83,10 +84,10 @@ export function trackProductView(i: TrackedItem) {
     const p = toShopify(i);
     if (p) shopify(AnalyticsEventName.PRODUCT_VIEW, { pageType: "product", resourceId: i.productGid, products: [p], totalValue: i.price });
     klaviyo("track", "Viewed Product", {
-      ProductName: i.name, ProductID: i.productGid ?? i.name, SKU: i.sku, Categories: ["Coffee"], ImageURL: i.image ?? undefined,
+      ProductName: i.name, ProductID: i.productGid ?? i.name, SKU: i.sku, Categories: [i.category ?? "Coffee"], ImageURL: i.image ?? undefined,
       URL: i.url ?? location.href, Brand: "Blended", Price: i.price,
     });
-    klaviyo("trackViewedItem", { Title: i.name, ItemId: i.productGid ?? i.name, Categories: ["Coffee"], ImageUrl: i.image ?? undefined, Url: i.url ?? location.href, Metadata: { Brand: "Blended", Price: i.price } });
+    klaviyo("trackViewedItem", { Title: i.name, ItemId: i.productGid ?? i.name, Categories: [i.category ?? "Coffee"], ImageUrl: i.image ?? undefined, Url: i.url ?? location.href, Metadata: { Brand: "Blended", Price: i.price } });
   });
 }
 
