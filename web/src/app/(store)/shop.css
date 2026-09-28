@@ -30,9 +30,12 @@
 .sh-flag.hot { background: var(--brand); color: #fff }
 .sh-quick { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 2; opacity: 0; transform: translateY(6px); transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease) }
 .sh-card:hover .sh-quick, .sh-card:focus-within .sh-quick { opacity: 1; transform: none }
-.sh-quick .sh-btn { width: 100% }
+.sh-quick .sh-btn { width: 100%; min-width: 0; overflow: hidden }
+.sh-quick .sh-btn > span { min-width: 0; overflow: hidden; text-overflow: ellipsis }
+.sh-sm { display: none }
 .sh-card-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px }
-.sh-card h3 { margin: 0; font-family: var(--font-mono); font-weight: 500; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; line-height: 1.35; text-wrap: pretty }
+.sh-card h3 { margin: 0; min-width: 0; font-family: var(--font-mono); font-weight: 500; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; line-height: 1.35; text-wrap: pretty;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; overflow-wrap: anywhere }
 .sh-price { font-family: var(--font-mono); font-variation-settings: var(--data-settings); font-size: 13px; white-space: nowrap }
 .sh-sub { font-size: 13.5px; color: var(--ink-muted); margin: 0; line-height: 1.45 }
 .sh-dots { display: flex; gap: 6px }
@@ -127,7 +130,11 @@
 @media (max-width:900px) {
   .sh-grid, .pd-rel .sh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) }
   .sh-quick { opacity: 1; transform: none }
-  .sh-quick .sh-btn { height: 38px; font-size: 10px; padding: 0 10px }
+  .sh-quick .sh-btn { height: 38px; font-size: 10px; letter-spacing: .1em; padding: 0 8px }
+  /* two-up cards are narrow: price goes under the name instead of beside it */
+  .sh-card-head { flex-direction: column; align-items: flex-start; gap: 4px }
+  .sh-card h3 { font-size: 12px; letter-spacing: .06em }
+  .sh-card .sh-sub { font-size: 12.5px }
   .pd { grid-template-columns: minmax(0, 1fr); padding-top: 12px }
   .pd-gal { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 calc(-1 * clamp(18px, 4vw, 48px)); padding: 0 clamp(18px, 4vw, 48px); scrollbar-width: none }
   .pd-gal::-webkit-scrollbar { display: none }
@@ -137,6 +144,8 @@
 }
 @media (max-width:800px) { .co-head, .co-seo { grid-template-columns: minmax(0, 1fr) } }
 @media (max-width:560px) {
+  .sh-lg { display: none }
+  .sh-sm { display: inline }
   .sh-tools .sh-wrap { gap: 12px }
   .sh-tabs { gap: 16px; overflow-x: auto; scrollbar-width: none; font-size: 10px; letter-spacing: .1em }
   .sh-tabs::-webkit-scrollbar { display: none }

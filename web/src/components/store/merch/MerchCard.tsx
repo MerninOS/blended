@@ -61,13 +61,16 @@ export function MerchCard({ p, hot, onAdded }: { p: MerchProduct; hot?: boolean;
         {!out && (
           <div className="sh-quick">
             {single
-              ? <button type="button" className="sh-btn" onClick={() => { addMerch(p, single, 1, false); onAdded?.(p); }}>Add to cart · {priceLabel(single.price)}</button>
-              : <Link className="sh-btn" href={href}>Choose options</Link>}
+              ? <button type="button" className="sh-btn" aria-label={`Add ${p.name} to cart, ${priceLabel(single.price)}`} onClick={() => { addMerch(p, single, 1, false); onAdded?.(p); }}>
+                  {/* phones drop the price from the button; it's right below the photo */}
+                  <span className="sh-lg">Add to cart · {priceLabel(single.price)}</span><span className="sh-sm">Add to cart</span>
+                </button>
+              : <Link className="sh-btn" href={href} aria-label={`Choose options for ${p.name}`}><span className="sh-lg">Choose options</span><span className="sh-sm">Options</span></Link>}
           </div>
         )}
       </div>
       <Link href={href} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div className="sh-card-row"><h3>{p.name}</h3><span className="sh-price">{priceLabel(p.price)}</span></div>
+        <div className="sh-card-row sh-card-head"><h3 title={p.name}>{p.name}</h3><span className="sh-price">{priceLabel(p.price)}</span></div>
         <div className="sh-card-row">
           <p className="sh-sub">{p.type}{sizes ? ` · ${sizes.values.length} ${sizes.name.toLowerCase()}s` : ""}</p>
           {colors && <span className="sh-dots" aria-label={`${colors.values.length} colors`}>{colors.values.map((c) => <i key={c.name} style={{ background: c.swatch ?? "var(--surface-sunken)" }} />)}</span>}
