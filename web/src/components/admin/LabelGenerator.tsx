@@ -1,0 +1,348 @@
+"use client";
+// Bag label generator (coffeeos/LabelGenerator.jsx). Labels come from shop
+// order lines or are made by hand, are drawn as SVG at 3.25 × 1.5 in
+// (975 × 450 @ 300 dpi) and print one per page — "Save as PDF" in the
+// browser's print dialog. The print styles live in labels.css.
+import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import type { GreenLot, Notes, StockCoffee } from "@/lib/domain/types";
+import type { AdminOrder, OrderItem } from "@/lib/domain/orders";
+import { AX, SHOP_SIZES, indexLots, radarGeom, rampColor, roastName, shopSize, weighted, type LotIndex } from "@/lib/domain/coffee";
+import { Btn, CO } from "@/components/ui/primitives";
+import { Icon } from "@/components/ui/Icon";
+import { Segmented, Tabs } from "./parts";
+import { StatusChip } from "./OrdersView";
+
+const W = 975, H = 450;
+const COLORS = ["#EE8A1E", "#C43C7C", "#D93D18", "#8E2F52"];
+const INK = "#1A1A18", SOFT = "#77726B", RED = "#DC3D1A", PAPER = "#F2EEE7", OFF = "#D6D1CB";
+const GRINDS = ["Whole bean", "Filter / drip", "Espresso", "French press", "Moka pot"];
+const SITE = "blendedcoffeelab.com";
+
+export interface LabelData {
+  name: string; site: string; roastedOn?: string;
+  parts: { name: string; origin: string; color: string }[];
+  vals: Notes; words: string[]; roast: number; size: string; grind: string;
+}
+
+// ---------- text fitting (canvas measures the same font the SVG draws) ----------
+let ctx: CanvasRenderingContext2D | null = null, family = "monospace";
+const fontFamily = () => {
+  if (typeof document === "undefined") return "monospace";
+  const f = getComputedStyle(document.documentElement).getPropertyValue("--nf-martian").trim();
+  return f ? `${f}, ui-monospace, monospace` : "ui-monospace, monospace";
+};
+const textWidth = (t: string, size: number, wt: number, ls = 0) => {
+  if (typeof document === "undefined") return t.length * size * .62 + ls * size * Math.max(0, t.length - 1);
+  if (!ctx) { ctx = document.createElement("canvas").getContext("2d"); family = fontFamily(); }
+  ctx!.font = `${wt} ${size}px ${family}`;
+  return ctx!.measureText(t).width + ls * size * Math.max(0, t.length - 1);
+};
+const fit = (t: string, size: number, wt: number, ls: number, maxW: number, min: number) =>
+  Math.max(min, Math.min(size, size * maxW / Math.max(1, textWidth(t, size, wt, ls))));
+
+/**
+ * True once in the browser with web fonts loaded. Labels are only drawn then:
+ * text is sized by measuring the real font, which the server can't do (and
+ * hydration would keep the server's guessed sizes).
+ */
+const fontsSub = (cb: () => void) => { let live = true; document.fonts?.ready.then(() => { if (live) { ctx = null; cb(); } }); return () => { live = false; }; };
+const useFontsReady = () => useSyncExternalStore(fontsSub, () => !document.fonts || document.fonts.status === "loaded", () => false);
+
+const today = () => { const d = new Date(); return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}/${String(d.getFullYear()).slice(2)}`; };
+const topWords = (vals: Notes) => AX.map((a) => ({ l: a.l, v: vals[a.k] || 0 })).filter((a) => a.v > 0).sort((a, b) => b.v - a.v).slice(0, 3).map((a) => a.l);
+const country = (o = "") => o.split(/\s*·\s*/)[0];
+const clampRoast = (r: number) => Math.max(1, Math.min(5, Math.round(r)));
+
+/** One fitted line of label text; squeezes with textLength if still too wide at the floor size. */
+function LgText({ t, x, y, size, wt = 400, ls = 0, maxW, min, fill = INK, anchor = "start", upper }: {
+  t: string; x: number; y: number; size: number; wt?: number; ls?: number; maxW?: number; min?: number; fill?: string; anchor?: "start" | "end"; upper?: boolean;
+}) {
+  const s = upper ? t.toUpperCase() : t;
+  const fs = maxW ? fit(s, size, wt, ls, maxW, min || size * .5) : size;
+  const squeeze = maxW != null && textWidth(s, fs, wt, ls) > maxW;
+  return (
+    <text x={x} y={y} fill={fill} textAnchor={anchor} fontWeight={wt} fontSize={fs.toFixed(2)} letterSpacing={ls ? (ls * fs).toFixed(2) : undefined}
+      style={{ fontFamily: "var(--font-mono)", fontVariationSettings: '"wdth" 100' }} {...(squeeze ? { textLength: maxW, lengthAdjust: "spacingAndGlyphs" } : {})}>{s}</text>
+  );
+}
+
+export function LabelArt({ d }: { d: LabelData }) {
+  if (!useFontsReady()) return <div aria-hidden="true" style={{ aspectRatio: `${W} / ${H}`, background: PAPER }} />;
+  return <LabelSvg d={d} />;
+}
+
+function LabelSvg({ d }: { d: LabelData }) {
+  const parts = d.parts.slice(0, 4), n = Math.max(1, parts.length);
+  const top = 104, rowH = Math.min(86, 176 / n), swH = rowH - 9;
+  const g = radarGeom(d.vals);
+  const roastTxt = `${roastName(d.roast)} ROAST`;
+  const rs = fit(roastTxt, 19, 500, .2, 250, 11), rw = textWidth(roastTxt, rs, 500, .2);
+  const barR = 913 - rw - 12, seg = 14.5, gap = 2;
+  const c0 = parts[0]?.color || COLORS[0], c1 = (parts[1] || parts[0])?.color || COLORS[1];
+  const onW = textWidth("roasted on:", 21, 400);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" style={{ display: "block", width: "100%", height: "auto" }} role="img" aria-label={`Label: ${d.name}`}>
+      <rect width={W} height={H} fill={PAPER} />
+      <circle cx="489" cy="157" r="110" fill={c0} opacity=".08" />
+      <circle cx="487" cy="289" r="113" fill={c1} opacity=".07" />
+      <path d="M491 168H600V302H531A40 40 0 0 1 491 262Z" fill="#6B5A50" opacity=".035" />
+      <LgText t={d.name || "Untitled"} x={52} y={76} size={72} wt={450} maxW={530} min={34} fill={RED} upper />
+      <LgText t="roasted on:" x={612} y={42} size={21} fill={SOFT} />
+      {d.roastedOn && <LgText t={d.roastedOn} x={612 + onW + 12} y={42} size={21} wt={500} maxW={913 - 624 - onW} min={12} />}
+      {parts.map((p, i) => {
+        const y = top + i * rowH;
+        return (
+          <g key={i}>
+            <rect x="52" y={y + 4} width="82" height={swH} rx="3" fill={p.color} />
+            <LgText t={p.name} x={153} y={y + rowH * .44} size={Math.min(31, rowH * .38)} wt={450} maxW={440} min={12} upper />
+            {p.origin && <LgText t={p.origin} x={153} y={y + rowH * .86} size={Math.min(20, rowH * .25)} maxW={440} min={9} fill={SOFT} upper />}
+          </g>
+        );
+      })}
+      <g transform={`translate(784 200) scale(${115 / 150}) translate(-240 -240)`}>
+        {[150, 109, 68].map((r) => <circle key={r} cx="240" cy="240" r={r} fill="none" stroke="rgba(26,26,24,.17)" strokeWidth="1.6" />)}
+        {g.axes.map((a, i) => <line key={i} x1="240" y1="240" x2={a.sx.toFixed(1)} y2={a.sy.toFixed(1)} stroke="rgba(26,26,24,.17)" strokeWidth="1.6" />)}
+        <path d={g.p1} fill="rgba(196,60,124,.32)" stroke="#C43C7C" strokeWidth="3.4" strokeLinejoin="round" />
+        {g.axes.map((a, i) => a.v > .05 && <circle key={i} cx={a.dx.toFixed(1)} cy={a.dy.toFixed(1)} r="4.6" fill="#C43C7C" />)}
+      </g>
+      <LgText t={d.site || ""} x={52} y={365} size={20.5} ls={.04} maxW={470} min={11} fill={SOFT} />
+      <LgText t={d.words.join(" / ")} x={52} y={405} size={18.5} wt={500} ls={.2} maxW={470} min={10} upper />
+      {[1, 2, 3, 4, 5].map((k) => <rect key={k} x={barR - (6 - k) * seg - (5 - k) * gap} y={367 - rs * .36 - 4.3} width={seg} height="8.6" rx="1.6" fill={k <= d.roast ? RED : OFF} />)}
+      <LgText t={roastTxt} x={913} y={367} size={rs} wt={500} ls={.2} anchor="end" />
+      <LgText t={`${d.size} · ${d.grind}`} x={913} y={405} size={19} wt={500} ls={.2} maxW={330} min={10} anchor="end" upper />
+    </svg>
+  );
+}
+
+// ---------- label data ----------
+function fromItem(it: OrderItem, idx: LotIndex, stock: StockCoffee[]): LabelData {
+  const roast = clampRoast(it.roast);
+  let parts: LabelData["parts"], vals: Notes;
+  if (it.kind === "blend" && it.sel?.length) {
+    parts = it.sel.map((s, i) => { const l = idx.get(s.id); return { name: l?.name ?? s.name, origin: country(l?.origin), color: COLORS[i % COLORS.length] }; });
+    vals = weighted(it.sel.map((s) => ({ id: s.id, pct: s.pct })), idx, roast);
+  } else {
+    const sku = stock.find((s) => s.name.toLowerCase() === it.name.toLowerCase());
+    const lot = sku && [...idx.values()].find((l) => l.name === sku.name);
+    parts = [{ name: sku?.name ?? it.name, origin: lot ? country(lot.origin) : sku?.sub.split(/\s*·\s*/).slice(1).join(" · ") ?? "", color: COLORS[0] }];
+    vals = sku?.notes ?? {};
+  }
+  return { site: SITE, name: it.name, parts, vals, words: topWords(vals), roast, size: it.sizeLabel, grind: it.grind || "Whole bean" };
+}
+
+interface Manual { name: string; sel: string[]; roast: number; sizeId: string; grind: string; notes: string; roastedOn: string; site: string; copies: string }
+function fromManual(m: Manual, idx: LotIndex): LabelData {
+  const sel = m.sel.filter((id) => idx.has(id));
+  const vals = sel.length ? weighted(sel.map((id) => ({ id, pct: 100 / sel.length })), idx, m.roast) : {};
+  const words = m.notes.trim() ? m.notes.split("/").map((s) => s.trim()).filter(Boolean) : topWords(vals);
+  return {
+    site: m.site, name: m.name, roastedOn: m.roastedOn, vals, words, roast: m.roast, size: shopSize(m.sizeId).label, grind: m.grind,
+    parts: sel.map((id, i) => { const l = idx.get(id)!; return { name: l.name, origin: country(l.origin), color: COLORS[i % COLORS.length] }; }),
+  };
+}
+
+// ---------- print: one label per 3.25 × 1.5 in page ----------
+function LgPrint({ labels, onDone }: { labels: LabelData[]; onDone: () => void }) {
+  useEffect(() => {
+    addEventListener("afterprint", onDone);
+    const t = setTimeout(() => (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => print()), 120);
+    return () => { clearTimeout(t); removeEventListener("afterprint", onDone); };
+  }, [onDone]);
+  return createPortal(<div className="lg-print">{labels.map((d, i) => <div key={i} className="lg-page"><LabelArt d={d} /></div>)}</div>, document.body);
+}
+
+// ---------- ui atoms ----------
+const inp = { width: "100%", height: 36, padding: "0 11px", border: "1px solid var(--hairline-strong)", borderRadius: "var(--r-sm)", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--font-sans)", fontSize: 13.5 } as const;
+function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+      <span style={CO.over({ fontSize: 9.5, color: "var(--ink-muted)" })}>{label}</span>
+      {children}
+      {hint && <span style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, color: "var(--ink-subtle)" }}>{hint}</span>}
+    </label>
+  );
+}
+function Head({ label, right }: { label: string; right?: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, paddingBottom: 9, borderBottom: "1px solid var(--hairline-strong)" }}>
+      <span style={CO.over({ fontSize: 10, color: "var(--ink-muted)" })}>{label}</span>
+      {right && <span style={CO.data({ fontSize: 11.5, color: "var(--ink-subtle)" })}>{right}</span>}
+    </div>
+  );
+}
+function Preview({ d, caption, children }: { d: LabelData | null; caption?: string; children: ReactNode }) {
+  return (
+    <div className="lg-preview" style={{ display: "flex", flexDirection: "column", gap: 14, position: "sticky", top: "calc(var(--topbar-h) + 16px)" }}>
+      <Head label="Preview" right="3.25 × 1.5 in" />
+      <div style={{ boxShadow: "var(--shadow-pop)", borderRadius: 3, overflow: "hidden", border: "1px solid var(--hairline)" }}>
+        {d ? <LabelArt d={d} /> : <div style={{ aspectRatio: "975 / 450", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface-sunken)", fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink-subtle)", padding: 16, textAlign: "center" }}>Pick an order line to preview its label.</div>}
+      </div>
+      {caption && <div style={CO.data({ fontSize: 11.5, color: "var(--ink-subtle)" })}>{caption}</div>}
+      {children}
+    </div>
+  );
+}
+const labelsWord = (n: number) => `${n} ${n === 1 ? "label" : "labels"}`;
+
+// ---------- from orders ----------
+type Row = { key: string; o: AdminOrder; it: OrderItem; d: LabelData };
+function FromOrders({ orders, idx, stock, roastedOn, setRoastedOn, onPrint }: {
+  orders: AdminOrder[]; idx: LotIndex; stock: StockCoffee[]; roastedOn: string; setRoastedOn: (v: string) => void; onPrint: (l: LabelData[]) => void;
+}) {
+  // Coffee lines from shop orders; merch and wholesale (bulk, private label) don't get bag labels here.
+  const rows = useMemo<Row[]>(() => orders.filter((o) => o.channel !== "Wholesale").flatMap((o) =>
+    o.items.map((it, i) => ({ key: `${o.id}:${i}`, o, it })).filter((r) => r.it.kind !== "item").map((r) => ({ ...r, d: fromItem(r.it, idx, stock) }))), [orders, idx, stock]);
+  const [scope, setScope] = useState<"open" | "all">("open");
+  const shown = rows.filter((r) => scope === "all" || r.o.status !== "shipped");
+  const [sel, setSel] = useState(() => new Set(rows.filter((r) => r.o.status !== "shipped").map((r) => r.key)));
+  const [active, setActive] = useState(shown[0]?.key);
+  const picked = shown.filter((r) => sel.has(r.key));
+  const count = picked.reduce((a, r) => a + r.it.qty, 0);
+  const cur = shown.find((r) => r.key === active) ?? shown[0]; // a row hidden by the filter falls back to the first shown
+  const toggle = (k: string) => setSel((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+  const allOn = shown.length > 0 && shown.every((r) => sel.has(r.key));
+  const cell = { padding: "10px 14px", verticalAlign: "middle", borderBottom: "1px solid var(--hairline)" } as const;
+  return (
+    <div className="lg-grid">
+      <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <Segmented options={[{ id: "open", label: "Not shipped" }, { id: "all", label: "All orders" }]} value={scope} onChange={setScope} />
+          <span style={CO.data({ fontSize: 12, color: "var(--ink-muted)", whiteSpace: "nowrap" })}>{picked.length} lines · {labelsWord(count)}</span>
+        </div>
+        <div style={{ border: "1px solid var(--hairline)", borderRadius: "var(--r-md)", overflow: "hidden" }}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
+              <thead><tr style={{ background: "var(--surface-sunken)" }}>
+                <th style={{ ...cell, width: 36 }}>
+                  <input type="checkbox" aria-label="Select all" checked={allOn} onChange={() => setSel((s) => { const n = new Set(s); shown.forEach((r) => (allOn ? n.delete(r.key) : n.add(r.key))); return n; })} style={{ accentColor: "var(--ink)" }} />
+                </th>
+                {([["Order", "left"], ["Coffee", "left"], ["Size · grind", "left"], ["Labels", "right"], ["Status", "left"]] as const).map(([h, al]) =>
+                  <th key={h} style={{ ...cell, textAlign: al, whiteSpace: "nowrap", ...CO.over({ fontSize: 10, color: "var(--ink-muted)" }) }}>{h}</th>)}
+              </tr></thead>
+              <tbody>
+                {shown.length === 0 && <tr><td colSpan={6} style={{ ...cell, padding: "28px 14px", textAlign: "center", fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink-subtle)" }}>{scope === "open" ? "Every order has shipped. Switch to All orders to reprint a label." : "No coffee orders yet."}</td></tr>}
+                {shown.map((r) => {
+                  const on = r.key === cur?.key;
+                  return (
+                    <tr key={r.key} onClick={() => setActive(r.key)} style={{ cursor: "pointer", background: on ? "var(--brand-soft)" : "transparent" }}>
+                      <td style={{ ...cell, boxShadow: on ? "inset 3px 0 0 var(--brand)" : "none" }}>
+                        <input type="checkbox" aria-label={`Include ${r.o.name} ${r.it.name}`} checked={sel.has(r.key)} onClick={(e) => e.stopPropagation()} onChange={() => toggle(r.key)} style={{ accentColor: "var(--ink)" }} />
+                      </td>
+                      <td style={cell}>
+                        <div style={CO.data({ fontSize: 13, color: "var(--ink)", whiteSpace: "nowrap" })}>{r.o.name}</div>
+                        <div style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, color: "var(--ink-subtle)", whiteSpace: "nowrap" }}>{r.o.customer.name}</div>
+                      </td>
+                      <td style={cell}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                          <span style={{ width: 10, height: 10, borderRadius: "var(--r-sm)", flexShrink: 0, background: rampColor(r.it.roast) }} />
+                          <span style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink)", whiteSpace: "nowrap" }}>{r.it.name}</span>
+                        </div>
+                      </td>
+                      <td style={cell}><span style={CO.data({ fontSize: 12, color: "var(--ink-muted)", whiteSpace: "nowrap" })}>{r.it.sizeLabel} · {r.it.grind}</span></td>
+                      <td style={{ ...cell, textAlign: "right" }}><span style={CO.data({ fontSize: 13, color: "var(--ink)" })}>{r.it.qty}</span></td>
+                      <td style={cell}><StatusChip status={r.o.status} /></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <Preview d={cur ? { ...cur.d, roastedOn } : null} caption={cur && `${cur.o.name} · ${cur.it.qty} ${cur.it.qty === 1 ? "copy" : "copies"}`}>
+        <Field label="Roasted on" hint="Printed on every label in this run. Clear it to write the date by hand.">
+          <input value={roastedOn} onChange={(e) => setRoastedOn(e.target.value)} style={{ ...inp, ...CO.data({ fontSize: 13 }) }} />
+        </Field>
+        <Btn variant="primary" disabled={!count} style={{ width: "100%", justifyContent: "center" }} icon={<Icon name="download" size={14} />}
+          onClick={() => count && onPrint(picked.flatMap((r) => Array<LabelData>(r.it.qty).fill({ ...r.d, roastedOn })))}>{`Save ${labelsWord(count)} as PDF`}</Btn>
+      </Preview>
+    </div>
+  );
+}
+
+// ---------- manual ----------
+function ManualLabel({ lots, idx, onPrint }: { lots: GreenLot[]; idx: LotIndex; onPrint: (l: LabelData[]) => void }) {
+  const [m, setM] = useState<Manual>(() => ({ name: "House blend", sel: lots.slice(0, 2).map((l) => l.id), roast: 3, sizeId: "1lb", grind: "Whole bean", notes: "", roastedOn: today(), site: SITE, copies: "1" }));
+  const up = <K extends keyof Manual>(k: K, v: Manual[K]) => setM((x) => ({ ...x, [k]: v }));
+  const d = fromManual(m, idx);
+  const free = lots.filter((l) => !m.sel.includes(l.id));
+  const copies = Math.max(1, Math.min(500, parseInt(m.copies, 10) || 1));
+  return (
+    <div className="lg-grid">
+      <div style={{ display: "flex", flexDirection: "column", gap: 22, minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <Head label="Coffee" />
+          <Field label="Name on label"><input value={m.name} onChange={(e) => up("name", e.target.value)} style={inp} /></Field>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <span style={CO.over({ fontSize: 9.5, color: "var(--ink-muted)" })}>Components</span>
+            {m.sel.map((id, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ width: 22, height: 22, borderRadius: 3, background: COLORS[i % COLORS.length], flexShrink: 0 }} />
+                <select aria-label={`Coffee ${i + 1}`} value={id} onChange={(e) => up("sel", m.sel.map((x, j) => (j === i ? e.target.value : x)))} style={{ ...inp, flex: 1, minWidth: 0 }}>
+                  {lots.filter((l) => l.id === id || !m.sel.includes(l.id)).map((l) => <option key={l.id} value={l.id}>{l.name} · {country(l.origin)}</option>)}
+                </select>
+                <button type="button" onClick={() => up("sel", m.sel.filter((_, j) => j !== i))} disabled={m.sel.length < 2} aria-label="Remove coffee"
+                  style={{ ...inp, width: 36, padding: 0, flexShrink: 0, cursor: m.sel.length < 2 ? "default" : "pointer", color: "var(--ink-muted)", opacity: m.sel.length < 2 ? .4 : 1 }}>−</button>
+              </div>
+            ))}
+            {lots.length === 0 && <span style={{ fontFamily: "var(--font-sans)", fontSize: 12.5, color: "var(--ink-subtle)" }}>No green coffees in the catalog yet.</span>}
+            {m.sel.length < 4 && free.length > 0 && <div><Btn size="sm" variant="outline" onClick={() => up("sel", [...m.sel, free[0].id])} icon={<Icon name="plus" size={14} />}>Add a coffee</Btn></div>}
+          </div>
+          <Field label="Tasting notes" hint={m.notes ? "Separate notes with a slash." : `From the cupping scores: ${d.words.join(" / ") || "—"}`}>
+            <input value={m.notes} placeholder={d.words.join(" / ")} onChange={(e) => up("notes", e.target.value)} style={inp} />
+          </Field>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <Head label="Roast and bag" />
+          <div role="radiogroup" aria-label="Roast" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(92px,1fr))", gap: 6 }}>
+            {[1, 2, 3, 4, 5].map((n) => {
+              const on = m.roast === n;
+              return (
+                <button type="button" role="radio" aria-checked={on} key={n} onClick={() => up("roast", n)} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 7, padding: "9px 9px 10px", cursor: "pointer", border: `1px solid ${on ? "var(--brand)" : "var(--hairline-strong)"}`, background: on ? "var(--brand-soft)" : "var(--surface)", borderRadius: "var(--r-sm)", minWidth: 0 }}>
+                  <span style={{ display: "flex", gap: 2, width: "100%" }}>{[1, 2, 3, 4, 5].map((k) => <span key={k} style={{ flex: 1, height: 5, borderRadius: 1, background: k <= n ? RED : OFF }} />)}</span>
+                  <span style={CO.over({ fontSize: 9, color: on ? "var(--brand-hover)" : "var(--ink)", textAlign: "left", overflowWrap: "anywhere" })}>{roastName(n)}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,180px),1fr))", gap: 14 }}>
+            <Field label="Bag size">
+              <div role="radiogroup" aria-label="Bag size" style={{ display: "grid", gridTemplateColumns: `repeat(${SHOP_SIZES.length},minmax(0,1fr))`, gap: 2, padding: 2, border: "1px solid var(--hairline)", borderRadius: "var(--r-md)" }}>
+                {SHOP_SIZES.map((z) => {
+                  const on = z.id === m.sizeId;
+                  return <button type="button" role="radio" aria-checked={on} key={z.id} onClick={() => up("sizeId", z.id)} style={{ height: 30, padding: 0, border: "none", borderRadius: "var(--r-sm)", cursor: "pointer", background: on ? "var(--ink)" : "transparent", color: on ? "var(--on-ink)" : "var(--ink-muted)", fontFamily: "var(--font-sans)", fontSize: 12.5, fontWeight: on ? 600 : 500, whiteSpace: "nowrap" }}>{z.label}</button>;
+                })}
+              </div>
+            </Field>
+            <Field label="Grind"><select value={m.grind} onChange={(e) => up("grind", e.target.value)} style={inp}>{GRINDS.map((g) => <option key={g}>{g}</option>)}</select></Field>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,180px),1fr))", gap: 14 }}>
+            <Field label="Roasted on" hint="Leave blank to write it by hand."><input value={m.roastedOn} onChange={(e) => up("roastedOn", e.target.value)} style={{ ...inp, ...CO.data({ fontSize: 13 }) }} /></Field>
+            <Field label="Website"><input value={m.site} onChange={(e) => up("site", e.target.value)} style={inp} /></Field>
+          </div>
+        </div>
+      </div>
+      <Preview d={d} caption={`${copies} ${copies === 1 ? "copy" : "copies"} · one label per PDF page`}>
+        <Field label="Copies"><input type="number" min={1} max={500} value={m.copies} onChange={(e) => up("copies", e.target.value)} style={{ ...inp, ...CO.data({ fontSize: 13 }), maxWidth: 120 }} /></Field>
+        <Btn variant="primary" style={{ width: "100%", justifyContent: "center" }} icon={<Icon name="download" size={14} />} onClick={() => onPrint(Array<LabelData>(copies).fill(d))}>{`Save ${labelsWord(copies)} as PDF`}</Btn>
+      </Preview>
+    </div>
+  );
+}
+
+export function LabelGeneratorView({ orders, lots, stock }: { orders: AdminOrder[]; lots: GreenLot[]; stock: StockCoffee[] }) {
+  const [mode, setMode] = useState<"orders" | "manual">("orders");
+  const [roastedOn, setRoastedOn] = useState(today);
+  const [job, setJob] = useState<LabelData[] | null>(null);
+  const idx = useMemo(() => indexLots(lots), [lots]);
+  return (
+    <div className="lg-wrap" style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
+      <Tabs tabs={[{ id: "orders", label: "From orders" }, { id: "manual", label: "Manual label" }]} active={mode} onChange={setMode} />
+      {mode === "orders"
+        ? <FromOrders orders={orders} idx={idx} stock={stock} roastedOn={roastedOn} setRoastedOn={setRoastedOn} onPrint={setJob} />
+        : <ManualLabel lots={lots} idx={idx} onPrint={setJob} />}
+      {job && <LgPrint labels={job} onDone={() => setJob(null)} />}
+    </div>
+  );
+}

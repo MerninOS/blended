@@ -1,0 +1,15 @@
+/* Label generator layout + print (one 3.25 × 1.5 in label per page) */
+.lg-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 560px); gap: 32px; align-items: start }
+.lg-wrap { padding: 20px 24px 48px }
+@media (max-width: 1100px) { .lg-grid { grid-template-columns: minmax(0, 1fr) } .lg-preview { position: static !important } }
+@media (max-width: 640px) { .lg-wrap { padding: 16px 14px 40px } .lg-grid { gap: 24px } }
+@media screen { .lg-print { display: none } }
+@media print {
+  @page { size: 3.25in 1.5in; margin: 0 }
+  html, body { margin: 0 !important; padding: 0 !important; background: #fff !important }
+  body > *:not(.lg-print) { display: none !important }
+  .lg-print { display: block }
+  .lg-page { width: 3.25in; height: 1.5in; overflow: hidden; break-after: page; page-break-after: always; -webkit-print-color-adjust: exact; print-color-adjust: exact }
+  .lg-page:last-child { break-after: auto; page-break-after: auto }
+  .lg-page svg { width: 3.25in !important; height: 1.5in !important }
+}
