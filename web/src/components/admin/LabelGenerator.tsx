@@ -1,9 +1,11 @@
 "use client";
-// Bag label generator (coffeeos/LabelGenerator.jsx). Labels come from shop
-// order lines or are made by hand, are drawn as SVG at 3.25 × 1.5 in
-// (975 × 450 @ 300 dpi) and print one per page — "Save as PDF" in the
-// browser's print dialog. The print styles live in labels.css.
-import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+// Label generator (coffeeos/LabelGenerator.jsx). Coffee bag labels come from
+// shop order lines or are made by hand, drawn as SVG at 3.25 × 1.5 in
+// (975 × 450 @ 300 dpi); concentrate labels are the 8 × 3.5 in bottle wrap
+// (concentrate-label.ts). Either prints one per page or on US Letter sheets
+// (12-up / 3-up) via "Save as PDF" in the browser's print dialog; a spot
+// picker handles partly used sheets. Print styles live in labels.css.
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { GreenLot, Notes, StockCoffee } from "@/lib/domain/types";
 import type { AdminOrder, OrderItem } from "@/lib/domain/orders";
@@ -12,6 +14,7 @@ import { Btn, CO } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
 import { Segmented, Tabs } from "./parts";
 import { StatusChip } from "./OrdersView";
+import { CC_BASES, CC_FLAVORS, CC_H, CC_MAX_SUPPS, CC_SUPPS, CC_W, ccLabel, concentrateLabelPng } from "./concentrate-label";
 
 const W = 975, H = 450;
 const COLORS = ["#EE8A1E", "#C43C7C", "#D93D18", "#8E2F52"];
@@ -142,14 +145,92 @@ function fromManual(m: Manual, idx: LotIndex): LabelData {
   };
 }
 
-// ---------- print: one label per 3.25 × 1.5 in page ----------
-function LgPrint({ labels, onDone }: { labels: LabelData[]; onDone: () => void }) {
+// ---------- sheets: US Letter, no gutters ----------
+// coffee: 2 × 6 at 3.25 × 1.5 in, 1 in margins · concentrate: 1 × 3 at 8 × 3.5 in, 0.25 in margins
+interface SheetSpec { cols: number; n: number; w: number; h: number; x: number; y: number; size: string }
+const SHEETS = {
+  coffee: { cols: 2, n: 12, w: 3.25, h: 1.5, x: 1, y: 1, size: "3.25 × 1.5 in" },
+  conc: { cols: 1, n: 3, w: 8, h: 3.5, x: .25, y: .25, size: "8 × 3.5 in" },
+} satisfies Record<string, SheetSpec>;
+type Format = "single" | "sheet";
+/** A print run: one node per label; null leaves that spot on the sheet blank. */
+interface Job { spec: SheetSpec; slots: (ReactNode | null)[] }
+
+const chunk = <T,>(a: T[], n: number) => Array.from({ length: Math.ceil(a.length / n) }, (_, i) => a.slice(i * n, i * n + n));
+const slotStyle = (sp: SheetSpec, i: number) => ({
+  position: "absolute", left: `${(sp.x + (i % sp.cols) * sp.w) / 8.5 * 100}%`, top: `${(sp.y + Math.floor(i / sp.cols) * sp.h) / 11 * 100}%`,
+  width: `${sp.w / 8.5 * 100}%`, height: `${sp.h / 11 * 100}%`,
+}) as const;
+const coffeeNode = (d: LabelData) => <LabelArt d={d} />;
+// eslint-disable-next-line @next/next/no-img-element -- a canvas-rendered data URL, printed at its own size
+const imgNode = (src: string) => <img src={src} alt="" style={{ display: "block", width: "100%", height: "100%" }} />;
+
+/** Mini letter sheet: filled spots show the label, empty ones are dashed. onToggle makes spots clickable. */
+function SheetMap({ spec, slots, onToggle, empty }: { spec: SheetSpec; slots: (ReactNode | null)[]; onToggle?: (i: number) => void; empty?: string }) {
+  return (
+    <div style={{ position: "relative", aspectRatio: "8.5 / 11", background: "#fff", border: "1px solid var(--hairline-strong)", borderRadius: 3, boxShadow: "var(--shadow-sm)" }}>
+      {Array.from({ length: spec.n }, (_, i) => {
+        const node = slots[i];
+        const st = { ...slotStyle(spec, i), padding: 0, margin: 0, overflow: "hidden", border: node ? "1px solid rgba(26,26,24,.12)" : "1px dashed var(--hairline-strong)", background: node ? "transparent" : "var(--surface-sunken)", display: "flex", alignItems: "center", justifyContent: "center" } as const;
+        const inner = node ?? <span style={CO.data({ fontSize: 10, color: "var(--ink-subtle)" })}>{empty ?? i + 1}</span>;
+        return onToggle
+          ? <button key={i} type="button" onClick={() => onToggle(i)} aria-pressed={!!node} aria-label={`Spot ${i + 1}`} style={{ ...st, cursor: "pointer" }}>{inner}</button>
+          : <div key={i} style={st}>{inner}</div>;
+      })}
+    </div>
+  );
+}
+
+function FormatPick({ value, onChange, spec }: { value: Format; onChange: (f: Format) => void; spec: SheetSpec }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <span style={CO.over({ fontSize: 9.5, color: "var(--ink-muted)" })}>Print on</span>
+      <Segmented options={[{ id: "single", label: "One per page" }, { id: "sheet", label: `Letter sheet · ${spec.n}` }]} value={value} onChange={onChange} />
+    </div>
+  );
+}
+
+/** Clickable spot picker for hand-made labels (manual and concentrate) — for partly used sheets. */
+function SpotPicker({ spec, spots, setSpots, node }: { spec: SheetSpec; spots: Set<number>; setSpots: (f: (s: Set<number>) => Set<number>) => void; node: ReactNode | null }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <span style={CO.over({ fontSize: 9.5, color: "var(--ink-muted)" })}>Spots to print</span>
+        <span style={{ display: "flex", gap: 6 }}>
+          <Btn size="sm" variant="outline" onClick={() => setSpots(() => new Set(Array.from({ length: spec.n }, (_, i) => i)))}>All</Btn>
+          <Btn size="sm" variant="outline" onClick={() => setSpots(() => new Set())}>Clear</Btn>
+        </span>
+      </div>
+      <SheetMap spec={spec} slots={spotRun(spec, spots, node)} onToggle={(i) => setSpots((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n; })} />
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, color: "var(--ink-subtle)" }}>Click a spot to add or remove it. Use this for partly used sheets.</span>
+    </div>
+  );
+}
+const spotRun = (spec: SheetSpec, spots: Set<number>, node: ReactNode | null) => Array.from({ length: spec.n }, (_, i) => (spots.has(i) ? node : null));
+
+// ---------- print ----------
+function LgPrint({ job, format, onDone }: { job: Job; format: Format; onDone: () => void }) {
+  const done = useRef(onDone);
+  useEffect(() => { done.current = onDone; });
   useEffect(() => {
-    addEventListener("afterprint", onDone);
-    const t = setTimeout(() => (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => print()), 120);
-    return () => { clearTimeout(t); removeEventListener("afterprint", onDone); };
-  }, [onDone]);
-  return createPortal(<div className="lg-print">{labels.map((d, i) => <div key={i} className="lg-page"><LabelArt d={d} /></div>)}</div>, document.body);
+    const after = () => done.current();
+    addEventListener("afterprint", after);
+    const t = setTimeout(() => (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => print()), 250);
+    return () => { clearTimeout(t); removeEventListener("afterprint", after); };
+  }, []);
+  const { spec, slots } = job;
+  const page = format === "sheet" ? "letter" : `${spec.w}in ${spec.h}in`;
+  return createPortal(
+    <div className="lg-print">
+      <style>{`@media print { @page { size: ${page}; margin: 0 } }`}</style>
+      {format === "sheet"
+        ? chunk(slots, spec.n).map((sheet, k) => (
+          <div key={k} className="lg-sheet">{sheet.map((node, i) => node && <div key={i} className="lg-slot" style={slotStyle(spec, i)}>{node}</div>)}</div>
+        ))
+        : slots.filter(Boolean).map((node, i) => <div key={i} className="lg-page" style={{ width: `${spec.w}in`, height: `${spec.h}in` }}>{node}</div>)}
+    </div>,
+    document.body,
+  );
 }
 
 // ---------- ui atoms ----------
@@ -166,17 +247,17 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 function Head({ label, right }: { label: string; right?: string }) {
   return (
     <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, paddingBottom: 9, borderBottom: "1px solid var(--hairline-strong)" }}>
-      <span style={CO.over({ fontSize: 10, color: "var(--ink-muted)" })}>{label}</span>
-      {right && <span style={CO.data({ fontSize: 11.5, color: "var(--ink-subtle)" })}>{right}</span>}
+      <span style={CO.over({ fontSize: 10, color: "var(--ink-muted)", whiteSpace: "nowrap", flexShrink: 0 })}>{label}</span>
+      {right && <span style={CO.data({ fontSize: 11.5, color: "var(--ink-subtle)", whiteSpace: "nowrap" })}>{right}</span>}
     </div>
   );
 }
-function Preview({ d, caption, children }: { d: LabelData | null; caption?: string; children: ReactNode }) {
+function Preview({ d, caption, children, size = SHEETS.coffee.size, art }: { d?: LabelData | null; caption?: string; children: ReactNode; size?: string; art?: ReactNode }) {
   return (
     <div className="lg-preview" style={{ display: "flex", flexDirection: "column", gap: 14, position: "sticky", top: "calc(var(--topbar-h) + 16px)" }}>
-      <Head label="Preview" right="3.25 × 1.5 in" />
+      <Head label="Preview" right={size} />
       <div style={{ boxShadow: "var(--shadow-pop)", borderRadius: 3, overflow: "hidden", border: "1px solid var(--hairline)" }}>
-        {d ? <LabelArt d={d} /> : <div style={{ aspectRatio: "975 / 450", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface-sunken)", fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink-subtle)", padding: 16, textAlign: "center" }}>Pick an order line to preview its label.</div>}
+        {(art ?? d) ? (art ?? <LabelArt d={d!} />) : <div style={{ aspectRatio: "975 / 450", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface-sunken)", fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink-subtle)", padding: 16, textAlign: "center" }}>Pick an order line to preview its label.</div>}
       </div>
       {caption && <div style={CO.data({ fontSize: 11.5, color: "var(--ink-subtle)" })}>{caption}</div>}
       {children}
@@ -184,11 +265,16 @@ function Preview({ d, caption, children }: { d: LabelData | null; caption?: stri
   );
 }
 const labelsWord = (n: number) => `${n} ${n === 1 ? "label" : "labels"}`;
+const copiesWord = (n: number) => `${n} ${n === 1 ? "copy" : "copies"}`;
+const saveBtn = (n: number, onClick: () => void, ready = true) => (
+  <Btn variant="primary" disabled={!n || !ready} style={{ width: "100%", justifyContent: "center" }} icon={<Icon name="download" size={14} />} onClick={onClick}>{`Save ${labelsWord(n)} as PDF`}</Btn>
+);
+type PrintProps = { onPrint: (job: Job) => void; format: Format; setFormat: (f: Format) => void };
 
 // ---------- from orders ----------
 type Row = { key: string; o: AdminOrder; it: OrderItem; d: LabelData };
-function FromOrders({ orders, idx, stock, roastedOn, setRoastedOn, onPrint }: {
-  orders: AdminOrder[]; idx: LotIndex; stock: StockCoffee[]; roastedOn: string; setRoastedOn: (v: string) => void; onPrint: (l: LabelData[]) => void;
+function FromOrders({ orders, idx, stock, roastedOn, setRoastedOn, onPrint, format, setFormat }: PrintProps & {
+  orders: AdminOrder[]; idx: LotIndex; stock: StockCoffee[]; roastedOn: string; setRoastedOn: (v: string) => void;
 }) {
   // Coffee lines from shop orders; merch and wholesale (bulk, private label) don't get bag labels here.
   const rows = useMemo<Row[]>(() => orders.filter((o) => o.channel !== "Wholesale").flatMap((o) =>
@@ -200,6 +286,9 @@ function FromOrders({ orders, idx, stock, roastedOn, setRoastedOn, onPrint }: {
   const picked = shown.filter((r) => sel.has(r.key));
   const count = picked.reduce((a, r) => a + r.it.qty, 0);
   const cur = shown.find((r) => r.key === active) ?? shown[0]; // a row hidden by the filter falls back to the first shown
+  // sheets fill in order, left to right, one label per bag
+  const run = picked.flatMap((r) => Array<LabelData>(r.it.qty).fill({ ...r.d, roastedOn }));
+  const sp = SHEETS.coffee, sheets = Math.ceil(count / sp.n), last = count % sp.n || sp.n;
   const toggle = (k: string) => setSel((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const allOn = shown.length > 0 && shown.every((r) => sel.has(r.key));
   const cell = { padding: "10px 14px", verticalAlign: "middle", borderBottom: "1px solid var(--hairline)" } as const;
@@ -254,15 +343,25 @@ function FromOrders({ orders, idx, stock, roastedOn, setRoastedOn, onPrint }: {
         <Field label="Roasted on" hint="Printed on every label in this run. Clear it to write the date by hand.">
           <input value={roastedOn} onChange={(e) => setRoastedOn(e.target.value)} style={{ ...inp, ...CO.data({ fontSize: 13 }) }} />
         </Field>
-        <Btn variant="primary" disabled={!count} style={{ width: "100%", justifyContent: "center" }} icon={<Icon name="download" size={14} />}
-          onClick={() => count && onPrint(picked.flatMap((r) => Array<LabelData>(r.it.qty).fill({ ...r.d, roastedOn })))}>{`Save ${labelsWord(count)} as PDF`}</Btn>
+        <FormatPick value={format} onChange={setFormat} spec={sp} />
+        {format === "sheet" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <SheetMap spec={sp} slots={run.slice(0, sp.n).map(coffeeNode)} empty="—" />
+            <span style={CO.data({ fontSize: 11.5, color: "var(--ink-subtle)" })}>
+              {count ? `Filled in order, left to right · ${sheets} ${sheets === 1 ? "sheet" : "sheets"} · ${last} of ${sp.n} used on the last` : "No lines selected"}
+            </span>
+          </div>
+        )}
+        {saveBtn(count, () => onPrint({ spec: sp, slots: run.map(coffeeNode) }))}
       </Preview>
     </div>
   );
 }
 
 // ---------- manual ----------
-function ManualLabel({ lots, idx, onPrint }: { lots: GreenLot[]; idx: LotIndex; onPrint: (l: LabelData[]) => void }) {
+function ManualLabel({ lots, idx, onPrint, format, setFormat }: PrintProps & { lots: GreenLot[]; idx: LotIndex }) {
+  const [spots, setSpots] = useState(() => new Set([0]));
+  const sp = SHEETS.coffee;
   const [m, setM] = useState<Manual>(() => ({ name: "House blend", sel: lots.slice(0, 2).map((l) => l.id), roast: 3, sizeId: "1lb", grind: "Whole bean", notes: "", roastedOn: today(), site: SITE, copies: "1" }));
   const up = <K extends keyof Manual>(k: K, v: Manual[K]) => setM((x) => ({ ...x, [k]: v }));
   const d = fromManual(m, idx);
@@ -323,26 +422,115 @@ function ManualLabel({ lots, idx, onPrint }: { lots: GreenLot[]; idx: LotIndex; 
           </div>
         </div>
       </div>
-      <Preview d={d} caption={`${copies} ${copies === 1 ? "copy" : "copies"} · one label per PDF page`}>
-        <Field label="Copies"><input type="number" min={1} max={500} value={m.copies} onChange={(e) => up("copies", e.target.value)} style={{ ...inp, ...CO.data({ fontSize: 13 }), maxWidth: 120 }} /></Field>
-        <Btn variant="primary" style={{ width: "100%", justifyContent: "center" }} icon={<Icon name="download" size={14} />} onClick={() => onPrint(Array<LabelData>(copies).fill(d))}>{`Save ${labelsWord(copies)} as PDF`}</Btn>
+      <Preview d={d} caption={format === "sheet" ? `${spots.size} of ${sp.n} spots on one letter sheet` : `${copiesWord(copies)} · one label per PDF page`}>
+        <FormatPick value={format} onChange={setFormat} spec={sp} />
+        {format === "sheet"
+          ? <SpotPicker spec={sp} spots={spots} setSpots={setSpots} node={coffeeNode(d)} />
+          : <Field label="Copies"><input type="number" min={1} max={500} value={m.copies} onChange={(e) => up("copies", e.target.value)} style={{ ...inp, ...CO.data({ fontSize: 13 }), maxWidth: 120 }} /></Field>}
+        {format === "sheet"
+          ? saveBtn(spots.size, () => onPrint({ spec: sp, slots: spotRun(sp, spots, coffeeNode(d)) }))
+          : saveBtn(copies, () => onPrint({ spec: sp, slots: Array.from({ length: copies }, () => coffeeNode(d)) }))}
+      </Preview>
+    </div>
+  );
+}
+
+// ---------- concentrate (8 × 3.5 in, the bottle wrap laid flat) ----------
+/** The label as a print-resolution PNG, redrawn when the recipe changes. */
+function useConcentrateLabel(baseId: string, flavorId: string, supps: string[]) {
+  const key = `${baseId}|${flavorId}|${supps.join(",")}`;
+  const [img, setImg] = useState<{ key: string; src: string } | null>(null);
+  useEffect(() => {
+    let live = true;
+    concentrateLabelPng(ccLabel(baseId, flavorId, supps)).then((src) => { if (live) setImg({ key, src }); });
+    return () => { live = false; };
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps -- key covers the recipe
+  return img?.key === key ? img.src : null;
+}
+
+function Concentrate({ onPrint, format, setFormat }: PrintProps) {
+  const [baseId, setBase] = useState(CC_BASES[0].id), [flavorId, setFlavor] = useState(CC_FLAVORS[0].id), [supps, setSupps] = useState<string[]>([]);
+  const [copies, setCopies] = useState("1"), [spots, setSpots] = useState(() => new Set([0]));
+  const sp = SHEETS.conc;
+  const src = useConcentrateLabel(baseId, flavorId, supps);
+  const nCopies = Math.max(1, Math.min(500, parseInt(copies, 10) || 1));
+  const n = format === "sheet" ? spots.size : nCopies;
+  const tile = (on: boolean) => ({ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "10px 12px", cursor: "pointer", textAlign: "left", border: `1px solid ${on ? "var(--brand)" : "var(--hairline-strong)"}`, background: on ? "var(--brand-soft)" : "var(--surface)", borderRadius: "var(--r-sm)", minWidth: 0 }) as const;
+  const tileT = { display: "block", minWidth: 0, fontFamily: "var(--font-sans)", fontSize: 13.5, lineHeight: 1.25, fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap" } as const;
+  const node = src ? imgNode(src) : null;
+  return (
+    <div className="lg-grid">
+      <div style={{ display: "flex", flexDirection: "column", gap: 22, minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Head label="Base" />
+          <div role="radiogroup" aria-label="Base" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 6 }}>
+            {CC_BASES.map((b) => (
+              <button type="button" role="radio" aria-checked={b.id === baseId} key={b.id} onClick={() => setBase(b.id)} style={tile(b.id === baseId)}>
+                <span style={tileT}>{b.name}</span>
+                <span style={{ display: "block", lineHeight: 1.3, ...CO.data({ fontSize: 11.5, color: "var(--ink-muted)", whiteSpace: "nowrap" }) }}>{b.caf} mg caffeine</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Head label="Flavor" />
+          <div role="radiogroup" aria-label="Flavor" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 6 }}>
+            {CC_FLAVORS.map((f) => (
+              <button type="button" role="radio" aria-checked={f.id === flavorId} key={f.id} onClick={() => setFlavor(f.id)} style={tile(f.id === flavorId)}>
+                <span style={tileT}>{f.name}</span>
+                <span style={{ display: "block", lineHeight: 1.3, ...CO.over({ fontSize: 9, color: "var(--ink-subtle)" }) }}>{f.notes.join(" / ")}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Head label="Add-ins" right={`${supps.length} of ${CC_MAX_SUPPS}`} />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(190px,1fr))", gap: 6 }}>
+            {CC_SUPPS.map((x) => {
+              const on = supps.includes(x.id), full = !on && supps.length >= CC_MAX_SUPPS;
+              return (
+                <button type="button" aria-pressed={on} key={x.id} disabled={full} onClick={() => setSupps((a) => (on ? a.filter((y) => y !== x.id) : [...a, x.id]))}
+                  style={{ ...tile(on), flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: 10, opacity: full ? .45 : 1, cursor: full ? "default" : "pointer" }}>
+                  <span style={tileT}>{x.name}</span>
+                  <span style={{ display: "block", lineHeight: 1.3, flexShrink: 0, ...CO.data({ fontSize: 11.5, color: on ? "var(--brand-hover)" : "var(--ink-muted)", whiteSpace: "nowrap" }) }}>{x.dose}</span>
+                </button>
+              );
+            })}
+          </div>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, color: "var(--ink-subtle)" }}>Up to three per bottle. Each is listed per 1.5 fl oz serving.</span>
+        </div>
+      </div>
+      <Preview size={sp.size} caption={format === "sheet" ? `${spots.size} of ${sp.n} spots on one letter sheet` : `${copiesWord(n)} · one label per PDF page`}
+        art={<div style={{ aspectRatio: `${CC_W} / ${CC_H}`, background: "var(--surface-sunken)" }}>{node}</div>}>
+        <FormatPick value={format} onChange={setFormat} spec={sp} />
+        {format === "sheet"
+          ? <SpotPicker spec={sp} spots={spots} setSpots={setSpots} node={node} />
+          : <Field label="Copies"><input type="number" min={1} max={500} value={copies} onChange={(e) => setCopies(e.target.value)} style={{ ...inp, ...CO.data({ fontSize: 13 }), maxWidth: 120 }} /></Field>}
+        {saveBtn(n, () => src && onPrint({ spec: sp, slots: format === "sheet" ? spotRun(sp, spots, imgNode(src)) : Array.from({ length: n }, () => imgNode(src)) }), !!src)}
       </Preview>
     </div>
   );
 }
 
 export function LabelGeneratorView({ orders, lots, stock }: { orders: AdminOrder[]; lots: GreenLot[]; stock: StockCoffee[] }) {
+  const [kind, setKind] = useState<"coffee" | "conc">("coffee");
   const [mode, setMode] = useState<"orders" | "manual">("orders");
+  const [format, setFormat] = useState<Format>("single");
   const [roastedOn, setRoastedOn] = useState(today);
-  const [job, setJob] = useState<LabelData[] | null>(null);
+  const [job, setJob] = useState<Job | null>(null);
   const idx = useMemo(() => indexLots(lots), [lots]);
+  const print = { onPrint: setJob, format, setFormat };
   return (
     <div className="lg-wrap" style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
-      <Tabs tabs={[{ id: "orders", label: "From orders" }, { id: "manual", label: "Manual label" }]} active={mode} onChange={setMode} />
-      {mode === "orders"
-        ? <FromOrders orders={orders} idx={idx} stock={stock} roastedOn={roastedOn} setRoastedOn={setRoastedOn} onPrint={setJob} />
-        : <ManualLabel lots={lots} idx={idx} onPrint={setJob} />}
-      {job && <LgPrint labels={job} onDone={() => setJob(null)} />}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <span style={CO.over({ fontSize: 9.5, color: "var(--ink-muted)" })}>Label</span>
+        <Segmented options={[{ id: "coffee", label: `Coffee bag · ${SHEETS.coffee.size}` }, { id: "conc", label: `Concentrate · ${SHEETS.conc.size}` }]} value={kind} onChange={setKind} />
+      </div>
+      {kind === "coffee" && <Tabs tabs={[{ id: "orders", label: "From orders" }, { id: "manual", label: "Manual label" }]} active={mode} onChange={setMode} />}
+      {kind === "conc" ? <Concentrate {...print} />
+        : mode === "orders" ? <FromOrders orders={orders} idx={idx} stock={stock} roastedOn={roastedOn} setRoastedOn={setRoastedOn} {...print} />
+        : <ManualLabel lots={lots} idx={idx} {...print} />}
+      {job && <LgPrint job={job} format={format} onDone={() => setJob(null)} />}
     </div>
   );
 }

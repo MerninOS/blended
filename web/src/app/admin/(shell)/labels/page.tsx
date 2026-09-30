@@ -17,7 +17,7 @@ export default async function LabelsPage() {
     .then(([orders, lots, stock]) => ({ orders, lots, stock }), (error: unknown) => ({ error }));
   return (
     <>
-      <TopBar title="Label generator" subtitle="Bag labels from shop orders, or made by hand. Each prints at 3.25 × 1.5 in." breadcrumbs="Operations / Labels" />
+      <TopBar title="Label generator" subtitle="Coffee bag and concentrate labels, from shop orders or made by hand." breadcrumbs="Operations / Labels" />
       {"orders" in res ? <LabelGeneratorView orders={res.orders} lots={res.lots} stock={res.stock} /> : <AdminError what="orders and the green catalog" error={res.error} />}
     </>
   );

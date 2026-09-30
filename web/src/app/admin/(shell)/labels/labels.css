@@ -5,11 +5,13 @@
 @media (max-width: 640px) { .lg-wrap { padding: 16px 14px 40px } .lg-grid { gap: 24px } }
 @media screen { .lg-print { display: none } }
 @media print {
-  @page { size: 3.25in 1.5in; margin: 0 }
+  /* @page size is set per run by the print portal: the label size, or US Letter for sheets */
   html, body { margin: 0 !important; padding: 0 !important; background: #fff !important }
   body > *:not(.lg-print) { display: none !important }
   .lg-print { display: block }
-  .lg-page { width: 3.25in; height: 1.5in; overflow: hidden; break-after: page; page-break-after: always; -webkit-print-color-adjust: exact; print-color-adjust: exact }
-  .lg-page:last-child { break-after: auto; page-break-after: auto }
-  .lg-page svg { width: 3.25in !important; height: 1.5in !important }
+  .lg-page, .lg-sheet { overflow: hidden; break-after: page; page-break-after: always; -webkit-print-color-adjust: exact; print-color-adjust: exact }
+  .lg-page:last-child, .lg-sheet:last-child { break-after: auto; page-break-after: auto }
+  .lg-sheet { position: relative; width: 8.5in; height: 11in }
+  .lg-slot { overflow: hidden }
+  .lg-page > *, .lg-slot > * { display: block; width: 100% !important; height: 100% !important }
 }
