@@ -40,6 +40,7 @@ const STOCK = gql`
           title
           description
           featuredImage { url(transform: { maxWidth: 800 }) }
+          images(first: 6) { nodes { url(transform: { maxWidth: 1400 }) altText } }
           variants(first: 10) {
             nodes { id availableForSale price { amount } selectedOptions { name value } }
           }
@@ -51,6 +52,15 @@ const STOCK = gql`
           lead: metafield(namespace: "blended", key: "lead_time") { value }
           availability: metafield(namespace: "blended", key: "availability") { value }
           badge: metafield(namespace: "blended", key: "badge") { value }
+          kind: metafield(namespace: "blended", key: "kind") { value }
+          process: metafield(namespace: "blended", key: "process") { value }
+          tasting: metafield(namespace: "blended", key: "tasting_words") { value }
+          farm: metafield(namespace: "blended", key: "farm") { value }
+          producer: metafield(namespace: "blended", key: "producer") { value }
+          altitude: metafield(namespace: "blended", key: "altitude") { value }
+          varietal: metafield(namespace: "blended", key: "varietal") { value }
+          harvest: metafield(namespace: "blended", key: "harvest") { value }
+          story: metafield(namespace: "blended", key: "story") { value }
         }
       }
     }

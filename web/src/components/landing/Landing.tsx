@@ -27,7 +27,7 @@ function LandingCart() {
   );
 }
 
-const LAB = "/lab", BUILD = "/lab#build", SHOP = "/lab#coffees";
+const LAB = "/lab", BUILD = "/lab#build", SHOP = "/coffees";
 
 const Arrow = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>;
 
@@ -174,17 +174,17 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
       {menu && <div className="lp-menu-scrim" onClick={() => setMenu(false)} />}
 
       <main>
-        <section className="lp-hero" aria-label="Build your blend">
+        <section className="lp-hero" aria-label="Know the farm. Choose the cup.">
           <HeroVideo src={data.media.heroVideo} poster={data.media.heroPoster} />
           <div className="lp-shade" />
           <div className="lp-hero-copy">
             <div className="lp-wrap" style={{ display: "flex", flexDirection: "column", gap: 24, alignItems: "flex-start" }}>
               <div className="lp-over" style={{ color: "rgba(255,255,255,.85)" }}><span style={{ color: "var(--brand)" }}>●</span> Sourced direct · Roasted to order</div>
-              <h1 className="lp-disp" style={{ fontSize: "clamp(40px,min(8.5vw,14.5vw),150px)", color: "#fff", lineHeight: .92 }}>Build<br /><span style={{ whiteSpace: "nowrap" }}>your <span style={{ color: "var(--brand)" }}>blend.</span></span></h1>
-              <p style={{ fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.5, margin: 0, maxWidth: "40ch", color: "rgba(255,255,255,.88)", textWrap: "pretty" }}>Coffee from farmers we know by name. Pick up to four, set the ratios, and we roast it to order in your own bag.</p>
-              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "16px 28px", marginTop: 8 }}>
-                <a className="lp-btn lg light" href={LAB} onClick={toLab}>Build your blend <Arrow /></a>
-                <Link className="lp-over" href={SHOP} style={{ color: "#fff", borderBottom: "1px solid currentColor", paddingBottom: 3 }}>Shop our coffees</Link>
+              <h1 className="lp-disp" style={{ fontSize: "clamp(38px,7vw,112px)", color: "#fff", lineHeight: .95 }}>Know the farm.<br />Choose the <span style={{ color: "var(--brand)" }}>cup.</span></h1>
+              <p style={{ fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.5, margin: 0, maxWidth: "44ch", color: "rgba(255,255,255,.88)", textWrap: "pretty" }}>We buy from farmers we know by name and roast every order fresh. Start with a coffee from this week&apos;s shelf, or combine them into a blend that is yours alone.</p>
+              <div className="lp-hero-ctas" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, marginTop: 8 }}>
+                <Link className="lp-btn lg light" href={SHOP}>Explore our offerings <Arrow /></Link>
+                <a className="lp-btn lg ghost" href={LAB} onClick={toLab}>Build your blend <Arrow /></a>
               </div>
             </div>
           </div>
@@ -220,7 +220,7 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
                     <span className="lp-over" style={{ color: "rgba(255,255,255,.75)", fontSize: 10.5 }}>{o.where}</span>
                     <h3 className="lp-disp" style={disp("clamp(36px,3.6vw,56px)")}>{o.name}</h3>
                     <p>{o.desc}</p>
-                    <Link className="lp-over" href={BUILD} style={{ color: "#fff", fontSize: 10.5, display: "inline-flex", gap: 8, alignItems: "center", marginTop: 4 }}>Blend with {o.name} <Arrow /></Link>
+                    <Link className="lp-over" href={SHOP} style={{ color: "#fff", fontSize: 10.5, display: "inline-flex", gap: 8, alignItems: "center", marginTop: 4 }}>Meet the producers <Arrow /></Link>
                   </div>
                 </div>
               ))}

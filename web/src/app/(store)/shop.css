@@ -126,6 +126,35 @@
 .pd-sticky .sh-btn { margin-left: auto; height: 48px }
 .pd-rel { margin-top: clamp(72px, 9vw, 130px) }
 
+/* our coffees (Coffee Collection.html / Coffee Product.html) */
+.co-roast { display: flex; align-items: center; gap: 8px; font-size: 10px; color: var(--ink-muted) }
+.co-bars { display: flex; gap: 2px }
+.co-roast i { display: block; width: 5px; height: 12px; border-radius: 1px; background: var(--hairline) }
+.co-roast b, .cp-roast b { font-weight: 600; color: var(--ink) }
+.co-roast b { font-weight: 500; color: inherit; margin-left: 2px }
+.co-notes { font-size: 13.5px; color: var(--ink); margin: 0; line-height: 1.45 }
+.cp-notes { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--font-mono); font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--ink) }
+.cp-roast { display: flex; align-items: center; gap: 12px; font-size: 10.5px; color: var(--ink-muted) }
+.cp-roast .bar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; width: 140px }
+.cp-roast .bar i { height: 8px; border-radius: 1px; background: var(--hairline) }
+.sh-chip.cp-size { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; height: auto; padding: 10px 14px; min-width: 96px }
+.cp-size small { font-family: var(--font-mono); font-variation-settings: var(--data-settings); font-size: 11.5px; color: var(--ink-muted); letter-spacing: 0; text-transform: none; text-decoration: none }
+.cp-size[aria-checked="true"] small { color: rgba(255, 255, 255, .72) }
+.cp-spec { display: grid; grid-template-columns: auto minmax(0, 1fr); margin: 0; font-size: 14px }
+.cp-spec dt, .cp-spec dd { margin: 0; padding: 10px 0; border-top: 1px solid var(--hairline) }
+.cp-spec dt { font-size: 10px; color: var(--ink-muted); padding-right: 24px; display: flex; align-items: center }
+.cp-spec dd { font-family: var(--font-mono); font-variation-settings: var(--data-settings); font-size: 13px; text-align: right; color: var(--ink); overflow-wrap: anywhere }
+.cp-recipe { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline); margin-bottom: 12px }
+.cp-recipe div { padding: 10px 0; display: flex; flex-direction: column; gap: 4px }
+.cp-recipe span { font-size: 9.5px; color: var(--ink-muted) }
+.cp-recipe b { font-family: var(--font-mono); font-variation-settings: var(--data-settings); font-weight: 500; font-size: 14px; color: var(--ink) }
+.cp-story { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 80px); align-items: center; margin-top: clamp(72px, 9vw, 130px); padding-top: clamp(48px, 6vw, 88px); border-top: 1px solid var(--hairline) }
+.cp-story .sh-media { aspect-ratio: 5/4 }
+.cp-story p { margin: 0; font-size: 16px; line-height: 1.65; color: var(--ink-muted); max-width: 52ch; text-wrap: pretty }
+.cp-blend { display: flex; justify-content: space-between; align-items: center; gap: 20px 40px; flex-wrap: wrap; margin-top: clamp(56px, 7vw, 100px); padding: clamp(28px, 4vw, 48px) 0; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--hairline) }
+.cp-blend p { margin: 8px 0 0; font-size: 15px; color: var(--ink-muted); max-width: 52ch }
+@media (max-width:900px) { .cp-story { grid-template-columns: minmax(0, 1fr) } }
+
 @media (max-width:1100px) { .sh-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) } }
 @media (max-width:900px) {
   .sh-grid, .pd-rel .sh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) }

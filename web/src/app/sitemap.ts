@@ -11,6 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [stock, shop, merch] = await Promise.all([getStockCoffees().catch(() => []), getShopInfo(), getMerch().catch(() => [])]);
   return [
     { url: abs("/"), changeFrequency: "daily", priority: 1 },
+    { url: abs("/coffees"), changeFrequency: "daily", priority: 0.9 },
     { url: abs("/lab"), changeFrequency: "daily", priority: 0.9 },
     { url: abs("/wholesale"), changeFrequency: "weekly", priority: 0.6 },
     ...stock.map((c) => ({ url: abs(`/coffees/${c.id}`), changeFrequency: "weekly" as const, priority: 0.8, ...(c.image ? { images: [absImg(c.image)!] } : {}) })),

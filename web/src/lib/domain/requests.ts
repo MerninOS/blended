@@ -3,7 +3,7 @@
 import type { SelItem, ShopSizeId } from "./types";
 
 export type RetailLine =
-  | { kind: "stock"; skuId: string; sizeId: ShopSizeId; qty: number }
+  | { kind: "stock"; skuId: string; sizeId: ShopSizeId; qty: number; grind?: string }
   | { kind: "blend"; name: string; sel: SelItem[]; roast: number | null; sizeId: ShopSizeId; qty: number }
   | { kind: "item"; variantId: string; qty: number };
 

@@ -39,6 +39,16 @@ async function ensureProductMetafields(q: AdminQ, log: (s: string) => void) {
     ["subtitle", "Subtitle", "single_line_text_field"],
     ["lead_time", "Lead time", "single_line_text_field"],
     ["availability", "Availability note", "single_line_text_field"],
+    // coffee product page (all optional)
+    ["kind", "Kind (single or blend)", "single_line_text_field"],
+    ["process", "Process", "single_line_text_field"],
+    ["tasting_words", "Tasting words", "list.single_line_text_field"],
+    ["farm", "Farm / washing station", "single_line_text_field"],
+    ["producer", "Producer", "single_line_text_field"],
+    ["altitude", "Altitude", "single_line_text_field"],
+    ["varietal", "Varietal", "single_line_text_field"],
+    ["harvest", "Harvest", "single_line_text_field"],
+    ["story", "Producer story", "multi_line_text_field"],
   ];
   for (const [key, name, type] of defs) {
     const r = await q(MF_CREATE, { definition: { namespace: "blended", key, name, type, ownerType: "PRODUCT", pin: true, access: { storefront: "PUBLIC_READ" } } });
@@ -173,6 +183,10 @@ async function seedStock(q: AdminQ, stock: StockCoffee[], image: ImageSource, lo
         mf("wholesale_price", "number_decimal", s.price.toFixed(2)), mf("subtitle", "single_line_text_field", s.sub),
         mf("lead_time", "single_line_text_field", s.lead), mf("availability", "single_line_text_field", s.avail),
         ...(s.tag ? [mf("badge", "single_line_text_field", s.tag)] : []),
+        ...([["process", s.process], ["farm", s.farm], ["producer", s.producer], ["altitude", s.altitude], ["varietal", s.varietal], ["harvest", s.harvest]] as const)
+          .flatMap(([k, v]) => (v ? [mf(k, "single_line_text_field", v)] : [])),
+        ...(s.tasting?.length ? [mf("tasting_words", "list.single_line_text_field", JSON.stringify(s.tasting))] : []),
+        ...(s.story ? [mf("story", "multi_line_text_field", s.story)] : []),
       ],
     } });
     check(r.productCreate, `Product ${s.name}`);

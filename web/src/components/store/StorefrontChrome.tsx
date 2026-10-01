@@ -5,14 +5,15 @@ import { useEffect, useState } from "react";
 import { CartButton } from "./CartDrawer";
 
 const TABS = [
-  { href: "/lab", id: "retail", label: "Retail", note: "Bags for home · free shipping over $50" },
+  { href: "/coffees", id: "coffees", label: "Coffees", note: "Single origins and house blends, roasted to order" },
+  { href: "/lab", id: "retail", label: "Coffee Lab", note: "Build your own blend · free shipping over $50" },
   { href: "/collections/merch", id: "merch", label: "Merch", note: "Caps, tees and mugs from the roastery" },
   { href: "/collections/gear", id: "gear", label: "Gear", note: "The brew gear we use on our own bar" },
   { href: "/wholesale", id: "wholesale", label: "Wholesale", note: "Cafés and private label · 5 lb minimum" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"] | null;
 const tabOf = (path: string): TabId =>
-  path.startsWith("/wholesale") ? "wholesale" : path.startsWith("/collections/merch-and-gear") || path.startsWith("/products/") ? null
+  path.startsWith("/wholesale") ? "wholesale" : path.startsWith("/coffees") ? "coffees" : path.startsWith("/collections/merch-and-gear") || path.startsWith("/products/") ? null
     : path.startsWith("/collections/merch") ? "merch" : path.startsWith("/collections/gear") ? "gear" : "retail";
 
 export function StorefrontChrome() {

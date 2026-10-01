@@ -4,7 +4,7 @@ import "server-only";
 import type { Catalog, GreenLot, SelItem } from "@/lib/domain/types";
 import type { RetailLine } from "@/lib/domain/requests";
 import {
-  G_PER_LB, MAX_BAGS, stockBagPrice, MAX_COMPONENTS, bagPrice, indexLots, minPctFor, minsFit, minsTotalG,
+  G_PER_LB, MAX_BAGS, grindOf, stockBagPrice, MAX_COMPONENTS, bagPrice, indexLots, minPctFor, minsFit, minsTotalG,
   greenUsageG, retailSel, roastName, roastOf, round2, shippingFor, shopSize, type LotIndex,
 } from "@/lib/domain/coffee";
 import { env } from "@/lib/env";
@@ -89,7 +89,7 @@ export function priceRetailCart(lines: RetailLine[], cat: Catalog, opts: { demo?
       if (!sku || !v) throw new CheckoutError("A coffee in your cart is no longer sold in that size.");
       if (!v.available) throw new CheckoutError(`${sku.name} (${size.label}) is sold out.`);
       goods += v.price * qty;
-      return { variantId: v.id, quantity: qty, customAttributes: [{ key: "Grind", value: "Whole bean" }] };
+      return { variantId: v.id, quantity: qty, customAttributes: [{ key: "Grind", value: grindOf(l.grind) }] };
     }
     const batchG = size.lb * qty * G_PER_LB;
     const sel = checkBlend(l.sel, batchG, idx);

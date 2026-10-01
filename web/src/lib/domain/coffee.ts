@@ -119,6 +119,10 @@ export const SHOP_SIZES: ShopSize[] = [
   { id: "5lb", label: "5 lb", lb: 5, mult: 0.84, note: "café size" },
 ];
 export const shopSize = (id: string) => SHOP_SIZES.find((s) => s.id === id) || SHOP_SIZES[1];
+/** Grind choices for our coffees (the Coffee Lab ships blends whole bean). */
+export const GRINDS = ["Whole bean", "Espresso", "Pour over", "Drip", "French press"] as const;
+export type Grind = (typeof GRINDS)[number];
+export const grindOf = (g: unknown): Grind => (GRINDS as readonly string[]).includes(String(g)) ? g as Grind : "Whole bean";
 export const SHIP_FLAT = 6.5;
 export const SHIP_FREE = 50;
 export const MAX_BAGS = 24;

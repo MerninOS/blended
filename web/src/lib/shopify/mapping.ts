@@ -52,7 +52,25 @@ export type SfProduct = {
   featuredImage: { url: string } | null;
   variants: { nodes: { id: string; availableForSale: boolean; price: { amount: string }; selectedOptions: { name: string; value: string }[] }[] };
   roast: MF; notes: MF; reviews: MF; wholesale: MF; subtitle: MF; lead: MF; availability: MF; badge: MF;
+  images?: { nodes: { url: string; altText: string | null }[] };
+  kind?: MF; process?: MF; tasting?: MF; farm?: MF; producer?: MF; altitude?: MF; varietal?: MF; harvest?: MF; story?: MF;
 };
+
+/** A list metafield (JSON array) or plain text split on commas / slashes / new lines. */
+const words = (v: string | undefined) => {
+  if (!v) return undefined;
+  try { const j = JSON.parse(v); if (Array.isArray(j)) return j.map(String).filter(Boolean); } catch { /* plain text */ }
+  const out = v.split(/\s*(?:,|\/|\n)\s*/).map((x) => x.trim()).filter(Boolean);
+  return out.length ? out : undefined;
+};
+const txt = (m: MF | undefined) => m?.value?.trim() || undefined;
+/** "Single origin · Colombia · Huila" → kind + "Colombia · Huila". */
+export function subParts(sub: string): { kind: "single" | "blend"; origin: string } {
+  const parts = sub.split(/\s*·\s*/).filter(Boolean);
+  const blend = /blend/i.test(parts[0] ?? "");
+  const lead = /^(single origin|house blend|blend|co-?ferment|decaf)$/i.test(parts[0] ?? "");
+  return { kind: blend ? "blend" : "single", origin: (lead ? parts.slice(1) : parts).join(" · ") };
+}
 
 export function stockFromProduct(p: SfProduct): StockCoffee {
   const variants: StockCoffee["variants"] = {};
@@ -75,5 +93,10 @@ export function stockFromProduct(p: SfProduct): StockCoffee {
     blurb: p.description,
     image: p.featuredImage?.url ?? null,
     reviews: json<CoffeeReviewsData | null>(p.reviews?.value, null),
+    kind: (txt(p.kind)?.toLowerCase().startsWith("blend") ? "blend" : txt(p.kind) ? "single" : undefined) ?? subParts(p.subtitle?.value || "").kind,
+    origin: subParts(p.subtitle?.value || "").origin || undefined,
+    process: txt(p.process), tasting: words(p.tasting?.value), farm: txt(p.farm), producer: txt(p.producer),
+    altitude: txt(p.altitude), varietal: txt(p.varietal), harvest: txt(p.harvest), story: txt(p.story),
+    images: p.images?.nodes.map((i) => ({ url: i.url, alt: i.altText || p.title })),
   };
 }

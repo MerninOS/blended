@@ -18,6 +18,7 @@ export interface CartLine {
   qty: number;
   unit: number;                // display price; the server re-prices
   roast?: number;
+  grind?: string;              // stock lines; blends ship whole bean
   variantId?: string;
   handle?: string;
   image?: string | null;

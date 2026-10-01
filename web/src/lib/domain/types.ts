@@ -55,6 +55,18 @@ export interface StockCoffee {
   blurb: string;
   image: string | null;
   reviews?: CoffeeReviewsData | null;
+  /** Product page details (optional blended.* metafields; rows without a value are hidden). */
+  kind?: "single" | "blend";
+  origin?: string;       // "Colombia · Huila", or the components' countries for a blend
+  process?: string;
+  tasting?: string[];    // "Red apple", "Panela"… (falls back to the top cupping scores)
+  farm?: string;         // farm or washing station; a blend lists its components
+  producer?: string;
+  altitude?: string;
+  varietal?: string;
+  harvest?: string;
+  story?: string;        // "Who grew it"
+  images?: { url: string; alt: string }[];
 }
 
 /** A component of a custom blend. */

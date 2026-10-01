@@ -62,7 +62,7 @@ export function CartDrawer({ onNewBlend }: { onNewBlend?: () => void }) {
     const lines: RetailLine[] = items.map((it) => it.kind === "item"
       ? { kind: "item", variantId: it.variantId!, qty: it.qty }
       : it.kind === "stock"
-        ? { kind: "stock", skuId: it.skuId!, sizeId: it.sizeId!, qty: it.qty }
+        ? { kind: "stock", skuId: it.skuId!, sizeId: it.sizeId!, qty: it.qty, grind: it.grind }
         : { kind: "blend", name: it.name, sel: it.sel ?? [], roast: it.roastOverride ?? null, sizeId: it.sizeId!, qty: it.qty });
     try {
       const res = await fetch("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lines }) });
@@ -118,7 +118,7 @@ export function CartDrawer({ onNewBlend }: { onNewBlend?: () => void }) {
                     : <span style={{ ...disp, fontSize: 14.5, color: "var(--ink)", lineHeight: 1.15, flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>{it.name}</span>}
                   <span style={{ ...mono, fontSize: 13, color: "var(--ink)" }}>{money(it.unit * it.qty)}</span>
                 </div>
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ink-muted)" }}>{it.kind === "item" ? it.sizeLabel : `${it.kind === "blend" ? "Custom blend" : "Our coffee"} · ${it.sizeLabel} · ${roastName(it.roast ?? 3)} roast`}</span>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ink-muted)" }}>{it.kind === "item" ? it.sizeLabel : `${it.kind === "blend" ? "Custom blend" : "Our coffee"} · ${it.sizeLabel} · ${it.grind && it.grind !== "Whole bean" ? `${it.grind} grind` : `${roastName(it.roast ?? 3)} roast`}`}</span>
                 {it.parts && <span style={{ ...mono, fontSize: 11, color: "var(--ink-subtle)", lineHeight: 1.45 }}>{it.parts.map((p) => `${p.pct}% ${p.name}`).join(" · ")}</span>}
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 2 }}>

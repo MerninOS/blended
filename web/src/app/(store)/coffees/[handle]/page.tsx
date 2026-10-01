@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCatalog, getStockCoffees } from "@/lib/catalog";
-import { SHOP_SIZES, money, stockBagPrice } from "@/lib/domain/coffee";
 import { abs, absImg, describe, productJsonLd, roastLabel } from "@/lib/seo";
-import { CatalogProvider } from "@/components/store/catalog-context";
-import { ShopView } from "@/components/store/ShopView";
+import { CoffeeProductView } from "@/components/store/coffee/CoffeeProductView";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { disp, mono, over } from "@/components/ui/primitives";
+import "../../shop.css";
 
 export const revalidate = 300;
 
@@ -21,7 +18,7 @@ export async function generateMetadata({ params }: PageProps<"/coffees/[handle]"
   const c = (await getStockCoffees().catch(() => [])).find((x) => x.id === handle);
   if (!c) return { title: "Coffee not found" };
   const description = describe(c);
-  const img = absImg(c.image);
+  const img = absImg(c.images?.[0]?.url ?? c.image);
   return {
     title: `${c.name} · ${roastLabel(c.roast)} roast`,
     description,
@@ -32,25 +29,25 @@ export async function generateMetadata({ params }: PageProps<"/coffees/[handle]"
 }
 
 export default async function CoffeePage({ params }: PageProps<"/coffees/[handle]">) {
-  const { handle } = await params;
-  const catalog = await getCatalog();
+  const [{ handle }, catalog] = await Promise.all([params, getCatalog()]);
   const c = catalog.stock.find((x) => x.id === handle);
   if (!c) notFound();
-  const from = Math.min(...SHOP_SIZES.map((s) => stockBagPrice(c, s)));
-  const intro = (
-    <section style={{ maxWidth: "var(--content-max)", margin: "0 auto", padding: "28px 24px 4px", display: "flex", flexDirection: "column", gap: 10 }}>
-      <nav aria-label="Breadcrumb" style={{ ...over, fontSize: 10, color: "var(--ink-subtle)" }}>
-        <Link href="/lab#coffees" style={{ color: "inherit", textDecoration: "none" }}>Our coffees</Link> / {c.name}
-      </nav>
-      <h1 style={{ ...disp, fontSize: "clamp(28px, 4vw, 44px)", margin: 0, color: "var(--ink)", lineHeight: 1 }}>{c.name}</h1>
-      <p style={{ margin: 0, ...mono, fontSize: 12.5, color: "var(--ink-muted)" }}>{roastLabel(c.roast)} roast · {c.sub} · from {money(from)}</p>
-      {c.blurb && <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: 15, lineHeight: 1.6, color: "var(--ink)", maxWidth: "68ch" }}>{c.blurb}</p>}
-    </section>
-  );
+  // Related: closest roast first.
+  const related = catalog.stock.filter((x) => x.id !== c.id).sort((a, b) => Math.abs(a.roast - c.roast) - Math.abs(b.roast - c.roast)).slice(0, 4);
+  // A single origin that's also a green lot opens the Coffee Lab with it already in the blend.
+  const lot = c.kind !== "blend" ? catalog.green.find((l) => l.name.toLowerCase() === c.name.toLowerCase() && l.avail > 0) : undefined;
+  const blendHref = lot ? `/lab?blend=${encodeURIComponent(`${lot.id}:100`)}#build` : "/lab#build";
+  const kind = c.kind === "blend" ? "House blends" : "Single origin";
   return (
-    <CatalogProvider catalog={catalog}>
+    <>
       <JsonLd data={productJsonLd(c)} />
-      <ShopView initialSkuId={c.id} productPage intro={intro} />
-    </CatalogProvider>
+      <JsonLd data={{ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: abs("/") },
+        { "@type": "ListItem", position: 2, name: "Our coffees", item: abs("/coffees") },
+        { "@type": "ListItem", position: 3, name: kind, item: abs(`/coffees#${c.kind === "blend" ? "blend" : "single"}`) },
+        { "@type": "ListItem", position: 4, name: c.name, item: abs(`/coffees/${c.id}`) },
+      ] }} />
+      <CoffeeProductView c={c} related={related} blendHref={blendHref} />
+    </>
   );
 }
