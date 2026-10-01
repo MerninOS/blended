@@ -1,8 +1,9 @@
 "use client";
-// Coffee Lab (ShopView.jsx): build a blend — choose coffees, set the ratios and
-// roast, pick a bag size — then add it to the cart. Single coffees by the bag
-// live on /coffees. Checkout happens from the cart drawer.
-import { useEffect, useRef, useState } from "react";
+// Coffee Lab (ShopView.jsx): build a blend, either from one of our house blends
+// or from scratch — set the coffees, ratios and roast, pick a bag size — then
+// add it to the cart. Single coffees by the bag live on /coffees. Checkout
+// happens from the cart drawer.
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SelItem, ShopSizeId } from "@/lib/domain/types";
 import {
@@ -13,15 +14,20 @@ import { Btn, LineItem, RuleHead, Step, Stepper, disp, mono, over } from "@/comp
 import { Icon } from "@/components/ui/Icon";
 import { useCatalog } from "./catalog-context";
 import { BlendRatios, TastingWheel } from "./BlendBuilder";
-import { BoxHero } from "./BoxHero";
+import { BoxHero, type HeroOption } from "./BoxHero";
+import { startingBlends, type StartingBlend } from "@/lib/domain/starting-blends";
 import { BlendCard, BoxViewer, bcCardData } from "./BlendCard";
 import { CartDrawer } from "./CartDrawer";
 import { cartStore } from "./cart-store";
 import { trackAddToCart } from "@/components/tracking/analytics";
 
 export function ShopView() {
-  const { idx } = useCatalog();
+  const { idx, stock, green } = useCatalog();
   const router = useRouter();
+  const blends = useMemo(() => startingBlends(stock, green), [stock, green]);
+  const [mode, setMode] = useState<HeroOption["id"]>(blends.length ? "house" : "scratch");
+  const [startId, setStartId] = useState<string | null>(null);
+  const start = blends.find((b) => b.id === startId) ?? null;
   const [sel, setSel] = useState<SelItem[]>([]);
   const [roast, setRoast] = useState<number | null>(null);
   const [blendName, setBlendName] = useState("");
@@ -35,7 +41,7 @@ export function ShopView() {
   const perLb = sel.length ? retailSel(sel, idx) : 0;
   const priceFor = (s: ShopSize) => bagPrice(perLb, s);
   const vals = weighted(sel, idx, roast);
-  const name = blendName.trim() || "Your blend";
+  const name = blendName.trim() || (start ? `Your ${start.name}` : "Your blend");
 
   const unit = priceFor(size);
   const goods = unit * qty;
@@ -46,7 +52,7 @@ export function ShopView() {
   const batchG = size.lb * qty * G_PER_LB;
   const minsOk = !sel.length || minsFit(sel, batchG, idx);
   const blocked = emptyBlend || qty < 1 || !minsOk;
-  const blocker = emptyBlend ? "Add at least one coffee to your blend."
+  const blocker = emptyBlend ? (mode === "house" ? "Pick a blend to start from." : "Add at least one coffee to your blend.")
     : !minsOk ? `${qty} × ${size.label} is ${Math.round(batchG).toLocaleString()} g — these coffees need ${minsTotalG(sel, idx).toLocaleString()} g between them. Order a bigger size, more bags, or drop one.`
     : null;
 
@@ -64,8 +70,13 @@ export function ShopView() {
     trackAddToCart({ kind: "blend", name, price: unit, quantity: qty, variantName: size.label, image: null },
       items.reduce((a, x) => a + x.unit * x.qty, 0), items.map((x) => x.name));
     setJustAdded(true); setTimeout(() => setJustAdded(false), 1600);
-    setTimeout(() => { setSel([]); setRoast(null); setBlendName(""); setQty(1); }, 320);
+    setTimeout(() => { setSel([]); setRoast(null); setBlendName(""); setQty(1); setStartId(null); }, 320);
   };
+  const pick = (id: HeroOption["id"]) => {
+    if (id !== mode) { setSel([]); setRoast(null); setStartId(null); }
+    setMode(id); scrollToStart();
+  };
+  const startFrom = (b: StartingBlend) => { setStartId(b.id); setSel(b.sel.map((x) => ({ ...x }))); setRoast(null); };
   // Deep links: #build (or ?mode=blend) scrolls to the first step, ?blend=lotA:70,lotB:30 starts from a
   // recipe (the landing page's house blend, a coffee page), ?cart=open opens the cart. Old #coffees links
   // (the roster used to live here) go to /coffees.
@@ -74,24 +85,42 @@ export function ShopView() {
     if (h === "coffees" || q.get("mode") === "shop") { router.replace("/coffees"); return; }
     const preset = (q.get("blend") || "").split(",").map((x) => x.split(":")).filter(([id, p]) => idx.has(id) && Number(p) > 0).map(([id, p]) => ({ id, pct: Math.round(Number(p)) }));
     const usePreset = preset.length > 0 && preset.length <= 4 && preset.reduce((a, s) => a + s.pct, 0) === 100;
-    if (usePreset || h === "build" || q.get("mode") === "blend") setTimeout(() => { if (usePreset) setSel(preset); scrollToStart(); }, 350);
+    // a preset that is one of our blends opens it under "Start from one of our blends"
+    const same = (a: SelItem[], b: SelItem[]) => a.length === b.length && a.every((x) => b.some((y) => y.id === x.id && y.pct === x.pct));
+    const ours = usePreset ? blends.find((b) => same(b.sel, preset)) : undefined;
+    if (usePreset || h === "build" || q.get("mode") === "blend") setTimeout(() => {
+      if (ours) { setMode("house"); startFrom(ours); } else if (usePreset) { setMode("scratch"); setSel(preset); }
+      scrollToStart();
+    }, 350);
     if (q.get("cart") === "open") cartStore.setOpen(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- one-time read of the URL on mount
 
+  const options: HeroOption[] = [
+    ...(blends.length ? [{ id: "house" as const, icon: "pkg", title: "Start from one of our blends", desc: "Open a house blend in the lab, then change the coffees, ratios or roast until it's yours.",
+      meta: `${blends.length} house blend${blends.length === 1 ? "" : "s"} · edit anything` }] : []),
+    { id: "scratch", icon: "flame", title: "Build from scratch", desc: "Combine up to four green lots, move the ratios, set the roast, and watch the cup change as you go.", meta: "Priced from your ratios · no extra fee" },
+  ];
+
   return (<>
-    <BoxHero />
+    <BoxHero mode={mode} onPick={pick} options={options} />
     <div className="pv-page" style={{ maxWidth: "var(--content-max)", margin: "0 auto", padding: "24px 24px 96px", display: "flex", flexDirection: "column", gap: 40 }}>
       <div ref={startRef} id="build" style={{ display: "flex", flexDirection: "column", gap: 40, scrollMarginTop: "calc(var(--topbar-h) + 16px)" }}>
-        <Step n={1} title="Choose your coffees">
-          <BlendRatios sel={sel} setSel={setSel} batchG={batchG} batchLabel={`${qty} × ${size.label}`} retail sections={["add"]} />
-        </Step>
+        {mode === "house" ? (
+          <Step n={1} title="Pick a blend to start from">
+            <StartingBlends blends={blends} on={startId} onPick={startFrom} />
+          </Step>
+        ) : (
+          <Step n={1} title="Choose your coffees">
+            <BlendRatios sel={sel} setSel={setSel} batchG={batchG} batchLabel={`${qty} × ${size.label}`} retail sections={["add"]} />
+          </Step>
+        )}
 
-        <Step n={2} title="Adjust your ratios">
+        <Step n={2} title={mode === "house" ? "Make it yours" : "Adjust your ratios"}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "clamp(24px,3vw,40px)", alignItems: "flex-start" }}>
             <div style={{ flex: "1 1 420px", minWidth: 0 }}>
               <BlendRatios sel={sel} setSel={setSel} roast={roast} setRoast={setRoast} retail
                 blendName={blendName} setBlendName={setBlendName}
-                batchG={batchG} batchLabel={`${qty} × ${size.label}`} sections={["ratios", "roast", "name"]}
+                batchG={batchG} batchLabel={`${qty} × ${size.label}`} sections={mode === "house" ? ["ratios", "add", "roast", "name"] : ["ratios", "roast", "name"]}
                 nameHint="Your name for it. It prints on the bag alongside the roast date, and you can reorder it in one click." />
             </div>
             <div className="pl-cup-col" style={{ flex: "1 1 360px", minWidth: 320, position: "sticky", top: 96 }}>
@@ -161,4 +190,37 @@ export function ShopView() {
     </div>
     <CartDrawer onNewBlend={scrollToStart} />
   </>);
+}
+
+/** Step 1 when starting from a house blend: one card per blend; picking one loads its recipe. */
+function StartingBlends({ blends, on, onPick }: { blends: StartingBlend[]; on: string | null; onPick: (b: StartingBlend) => void }) {
+  const { idx } = useCatalog();
+  return (
+    <div role="radiogroup" aria-label="House blends" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,260px),1fr))", gap: 10 }}>
+      {blends.map((b) => {
+        const sel = b.id === on, r = Math.max(1, Math.min(5, Math.round(b.roast)));
+        return (
+          <button type="button" role="radio" aria-checked={sel} key={b.id} onClick={() => onPick(b)} className="opt-card" style={{ padding: 16, textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 10, minWidth: 0,
+            border: sel ? "1.5px solid var(--brand)" : "1px solid var(--hairline-strong)", borderRadius: "var(--r-md)", background: sel ? "var(--brand-soft)" : "var(--surface)", fontFamily: "var(--font-sans)", transition: "all var(--dur) var(--ease)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ ...disp, fontSize: 17, color: "var(--ink)", lineHeight: 1.05, flex: 1, minWidth: 0 }}>{b.name}</span>
+              <span aria-label={`${roastName(b.roast)} roast`} style={{ display: "inline-flex", gap: 2, flexShrink: 0 }}>
+                {[1, 2, 3, 4, 5].map((n) => <i key={n} style={{ display: "block", width: 5, height: 12, borderRadius: 1, background: n <= r ? `var(--roast-${r})` : "var(--hairline)" }} />)}
+              </span>
+            </div>
+            <div style={{ display: "flex", height: 6, borderRadius: 3, overflow: "hidden", gap: 2 }} aria-hidden="true">
+              {b.sel.map((x) => <span key={x.id} style={{ flex: x.pct, background: rampColor(idx.get(x.id)?.roast ?? 3) }} />)}
+            </div>
+            <div style={{ ...mono, fontSize: 11.5, color: "var(--ink-muted)", lineHeight: 1.5 }}>
+              {b.sel.map((x) => `${x.pct}% ${idx.get(x.id)?.name ?? x.id}`).join(" · ")}
+            </div>
+            {b.tasting.length > 0 && <div style={{ fontSize: 13, color: "var(--ink)", lineHeight: 1.4 }}>{b.tasting.join(", ")}</div>}
+            <div style={{ ...over, fontSize: 9.5, color: sel ? "var(--brand)" : "var(--ink-subtle)", marginTop: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+              {sel ? "Started from this · edit it below" : "Start from this"}<Icon name="arrow" size={12} stroke={2} />
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
 }

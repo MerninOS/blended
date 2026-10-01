@@ -49,6 +49,7 @@ async function ensureProductMetafields(q: AdminQ, log: (s: string) => void) {
     ["varietal", "Varietal", "single_line_text_field"],
     ["harvest", "Harvest", "single_line_text_field"],
     ["story", "Producer story", "multi_line_text_field"],
+    ["recipe", "Blend recipe", "single_line_text_field"],
   ];
   for (const [key, name, type] of defs) {
     const r = await q(MF_CREATE, { definition: { namespace: "blended", key, name, type, ownerType: "PRODUCT", pin: true, access: { storefront: "PUBLIC_READ" } } });
@@ -183,7 +184,7 @@ async function seedStock(q: AdminQ, stock: StockCoffee[], image: ImageSource, lo
         mf("wholesale_price", "number_decimal", s.price.toFixed(2)), mf("subtitle", "single_line_text_field", s.sub),
         ...(s.lead ? [mf("lead_time", "single_line_text_field", s.lead)] : []), ...(s.avail ? [mf("availability", "single_line_text_field", s.avail)] : []),
         ...(s.tag ? [mf("badge", "single_line_text_field", s.tag)] : []),
-        ...([["process", s.process], ["farm", s.farm], ["producer", s.producer], ["altitude", s.altitude], ["varietal", s.varietal], ["harvest", s.harvest]] as const)
+        ...([["process", s.process], ["farm", s.farm], ["producer", s.producer], ["altitude", s.altitude], ["varietal", s.varietal], ["harvest", s.harvest], ["recipe", s.recipe]] as const)
           .flatMap(([k, v]) => (v ? [mf(k, "single_line_text_field", v)] : [])),
         ...(s.tasting?.length ? [mf("tasting_words", "list.single_line_text_field", JSON.stringify(s.tasting))] : []),
         ...(s.story ? [mf("story", "multi_line_text_field", s.story)] : []),
@@ -238,7 +239,7 @@ export function sampleCoffeesFromGreen(green: GreenLot[]): StockCoffee[] {
     return {
       ...base, id: slug(name), name, sub: `House blend · ${country(a.origin)} + ${country(b.origin)}`, kind: "blend",
       origin: `${country(a.origin)} · ${country(b.origin)}`, process: a.process === b.process ? a.process : `${a.process} / ${b.process}`,
-      farm: `${a.name} + ${b.name}`, roast: Math.max(1, Math.min(5, Math.round(roastOf(sel, idx)))), tag: null, notes,
+      farm: `${a.name} + ${b.name}`, recipe: `${pa}% ${a.name}, ${100 - pa}% ${b.name}`, roast: Math.max(1, Math.min(5, Math.round(roastOf(sel, idx)))), tag: null, notes,
       price: nickel(wholesaleOf(a) * pa / 100 + wholesaleOf(b) * (100 - pa) / 100), retail: nickel(retailOf(a) * pa / 100 + retailOf(b) * (100 - pa) / 100),
       blurb: `${pa}% ${a.name} ${roles[0]}, ${100 - pa}% ${b.name} ${roles[1]}. ${cap(list(words(notes)))}.`,
     };

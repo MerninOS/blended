@@ -383,6 +383,3 @@ html[data-product="coroasted-coffee-os"] body {
 .policy-body a { color: var(--ink); text-decoration: underline; }
 
 /* Coffee Lab hero: the "choose your coffees below" arrow nudges downward */
-@keyframes bx-nudge { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(4px) } }
-.bx-cue-arrow { animation: bx-nudge 1.6s var(--ease) infinite }
-@media (prefers-reduced-motion: reduce) { .bx-cue-arrow { animation: none } }

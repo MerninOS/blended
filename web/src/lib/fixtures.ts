@@ -72,11 +72,11 @@ const STOCK_BASE: StockCoffee[] = [
 ];
 
 // Product-page details for the demo coffees (in a real store: blended.* metafields).
-type Detail = Pick<StockCoffee, "origin" | "process" | "tasting" | "farm" | "producer" | "altitude" | "varietal" | "harvest" | "story">;
+type Detail = Pick<StockCoffee, "origin" | "process" | "tasting" | "farm" | "producer" | "altitude" | "varietal" | "harvest" | "story" | "recipe">;
 const DETAILS: Record<string, Detail> = {
-  "s-counter": { process: "Natural / Washed", tasting: ["Cocoa", "Toasted hazelnut", "Brown sugar"], farm: "Cerrado Norte + Sierra Alta", altitude: "1,100–1,600 m", varietal: "Catuaí, Bourbon", harvest: "2025–26",
+  "s-counter": { process: "Natural / Washed", tasting: ["Cocoa", "Toasted hazelnut", "Brown sugar"], farm: "Cerrado Norte + Sierra Alta", altitude: "1,100–1,600 m", varietal: "Catuaí, Bourbon", harvest: "2025–26", recipe: "70% Cerrado Norte, 30% Sierra Alta",
     story: "Mostly Cerrado Norte for body and chocolate, with Sierra Alta for a cleaner finish. We adjust the ratio as crops change so the cup stays the same." },
-  "s-sixounce": { process: "Washed", tasting: ["Toffee", "Stone fruit", "Black tea"], farm: "Sierra Alta + Huila Reserve + Guji Highland", altitude: "1,300–2,250 m", varietal: "Bourbon, Caturra, landraces", harvest: "2026",
+  "s-sixounce": { process: "Washed", tasting: ["Toffee", "Stone fruit", "Black tea"], farm: "Sierra Alta + Huila Reserve + Guji Highland", altitude: "1,300–2,250 m", varietal: "Bourbon, Caturra, landraces", harvest: "2026", recipe: "50% Sierra Alta, 30% Huila Reserve, 20% Guji Highland",
     story: "A Mexican base with Colombian sweetness and a share of Guji for aroma. It is the coffee we brew by the batch every morning." },
   "s-cerrado": { process: "Natural", tasting: ["Hazelnut", "Dark chocolate", "Dried cherry"], farm: "Fazenda Santa Inês", producer: "Santa Inês family", altitude: "1,100 m", varietal: "Yellow Catuaí", harvest: "Aug 2025",
     story: "The family behind Fazenda Santa Inês dries whole cherries on patios for up to three weeks, which gives this natural its dense sweetness." },
@@ -88,7 +88,7 @@ const DETAILS: Record<string, Detail> = {
     story: "Decaffeinated at origin with ethyl acetate made from local sugarcane, which keeps the sweetness most decafs lose." },
   "s-straw": { process: "Co-ferment", tasting: ["Strawberry", "Cream", "Hibiscus"], farm: "Finca El Paraíso", producer: "Diego Bermúdez", altitude: "1,900 m", varietal: "Castillo", harvest: "Apr 2026",
     story: "Diego Bermúdez ferments the cherries with fruit in sealed tanks before a slow, controlled dry. It is an unusual coffee and we roast it light to keep it that way." },
-  "s-coldbrew": { origin: "Brazil · Mexico", process: "Natural / Washed", tasting: ["Molasses", "Baker's chocolate", "Malt"], farm: "Cerrado Norte + Sierra Alta", altitude: "1,100–1,600 m", varietal: "Catuaí, Bourbon", harvest: "2025–26",
+  "s-coldbrew": { origin: "Brazil · Mexico", process: "Natural / Washed", tasting: ["Molasses", "Baker's chocolate", "Malt"], farm: "Cerrado Norte + Sierra Alta", altitude: "1,100–1,600 m", varietal: "Catuaí, Bourbon", harvest: "2025–26", recipe: "60% Cerrado Norte, 40% Sierra Alta",
     story: "Taken a little darker and slowed through the finish so the sugars caramelize. Built to be diluted, over ice or with milk." },
 };
 export const DEMO_STOCK: StockCoffee[] = STOCK_BASE.map((c) => {

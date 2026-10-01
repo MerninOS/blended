@@ -61,6 +61,7 @@ const STOCK = gql`
           varietal: metafield(namespace: "blended", key: "varietal") { value }
           harvest: metafield(namespace: "blended", key: "harvest") { value }
           story: metafield(namespace: "blended", key: "story") { value }
+          recipe: metafield(namespace: "blended", key: "recipe") { value }
         }
       }
     }

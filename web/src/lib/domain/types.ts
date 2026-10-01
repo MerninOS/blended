@@ -66,6 +66,8 @@ export interface StockCoffee {
   varietal?: string;
   harvest?: string;
   story?: string;        // "Who grew it"
+  /** A house blend's recipe, "70% Cerrado Norte, 30% Sierra Alta" or "cerrado:70, sierra:30" (blended.recipe). */
+  recipe?: string;
   images?: { url: string; alt: string }[];
 }
 

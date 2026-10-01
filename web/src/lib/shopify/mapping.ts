@@ -53,7 +53,7 @@ export type SfProduct = {
   variants: { nodes: { id: string; availableForSale: boolean; price: { amount: string }; selectedOptions: { name: string; value: string }[] }[] };
   roast: MF; notes: MF; reviews: MF; wholesale: MF; subtitle: MF; lead: MF; availability: MF; badge: MF;
   images?: { nodes: { url: string; altText: string | null }[] };
-  kind?: MF; process?: MF; tasting?: MF; farm?: MF; producer?: MF; altitude?: MF; varietal?: MF; harvest?: MF; story?: MF;
+  kind?: MF; process?: MF; tasting?: MF; farm?: MF; producer?: MF; altitude?: MF; varietal?: MF; harvest?: MF; story?: MF; recipe?: MF;
 };
 
 /** A list metafield (JSON array) or plain text split on commas / slashes / new lines. */
@@ -96,7 +96,7 @@ export function stockFromProduct(p: SfProduct): StockCoffee {
     kind: (txt(p.kind)?.toLowerCase().startsWith("blend") ? "blend" : txt(p.kind) ? "single" : undefined) ?? subParts(p.subtitle?.value || "").kind,
     origin: subParts(p.subtitle?.value || "").origin || undefined,
     process: txt(p.process), tasting: words(p.tasting?.value), farm: txt(p.farm), producer: txt(p.producer),
-    altitude: txt(p.altitude), varietal: txt(p.varietal), harvest: txt(p.harvest), story: txt(p.story),
+    altitude: txt(p.altitude), varietal: txt(p.varietal), harvest: txt(p.harvest), story: txt(p.story), recipe: txt(p.recipe),
     images: p.images?.nodes.map((i) => ({ url: i.url, alt: i.altText || p.title })),
   };
 }
