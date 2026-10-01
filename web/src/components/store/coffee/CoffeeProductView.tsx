@@ -118,7 +118,7 @@ export function CoffeeProductView({ c, related, blendHref }: { c: StockCoffee; r
             </form>
 
             <ul className="pd-perks">
-              <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M12 2c1 3 4 4.5 4 8.5a4 4 0 0 1-8 0C8 8 9.5 6.5 9.5 4.5 11 5.5 12 4 12 2z" /><path d="M5 21h14" /></svg>Roasted to order in small batches</li>
+              <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M12 2c1 3 4 4.5 4 8.5a4 4 0 0 1-8 0C8 8 9.5 6.5 9.5 4.5 11 5.5 12 4 12 2z" /><path d="M5 21h14" /></svg>Roasted within 48 hours of your order</li>
               <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7" /><circle cx="7" cy="17.5" r="1.5" /><circle cx="17" cy="17.5" r="1.5" /></svg>{c.lead || "Ships in 2–3 business days"}</li>
             </ul>
 
