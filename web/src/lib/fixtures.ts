@@ -74,9 +74,9 @@ const STOCK_BASE: StockCoffee[] = [
 // Product-page details for the demo coffees (in a real store: blended.* metafields).
 type Detail = Pick<StockCoffee, "origin" | "process" | "tasting" | "farm" | "producer" | "altitude" | "varietal" | "harvest" | "story" | "recipe">;
 const DETAILS: Record<string, Detail> = {
-  "s-counter": { process: "Natural / Washed", tasting: ["Cocoa", "Toasted hazelnut", "Brown sugar"], farm: "Cerrado Norte + Sierra Alta", altitude: "1,100–1,600 m", varietal: "Catuaí, Bourbon", harvest: "2025–26", recipe: "70% Cerrado Norte, 30% Sierra Alta",
+  "s-counter": { process: "Natural / Washed", tasting: ["Cocoa", "Toasted hazelnut", "Brown sugar"], farm: "Cerrado Norte + Sierra Alta", altitude: "1,100–1,600 m", varietal: "Catuaí, Bourbon", harvest: "2025–26", recipe: "60% Cerrado Norte, 40% Sierra Alta",
     story: "Mostly Cerrado Norte for body and chocolate, with Sierra Alta for a cleaner finish. We adjust the ratio as crops change so the cup stays the same." },
-  "s-sixounce": { process: "Washed", tasting: ["Toffee", "Stone fruit", "Black tea"], farm: "Sierra Alta + Huila Reserve + Guji Highland", altitude: "1,300–2,250 m", varietal: "Bourbon, Caturra, landraces", harvest: "2026", recipe: "50% Sierra Alta, 30% Huila Reserve, 20% Guji Highland",
+  "s-sixounce": { process: "Washed", tasting: ["Toffee", "Stone fruit", "Black tea"], farm: "Sierra Alta + Huila Reserve + Guji Highland", altitude: "1,300–2,250 m", varietal: "Bourbon, Caturra, landraces", harvest: "2026", recipe: "40% Sierra Alta, 40% Huila Reserve, 20% Guji Highland",
     story: "A Mexican base with Colombian sweetness and a share of Guji for aroma. It is the coffee we brew by the batch every morning." },
   "s-cerrado": { process: "Natural", tasting: ["Hazelnut", "Dark chocolate", "Dried cherry"], farm: "Fazenda Santa Inês", producer: "Santa Inês family", altitude: "1,100 m", varietal: "Yellow Catuaí", harvest: "Aug 2025",
     story: "The family behind Fazenda Santa Inês dries whole cherries on patios for up to three weeks, which gives this natural its dense sweetness." },

@@ -5,8 +5,8 @@ import { ShopView } from "@/components/store/ShopView";
 
 export const revalidate = 300;
 export const metadata: Metadata = {
-  title: "Coffee Lab · build your blend",
-  description: "Build your own coffee blend: pick up to four single-origin green lots, set the ratios and the roast, and we roast it to order with your name on the bag.",
+  title: "Coffee Lab · start from our recipe or build your blend",
+  description: "Start from one of our coffees and adjust the ratio, or build your own blend from up to four single-origin green lots. Set the roast and we roast it to order with your name on the bag.",
   alternates: { canonical: "/lab" },
 };
 

@@ -1,12 +1,12 @@
 "use client";
 // Coffee Lab hero: the turnable BLENDED bag on the tan stage, fitted between
-// the title and the two ways to start a blend (BoxHero.jsx).
+// the title and the two ways in — start from our recipe, or build your own (BoxHero.jsx).
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { disp, over } from "@/components/ui/primitives";
 import { BOX_D, BOX_H, BOX_W, mountBox } from "./box3d";
 
-export interface HeroOption { id: "house" | "scratch"; icon: string; title: string; desc: string; meta: string }
+export interface HeroOption { id: "shop" | "blend"; icon: string; title: string; desc: string; meta: string }
 
 export function BoxHero({ mode, onPick, options }: { mode: string; onPick: (id: HeroOption["id"]) => void; options: HeroOption[] }) {
   const canvasHost = useRef<HTMLDivElement>(null), titleRef = useRef<HTMLDivElement>(null), optsRef = useRef<HTMLDivElement>(null);
@@ -43,7 +43,7 @@ export function BoxHero({ mode, onPick, options }: { mode: string; onPick: (id: 
         <div ref={canvasHost} style={{ position: "absolute", inset: 0, opacity: ready ? 1 : 0, transition: "opacity 600ms var(--ease)" }} />
         <div ref={optsRef} className="bx-opts" style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "0 24px clamp(20px,4vh,40px)", zIndex: 3 }}>
           <div style={{ maxWidth: 880, margin: "0 auto" }}>
-            <div style={{ ...over, fontSize: 10.5, color: "var(--ink-muted)", marginBottom: 12, textAlign: "center" }}>How would you like to start?</div>
+            <div style={{ ...over, fontSize: 10.5, color: "var(--ink-muted)", marginBottom: 12, textAlign: "center" }}><span style={{ color: "var(--brand)" }}>1</span> · What would you like?</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 10 }}>
               {options.map((m) => {
                 const on = mode === m.id;

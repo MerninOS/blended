@@ -1,47 +1,60 @@
 "use client";
-// Coffee Lab (ShopView.jsx): build a blend, either from one of our house blends
-// or from scratch — set the coffees, ratios and roast, pick a bag size — then
-// add it to the cart. Single coffees by the bag live on /coffees. Checkout
-// happens from the cart drawer.
+// Coffee Lab (ShopView.jsx): start from one of our recipes — pick a coffee, then
+// move its ratio, add a coffee or change the roast to make it yours — or build a
+// blend from scratch. Either way, pick a bag size and add it to the cart.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import type { SelItem, ShopSizeId } from "@/lib/domain/types";
+import type { SelItem, ShopSizeId, StockCoffee } from "@/lib/domain/types";
 import {
-  G_PER_LB, MAX_BAGS, SHIP_FREE, SHOP_SIZES, bagPrice, minsFit, minsTotalG, money, rampColor, retailSel,
+  G_PER_LB, MAX_BAGS, enforceMins, SHIP_FREE, SHOP_SIZES, bagPrice, minsFit, minsTotalG, money, rampColor, retailSel,
   roastName, roastOf, shippingFor, weighted, type ShopSize,
 } from "@/lib/domain/coffee";
-import { Btn, LineItem, RuleHead, Step, Stepper, disp, mono, over } from "@/components/ui/primitives";
+import { blendableLots, recipeOf, sameSel } from "@/lib/domain/recipes";
+import { Btn, LineItem, Photo, Pill, RuleHead, Step, Stepper, disp, mono, over } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
 import { useCatalog } from "./catalog-context";
 import { BlendRatios, TastingWheel } from "./BlendBuilder";
 import { BoxHero, type HeroOption } from "./BoxHero";
-import { startingBlends, type StartingBlend } from "@/lib/domain/starting-blends";
 import { BlendCard, BoxViewer, bcCardData } from "./BlendCard";
 import { CartDrawer } from "./CartDrawer";
+import { CoffeeReviews } from "./CoffeeReviews";
 import { cartStore } from "./cart-store";
-import { trackAddToCart } from "@/components/tracking/analytics";
+import { addCoffee, inStock, priceOf } from "./coffee/shelf";
+import { trackAddToCart, trackProductView } from "@/components/tracking/analytics";
 
 export function ShopView() {
   const { idx, stock, green } = useCatalog();
-  const router = useRouter();
-  const blends = useMemo(() => startingBlends(stock, green), [stock, green]);
-  const [mode, setMode] = useState<HeroOption["id"]>(blends.length ? "house" : "scratch");
-  const [startId, setStartId] = useState<string | null>(null);
-  const start = blends.find((b) => b.id === startId) ?? null;
-  const [sel, setSel] = useState<SelItem[]>([]);
+  const lots = useMemo(() => blendableLots(green), [green]);
+  const [mode, setMode] = useState<HeroOption["id"]>("shop");
+  const [skuId, setSkuId] = useState(stock[0]?.id ?? "");
+  const sku = stock.find((s) => s.id === skuId) ?? stock[0];
+  const recipe = useMemo(() => (sku ? recipeOf(sku, lots) : []), [sku, lots]);
+  const [sel, setSel] = useState<SelItem[]>(() => recipe.map((x) => ({ ...x })));
   const [roast, setRoast] = useState<number | null>(null);
   const [blendName, setBlendName] = useState("");
   const [sizeId, setSizeId] = useState<ShopSizeId>("1lb");
   const [qty, setQty] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
 
-  const emptyBlend = sel.length === 0;
   const size = SHOP_SIZES.find((s) => s.id === sizeId)!;
-  const effRoast = roast != null ? roast : (sel.length ? roastOf(sel, idx) : 3);
-  const perLb = sel.length ? retailSel(sel, idx) : 0;
-  const priceFor = (s: ShopSize) => bagPrice(perLb, s);
-  const vals = weighted(sel, idx, roast);
-  const name = blendName.trim() || (start ? `Your ${start.name}` : "Your blend");
+  const batchG = size.lb * qty * G_PER_LB;
+  const isBuild = mode === "blend";
+  const hasRecipe = recipe.length > 0;
+  // the builder lifts a share below a lot's minimum for small batches; that's still our recipe
+  const fitted = useMemo(() => (minsFit(recipe, batchG, idx) ? enforceMins(recipe, null, batchG, idx) : recipe), [recipe, batchG, idx]);
+  const tweaked = !isBuild && hasRecipe && (roast != null || (!sameSel(sel, recipe) && !sameSel(sel, fitted)));
+  const isBlend = isBuild || tweaked;   // priced and packed from ratios
+  const emptyBlend = isBlend && sel.length === 0;
+  const resetRecipe = () => { setSel(recipe.map((x) => ({ ...x }))); setRoast(null); };
+  const chooseSku = (id: string) => {
+    const c = stock.find((s) => s.id === id); if (!c) return;
+    setSkuId(id); setSel(recipeOf(c, lots)); setRoast(null);
+  };
+
+  const effRoast = isBlend ? (roast != null ? roast : (sel.length ? roastOf(sel, idx) : 3)) : (sku?.roast ?? 3);
+  const perLb = isBlend && sel.length ? retailSel(sel, idx) : 0;
+  const priceFor = (s: ShopSize) => (isBlend ? bagPrice(perLb, s) : sku ? priceOf(sku, s) : 0);
+  const vals = isBlend ? weighted(sel, idx, roast) : (sku?.notes ?? {});
+  const name = isBuild ? (blendName.trim() || "Your blend") : tweaked ? `${sku!.name}, your ratio` : (sku?.name ?? "");
 
   const unit = priceFor(size);
   const goods = unit * qty;
@@ -49,78 +62,98 @@ export function ShopView() {
   const total = goods + shipping;
   const toFree = Math.max(0, SHIP_FREE - goods);
 
-  const batchG = size.lb * qty * G_PER_LB;
-  const minsOk = !sel.length || minsFit(sel, batchG, idx);
-  const blocked = emptyBlend || qty < 1 || !minsOk;
-  const blocker = emptyBlend ? (mode === "house" ? "Pick a blend to start from." : "Add at least one coffee to your blend.")
+  const minsOk = !isBlend || !sel.length || minsFit(sel, batchG, idx);
+  const soldOut = !isBlend && !!sku && !inStock(sku, size);
+  const blocked = emptyBlend || qty < 1 || !minsOk || soldOut || (!isBlend && !sku);
+  const blocker = emptyBlend ? "Add at least one coffee to your blend."
     : !minsOk ? `${qty} × ${size.label} is ${Math.round(batchG).toLocaleString()} g — these coffees need ${minsTotalG(sel, idx).toLocaleString()} g between them. Order a bigger size, more bags, or drop one.`
+    : soldOut ? `${sku!.name} is sold out in ${size.label}.`
     : null;
 
-  const startRef = useRef<HTMLDivElement>(null);
-  const scrollToStart = () => requestAnimationFrame(() => {
-    const el = startRef.current; if (!el) return;
-    const top = el.getBoundingClientRect().top + scrollY - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--topbar-h")) || 52) - 16;
+  // A coffee counts as viewed when it's the one picked under "Start from our recipe".
+  const viewedKey = !isBuild && sku ? `${sku.id}-${size.id}` : null;
+  useEffect(() => {
+    if (!viewedKey || !sku) return;
+    trackProductView({ kind: "stock", name: sku.name, price: priceOf(sku, size), productGid: sku.gid, variantGid: sku.variants[size.id]?.id || undefined,
+      variantName: size.label, image: sku.image, url: `${location.origin}/coffees/${sku.id}` });
+  }, [viewedKey]); // eslint-disable-line react-hooks/exhaustive-deps -- fire once per coffee+size shown
+
+  const pageRef = useRef<HTMLDivElement>(null), blendTopRef = useRef<HTMLDivElement>(null);
+  const scrollToEl = (el: HTMLElement | null, pad: number) => requestAnimationFrame(() => {
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + scrollY - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--topbar-h")) || 52) - pad;
     scrollTo({ top, behavior: "smooth" });
   });
   const addToCart = () => {
     if (blocked) return;
-    cartStore.add({ kind: "blend", key: null, sizeId, sizeLabel: size.label, name, qty, unit, roast: effRoast, roastOverride: roast, sel,
-      parts: sel.map((x) => ({ id: x.id, pct: x.pct, name: idx.get(x.id)?.name ?? x.id })) }, true);
-    const items = cartStore.get().items;
-    trackAddToCart({ kind: "blend", name, price: unit, quantity: qty, variantName: size.label, image: null },
-      items.reduce((a, x) => a + x.unit * x.qty, 0), items.map((x) => x.name));
+    if (isBlend) {
+      cartStore.add({ kind: "blend", key: null, sizeId, sizeLabel: size.label, name, qty, unit, roast: effRoast, roastOverride: roast, sel,
+        parts: sel.map((x) => ({ id: x.id, pct: x.pct, name: idx.get(x.id)?.name ?? x.id })) }, true);
+      const items = cartStore.get().items;
+      trackAddToCart({ kind: "blend", name, price: unit, quantity: qty, variantName: size.label, image: null },
+        items.reduce((a, x) => a + x.unit * x.qty, 0), items.map((x) => x.name));
+    } else if (sku) addCoffee(sku, size, "Whole bean", qty, true);
     setJustAdded(true); setTimeout(() => setJustAdded(false), 1600);
-    setTimeout(() => { setSel([]); setRoast(null); setBlendName(""); setQty(1); setStartId(null); }, 320);
+    if (isBuild) setTimeout(() => { setSel([]); setRoast(null); setBlendName(""); setQty(1); }, 320);
+    else if (tweaked) setTimeout(() => { resetRecipe(); setQty(1); }, 320);
+    else setQty(1);
   };
   const pick = (id: HeroOption["id"]) => {
-    if (id !== mode) { setSel([]); setRoast(null); setStartId(null); }
-    setMode(id); scrollToStart();
+    if (id !== mode) { if (id === "blend") { setSel([]); setRoast(null); } else resetRecipe(); }
+    setMode(id); scrollToEl(pageRef.current, 8);
   };
-  const startFrom = (b: StartingBlend) => { setStartId(b.id); setSel(b.sel.map((x) => ({ ...x }))); setRoast(null); };
-  // Deep links: #build (or ?mode=blend) scrolls to the first step, ?blend=lotA:70,lotB:30 starts from a
-  // recipe (the landing page's house blend, a coffee page), ?cart=open opens the cart. Old #coffees links
-  // (the roster used to live here) go to /coffees.
+  const newBlend = () => { setSel([]); setRoast(null); setMode("blend"); scrollToEl(blendTopRef.current ?? pageRef.current, 16); };
+  // Deep links: #build (or ?mode=blend) opens the builder, #coffees (or ?mode=shop) the recipes,
+  // ?blend=lotA:70,lotB:30 starts the builder from a recipe (the landing page's house blend),
+  // ?cart=open opens the cart.
   useEffect(() => {
     const q = new URLSearchParams(location.search), h = location.hash.slice(1);
-    if (h === "coffees" || q.get("mode") === "shop") { router.replace("/coffees"); return; }
     const preset = (q.get("blend") || "").split(",").map((x) => x.split(":")).filter(([id, p]) => idx.has(id) && Number(p) > 0).map(([id, p]) => ({ id, pct: Math.round(Number(p)) }));
     const usePreset = preset.length > 0 && preset.length <= 4 && preset.reduce((a, s) => a + s.pct, 0) === 100;
-    // a preset that is one of our blends opens it under "Start from one of our blends"
-    const same = (a: SelItem[], b: SelItem[]) => a.length === b.length && a.every((x) => b.some((y) => y.id === x.id && y.pct === x.pct));
-    const ours = usePreset ? blends.find((b) => same(b.sel, preset)) : undefined;
-    if (usePreset || h === "build" || q.get("mode") === "blend") setTimeout(() => {
-      if (ours) { setMode("house"); startFrom(ours); } else if (usePreset) { setMode("scratch"); setSel(preset); }
-      scrollToStart();
-    }, 350);
+    const m = usePreset || h === "build" || q.get("mode") === "blend" ? "blend" : h === "coffees" || q.get("mode") === "shop" ? "shop" : null;
+    if (m) setTimeout(() => { pick(m); if (usePreset) setSel(preset); }, 350);
     if (q.get("cart") === "open") cartStore.setOpen(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- one-time read of the URL on mount
 
+  const minBag = stock.length ? Math.min(...stock.map((s) => priceOf(s, SHOP_SIZES[0]))) : 0;
   const options: HeroOption[] = [
-    ...(blends.length ? [{ id: "house" as const, icon: "pkg", title: "Start from one of our blends", desc: "Open a house blend in the lab, then change the coffees, ratios or roast until it's yours.",
-      meta: `${blends.length} house blend${blends.length === 1 ? "" : "s"} · edit anything` }] : []),
-    { id: "scratch", icon: "flame", title: "Build from scratch", desc: "Combine up to four green lots, move the ratios, set the roast, and watch the cup change as you go.", meta: "Priced from your ratios · no extra fee" },
+    { id: "shop", icon: "pkg", title: "Start from our recipe", desc: "Select one of our coffees, then build off one of our existing blends and adjust the ratio.", meta: `${stock.length} on the roster · from ${money(minBag)} a bag` },
+    { id: "blend", icon: "flame", title: "Build your own blend", desc: "Combine up to four green lots, move the ratios, set the roast, and watch the cup change as you go.", meta: "Priced from your ratios · no extra fee" },
   ];
+
+  const sizeStep = (n: number) => (
+    <Step n={n} title="Choose your bag size">
+      <div role="radiogroup" aria-label="Bag size" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8 }}>
+        {SHOP_SIZES.map((s) => {
+          const on = s.id === sizeId, p = priceFor(s), out = !isBlend && !!sku && !inStock(sku, s);
+          return (
+            <button type="button" role="radio" aria-checked={on} key={s.id} onClick={() => setSizeId(s.id)} style={{ padding: "13px 14px", textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 5,
+              border: on ? "1.5px solid var(--brand)" : "1px solid var(--hairline-strong)", borderRadius: "var(--r-md)", background: on ? "var(--brand-soft)" : "var(--surface)", transition: "all var(--dur) var(--ease)" }}>
+              <span style={{ ...disp, fontSize: 15, color: "var(--ink)", lineHeight: 1 }}>{s.label}</span>
+              <span style={{ ...mono, fontSize: 14, color: on ? "var(--brand-hover)" : "var(--ink)" }}>{emptyBlend ? "—" : money(p)}</span>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, color: "var(--ink-subtle)" }}>{out ? "Sold out" : `${s.note}${emptyBlend ? "" : ` · ${money(p / s.lb)}/lb`}`}</span>
+            </button>
+          );
+        })}
+      </div>
+    </Step>
+  );
 
   return (<>
     <BoxHero mode={mode} onPick={pick} options={options} />
-    <div className="pv-page" style={{ maxWidth: "var(--content-max)", margin: "0 auto", padding: "24px 24px 96px", display: "flex", flexDirection: "column", gap: 40 }}>
-      <div ref={startRef} id="build" style={{ display: "flex", flexDirection: "column", gap: 40, scrollMarginTop: "calc(var(--topbar-h) + 16px)" }}>
-        {mode === "house" ? (
-          <Step n={1} title="Pick a blend to start from">
-            <StartingBlends blends={blends} on={startId} onPick={startFrom} />
-          </Step>
-        ) : (
-          <Step n={1} title="Choose your coffees">
-            <BlendRatios sel={sel} setSel={setSel} batchG={batchG} batchLabel={`${qty} × ${size.label}`} retail sections={["add"]} />
-          </Step>
-        )}
+    <div ref={pageRef} className="pv-page" style={{ maxWidth: "var(--content-max)", margin: "0 auto", padding: "24px 24px 96px", display: "flex", flexDirection: "column", gap: 40 }}>
+      {isBuild ? <>
+        <div ref={blendTopRef} />
+        <Step n={2} title="Choose your coffees">
+          <BlendRatios sel={sel} setSel={setSel} batchG={batchG} batchLabel={`${qty} × ${size.label}`} retail sections={["add"]} />
+        </Step>
 
-        <Step n={2} title={mode === "house" ? "Make it yours" : "Adjust your ratios"}>
+        <Step n={3} title="Adjust your ratios">
           <div style={{ display: "flex", flexWrap: "wrap", gap: "clamp(24px,3vw,40px)", alignItems: "flex-start" }}>
             <div style={{ flex: "1 1 420px", minWidth: 0 }}>
               <BlendRatios sel={sel} setSel={setSel} roast={roast} setRoast={setRoast} retail
                 blendName={blendName} setBlendName={setBlendName}
-                batchG={batchG} batchLabel={`${qty} × ${size.label}`} sections={mode === "house" ? ["ratios", "add", "roast", "name"] : ["ratios", "roast", "name"]}
+                batchG={batchG} batchLabel={`${qty} × ${size.label}`} sections={["ratios", "roast", "name"]}
                 nameHint="Your name for it. It prints on the bag alongside the roast date, and you can reorder it in one click." />
             </div>
             <div className="pl-cup-col" style={{ flex: "1 1 360px", minWidth: 320, position: "sticky", top: 96 }}>
@@ -128,26 +161,36 @@ export function ShopView() {
             </div>
           </div>
         </Step>
-      </div>
 
-      <Step n={3} title="Choose your bag size">
-        <div role="radiogroup" aria-label="Bag size" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8 }}>
-          {SHOP_SIZES.map((s) => {
-            const on = s.id === sizeId, p = priceFor(s);
-            return (
-              <button type="button" role="radio" aria-checked={on} key={s.id} onClick={() => setSizeId(s.id)} style={{ padding: "13px 14px", textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 5,
-                border: on ? "1.5px solid var(--brand)" : "1px solid var(--hairline-strong)", borderRadius: "var(--r-md)", background: on ? "var(--brand-soft)" : "var(--surface)", transition: "all var(--dur) var(--ease)" }}>
-                <span style={{ ...disp, fontSize: 15, color: "var(--ink)", lineHeight: 1 }}>{s.label}</span>
-                <span style={{ ...mono, fontSize: 14, color: on ? "var(--brand-hover)" : "var(--ink)" }}>{emptyBlend ? "—" : money(p)}</span>
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, color: "var(--ink-subtle)" }}>{s.note}{emptyBlend ? "" : ` · ${money(p / s.lb)}/lb`}</span>
-              </button>
-            );
-          })}
-        </div>
-      </Step>
+        {sizeStep(4)}
+      </> : <>
+        <Step n={2} title="Pick a coffee">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "clamp(24px,3vw,40px)", alignItems: "flex-start" }}>
+            <div style={{ flex: "1 1 420px", minWidth: 0 }}><ShopGrid stock={stock} skuId={sku?.id} setSkuId={chooseSku} size={size} /></div>
+            <div className="pl-cup-col" style={{ flex: "1 1 360px", minWidth: 320, position: "sticky", top: 96 }}>
+              <TastingWheel vals={vals} roast={effRoast} empty={!sku} title={sku?.name} note="Cupping scores from our lab on the lot in the bag right now." />
+            </div>
+          </div>
+        </Step>
 
-      <Step n={4} title="Checkout">
-        {!emptyBlend && (
+        {hasRecipe && sku && (
+          <Step n={3} title="Adjust the ratio">
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+              <p style={{ flex: "1 1 320px", margin: 0, fontFamily: "var(--font-sans)", fontSize: 13, lineHeight: 1.55, color: "var(--ink-muted)", maxWidth: "64ch" }}>
+                {tweaked ? `Your version of ${sku.name}. It's roasted to order from these ratios and priced from the coffees in it.` : `This is our recipe for ${sku.name}. Move a ratio, add a coffee, or change the roast to make it yours.`}
+              </p>
+              {tweaked && <Btn variant="secondary" size="sm" onClick={resetRecipe}>Reset to our recipe</Btn>}
+            </div>
+            <BlendRatios sel={sel} setSel={setSel} roast={roast} setRoast={setRoast} retail
+              batchG={batchG} batchLabel={`${qty} × ${size.label}`} sections={["ratios", "add", "roast"]} />
+          </Step>
+        )}
+
+        {sizeStep(hasRecipe ? 4 : 3)}
+      </>}
+
+      <Step n={isBuild || hasRecipe ? 5 : 4} title="Checkout">
+        {isBlend && !emptyBlend && (
           <div className="bc-preview" style={{ display: "grid", gridTemplateColumns: "minmax(220px,1fr) minmax(0,2fr)", gap: 24, alignItems: "stretch", marginBottom: 8 }}>
             <div style={{ background: "var(--bag-stage)", borderRadius: "var(--r-lg)", minHeight: 280, overflow: "hidden", position: "relative" }}><div style={{ position: "absolute", inset: 0 }}><BoxViewer card={bcCardData({ sel, vals, name, sizeLabel: size.label, roast: effRoast, idx })} /></div></div>
             <div className="bc-card" style={{ minWidth: 0 }}><BlendCard sel={sel} vals={vals} name={name} sizeLabel={size.label} roast={effRoast} /></div>
@@ -170,7 +213,7 @@ export function ShopView() {
 
       {/* sticky bar */}
       <div className="co-confirmbar" style={{ position: "sticky", bottom: 16, background: "var(--surface)", border: "1px solid var(--hairline)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-pop)", padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-        <div className="cb-icon" style={{ width: 44, height: 44, background: "var(--surface-sunken)", borderRadius: "var(--r-md)", display: "flex", alignItems: "center", justifyContent: "center", color: rampColor(effRoast), flexShrink: 0 }}><Icon name="flame" size={20} stroke={2} /></div>
+        <div className="cb-icon" style={{ width: 44, height: 44, background: "var(--surface-sunken)", borderRadius: "var(--r-md)", display: "flex", alignItems: "center", justifyContent: "center", color: rampColor(effRoast), flexShrink: 0 }}><Icon name={isBlend ? "flame" : "pkg"} size={20} stroke={2} /></div>
         <div style={{ flex: "1 1 260px", minWidth: 0 }}>
           <div className="cb-title" style={{ ...disp, fontSize: 18, color: "var(--ink)", lineHeight: 1.1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
           <div className="cb-meta" aria-live="polite" style={{ fontSize: 12.5, color: blocker ? "var(--danger)" : "var(--ink-muted)", fontFamily: "var(--font-sans)", marginTop: 4 }}>
@@ -188,37 +231,36 @@ export function ShopView() {
         <Btn variant="primary" size="lg" disabled={blocked} icon={<Icon name="arrow" size={15} stroke={2} />} onClick={addToCart}>{justAdded ? "Added" : "Add to cart"}</Btn>
       </div>
     </div>
-    <CartDrawer onNewBlend={scrollToStart} />
+    <CartDrawer onNewBlend={newBlend} />
   </>);
 }
 
-/** Step 1 when starting from a house blend: one card per blend; picking one loads its recipe. */
-function StartingBlends({ blends, on, onPick }: { blends: StartingBlend[]; on: string | null; onPick: (b: StartingBlend) => void }) {
-  const { idx } = useCatalog();
+// ---- retail coffee grid: photo, name, cup notes, shelf price ----
+function ShopGrid({ stock, skuId, setSkuId, size }: { stock: StockCoffee[]; skuId?: string; setSkuId: (id: string) => void; size: ShopSize }) {
   return (
-    <div role="radiogroup" aria-label="House blends" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,260px),1fr))", gap: 10 }}>
-      {blends.map((b) => {
-        const sel = b.id === on, r = Math.max(1, Math.min(5, Math.round(b.roast)));
+    <div className="sg-grid" role="radiogroup" aria-label="Our coffees" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(210px,1fr))", gap: 12, alignItems: "start" }}>
+      {stock.map((s) => {
+        const on = s.id === skuId;
         return (
-          <button type="button" role="radio" aria-checked={sel} key={b.id} onClick={() => onPick(b)} className="opt-card" style={{ padding: 16, textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 10, minWidth: 0,
-            border: sel ? "1.5px solid var(--brand)" : "1px solid var(--hairline-strong)", borderRadius: "var(--r-md)", background: sel ? "var(--brand-soft)" : "var(--surface)", fontFamily: "var(--font-sans)", transition: "all var(--dur) var(--ease)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ ...disp, fontSize: 17, color: "var(--ink)", lineHeight: 1.05, flex: 1, minWidth: 0 }}>{b.name}</span>
-              <span aria-label={`${roastName(b.roast)} roast`} style={{ display: "inline-flex", gap: 2, flexShrink: 0 }}>
-                {[1, 2, 3, 4, 5].map((n) => <i key={n} style={{ display: "block", width: 5, height: 12, borderRadius: 1, background: n <= r ? `var(--roast-${r})` : "var(--hairline)" }} />)}
-              </span>
+          <div key={s.id} className="sg-card" role="radio" aria-checked={on} tabIndex={0} onClick={() => setSkuId(s.id)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSkuId(s.id); } }}
+            style={{ cursor: "pointer", display: "flex", flexDirection: "column", gap: 9, padding: 11, textAlign: "left", transition: "all var(--dur) var(--ease)",
+              border: on ? "1.5px solid var(--brand)" : "1px solid var(--hairline)", borderRadius: "var(--r-md)", background: on ? "var(--brand-soft)" : "var(--surface)" }}>
+            <Photo src={s.image} alt={s.name} cls="sg-photo" placeholder={s.name} style={{ aspectRatio: "1 / 1" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ width: 10, height: 10, borderRadius: "var(--r-sm)", flexShrink: 0, background: rampColor(s.roast), boxShadow: "inset 0 0 0 1px rgba(0,0,0,.14)" }} />
+              {/* A real link so crawlers find each coffee's page; a click still just selects it. */}
+              <a href={`/coffees/${s.id}`} onClick={(e) => { if (!e.metaKey && !e.ctrlKey && !e.shiftKey) e.preventDefault(); }} tabIndex={-1}
+                style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-sans)", fontSize: 13.5, fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{s.name}</a>
+              {s.tag && <Pill variant="tomato" dot pulse>{s.tag}</Pill>}
             </div>
-            <div style={{ display: "flex", height: 6, borderRadius: 3, overflow: "hidden", gap: 2 }} aria-hidden="true">
-              {b.sel.map((x) => <span key={x.id} style={{ flex: x.pct, background: rampColor(idx.get(x.id)?.roast ?? 3) }} />)}
+            <div style={{ ...over, fontSize: 9, color: "var(--ink-subtle)" }}>{roastName(s.roast)} · {s.sub.split(" · ")[0]}</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, lineHeight: 1.5, color: "var(--ink-muted)", flex: 1, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.blurb}</div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 7, paddingTop: 2, borderTop: "1px solid var(--hairline)" }}>
+              <span style={{ ...mono, fontSize: 14, color: "var(--ink)", paddingTop: 7 }}>{money(priceOf(s, size))}</span>
+              <span style={{ ...mono, fontSize: 11, color: "var(--ink-subtle)" }}>/ {size.label}</span>
             </div>
-            <div style={{ ...mono, fontSize: 11.5, color: "var(--ink-muted)", lineHeight: 1.5 }}>
-              {b.sel.map((x) => `${x.pct}% ${idx.get(x.id)?.name ?? x.id}`).join(" · ")}
-            </div>
-            {b.tasting.length > 0 && <div style={{ fontSize: 13, color: "var(--ink)", lineHeight: 1.4 }}>{b.tasting.join(", ")}</div>}
-            <div style={{ ...over, fontSize: 9.5, color: sel ? "var(--brand)" : "var(--ink-subtle)", marginTop: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-              {sel ? "Started from this · edit it below" : "Start from this"}<Icon name="arrow" size={12} stroke={2} />
-            </div>
-          </button>
+            <CoffeeReviews coffee={s} compact />
+          </div>
         );
       })}
     </div>
