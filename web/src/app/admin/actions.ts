@@ -4,12 +4,12 @@ import type { GreenLot } from "@/lib/domain/types";
 import type { Stage } from "@/lib/domain/orders";
 import { requireAdmin } from "@/lib/admin-auth";
 import { setOrderStage } from "@/lib/orders";
-import { deleteGreenLot, saveGreenLot } from "@/lib/green-admin";
+import { deleteGreenLot, listGreenLotsAdmin, saveGreenLot } from "@/lib/green-admin";
 import { finalizeUpload, stageUpload } from "@/lib/shopify/files";
 import { registerWebhooks, saveSettings, type StoreSettings } from "@/lib/settings";
 import { CACHE_TAGS, admin } from "@/lib/shopify/client";
 import { env, isDemo } from "@/lib/env";
-import { setupStore } from "@/lib/store-setup";
+import { seedSampleCoffees, setupStore, type AdminQ } from "@/lib/store-setup";
 import { DEMO_GREEN, DEMO_STOCK } from "@/lib/fixtures";
 import { demoStore } from "@/lib/demo-store";
 
@@ -85,6 +85,26 @@ export async function registerWebhooksAction(): Promise<Result> {
  * collection in Shopify (idempotent). With `seed`, also adds the sample catalog;
  * its photos are pulled by Shopify from this deployment's public URL.
  */
+/**
+ * Settings → "Add sample coffees": the store setup, then draft coffees built
+ * from the store's own green lots (sampleCoffeesFromGreen). Idempotent.
+ */
+export async function addSampleCoffeesAction(): Promise<Result & { log?: string[] }> {
+  await requireAdmin();
+  if (isDemo()) return { ok: false, error: "Connect a Shopify store first." };
+  const lines: string[] = [];
+  try {
+    const q: AdminQ = (query, variables) => admin(query, { variables });
+    await setupStore({ q, collectionHandle: env.stockCollection, locationId: env.locationId, seed: null, log: (l) => lines.push(l) });
+    await seedSampleCoffees(q, await listGreenLotsAdmin(), (l) => lines.push(l));
+    lines.push("They're drafts: add a photo, check the prices, then set each one to Active.");
+    updateTag(CACHE_TAGS.catalog); revalidatePath("/admin", "layout");
+    return { ok: true, log: lines };
+  } catch (e) {
+    return { ...fail(e), log: lines };
+  }
+}
+
 export async function setupStoreAction(seed: boolean): Promise<Result & { log?: string[] }> {
   await requireAdmin();
   if (isDemo()) return { ok: false, error: "Connect a Shopify store first." };

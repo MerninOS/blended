@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { ConnectionInfo, StoreSettings } from "@/lib/settings";
 import { Btn, CO, Pill, Toast } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
-import { registerWebhooksAction, saveSettingsAction, setupStoreAction } from "@/app/admin/actions";
+import { addSampleCoffeesAction, registerWebhooksAction, saveSettingsAction, setupStoreAction } from "@/app/admin/actions";
 
 const over = (o = {}) => CO.over({ fontSize: 10, color: "var(--ink-muted)", ...o });
 
@@ -70,10 +70,10 @@ export function SettingsView({ conn, initial }: { conn: ConnectionInfo; initial:
   const hooks = () => start(async () => { const r = await registerWebhooksAction(); if (r.ok) { flash("Webhooks registered"); router.refresh(); } else flash(r.error, "danger"); });
   const connected = !!conn.shop;
   const [setupLog, setSetupLog] = useState<string[] | null>(null);
-  const setup = (seed: boolean) => start(async () => {
-    const r = await setupStoreAction(seed);
+  const setup = (samples: boolean) => start(async () => {
+    const r = samples ? await addSampleCoffeesAction() : await setupStoreAction(false);
     setSetupLog([...(r.log ?? []), ...(r.ok ? [] : [`Stopped: ${r.error}`])]);
-    if (r.ok) { flash("Store is set up"); router.refresh(); } else flash(r.error, "danger");
+    if (r.ok) { flash(samples ? "Sample coffees added as drafts" : "Store is set up"); router.refresh(); } else flash(r.error, "danger");
   });
 
   return (
@@ -106,7 +106,7 @@ export function SettingsView({ conn, initial }: { conn: ConnectionInfo; initial:
       </Section>
 
       <Section title="Store setup"
-        note="Creates what Blended needs in Shopify: the blended.* product fields and the Our coffees collection. Green lots are products tagged blended-green whose stock is tracked in Shopify inventory, in grams. Safe to run again. The sample option also adds the design's coffees so you can try the storefront."
+        note="Creates what Blended needs in Shopify: the blended.* product fields and the Our coffees collection. Green lots are products tagged blended-green whose stock is tracked in Shopify inventory, in grams. Safe to run again. Add sample coffees also drafts a coffee for each of your green lots, plus two house blends, using the lots’ origin, process, roast, cupping scores and prices."
         right={<Pill variant={conn.setupDone && !conn.legacyGreen ? "matcha" : "cream"} dot>{conn.legacyGreen ? "Needs update" : conn.setupDone ? "Done" : conn.setupDone === false ? "Not set up" : "Unknown"}</Pill>}>
         {conn.legacyGreen > 0 && (
           <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: 13, lineHeight: 1.55, color: "var(--ink)" }}>
@@ -115,7 +115,7 @@ export function SettingsView({ conn, initial }: { conn: ConnectionInfo; initial:
         )}
         <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
           <Btn size="sm" variant={conn.setupDone && !conn.legacyGreen ? "outline" : "primary"} disabled={busy || !connected} onClick={() => setup(false)}>{busy ? "Working…" : "Set up store"}</Btn>
-          <Btn size="sm" variant="outline" disabled={busy || !connected} onClick={() => setup(true)}>Set up + add sample coffees</Btn>
+          <Btn size="sm" variant="outline" disabled={busy || !connected} onClick={() => setup(true)}>Add sample coffees</Btn>
         </div>
         {setupLog && (
           <div style={{ border: "1px solid var(--hairline)", borderRadius: "var(--r-md)", padding: "10px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
