@@ -82,11 +82,11 @@ export function ShopView() {
     <BoxHero cta={{ label: "Build your blend", onClick: scrollToStart }} />
     <div className="pv-page" style={{ maxWidth: "var(--content-max)", margin: "0 auto", padding: "24px 24px 96px", display: "flex", flexDirection: "column", gap: 40 }}>
       <div ref={startRef} id="build" style={{ display: "flex", flexDirection: "column", gap: 40, scrollMarginTop: "calc(var(--topbar-h) + 16px)" }}>
-        <Step n={2} title="Choose your coffees">
+        <Step n={1} title="Choose your coffees">
           <BlendRatios sel={sel} setSel={setSel} batchG={batchG} batchLabel={`${qty} × ${size.label}`} retail sections={["add"]} />
         </Step>
 
-        <Step n={3} title="Adjust your ratios">
+        <Step n={2} title="Adjust your ratios">
           <div style={{ display: "flex", flexWrap: "wrap", gap: "clamp(24px,3vw,40px)", alignItems: "flex-start" }}>
             <div style={{ flex: "1 1 420px", minWidth: 0 }}>
               <BlendRatios sel={sel} setSel={setSel} roast={roast} setRoast={setRoast} retail
@@ -101,7 +101,7 @@ export function ShopView() {
         </Step>
       </div>
 
-      <Step n={4} title="Choose your bag size">
+      <Step n={3} title="Choose your bag size">
         <div role="radiogroup" aria-label="Bag size" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8 }}>
           {SHOP_SIZES.map((s) => {
             const on = s.id === sizeId, p = priceFor(s);
@@ -117,7 +117,7 @@ export function ShopView() {
         </div>
       </Step>
 
-      <Step n={5} title="Checkout">
+      <Step n={4} title="Checkout">
         {!emptyBlend && (
           <div className="bc-preview" style={{ display: "grid", gridTemplateColumns: "minmax(220px,1fr) minmax(0,2fr)", gap: 24, alignItems: "stretch", marginBottom: 8 }}>
             <div style={{ background: "var(--bag-stage)", borderRadius: "var(--r-lg)", minHeight: 280, overflow: "hidden", position: "relative" }}><div style={{ position: "absolute", inset: 0 }}><BoxViewer card={bcCardData({ sel, vals, name, sizeLabel: size.label, roast: effRoast, idx })} /></div></div>
