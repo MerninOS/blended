@@ -1,33 +1,23 @@
 "use client";
 // The BLENDED coffee bag, drawn in the browser with three.js (BoxHero.jsx):
 // a matte white flat-bottom pouch with a vertical BLENDED label panel and the
-// blend card slipped on at a slight tilt over the lower label. The
-// card is painted from the blend (components, ratios, cup radar, roast, size),
-// so the checkout preview shows the customer's own blend on the bag.
+// bag label (lib/bag-label.ts) slipped on at a slight tilt over the lower
+// panel, so the checkout preview shows the customer's own label on the bag.
 // Loaded lazily so three stays out of the main bundle.
 import type * as THREE_NS from "three";
+import { LABEL_H, LABEL_SITE, LABEL_W, drawLabel, resetMeasure, type LabelData } from "@/lib/bag-label";
 
 type Three = typeof THREE_NS;
 export const BOX_PAPER = "#F0EDE5", BOX_INK = "#1A1A18", BOX_RED = "#D93D18";
 export const BOX_W = 1.2, BOX_H = 1.9, BOX_D = .56;
 
-/** What the card on the front of the bag shows. Radar points are unit offsets from the centre. */
-export interface BagCard {
-  name: string;
-  parts: { name: string; origin: string; pct: number; color: string }[];
-  radar: [number, number][];
-  words: string[];
-  roast: number | null;
-  roastName: string | null;
-  roastColor: string;
-  size: string;
-}
+/** What the card on the front of the bag shows: the bag label. */
+export type BagCard = LabelData;
 
 export const BAG_CARD_DEFAULT: BagCard = {
-  name: "Custom blend",
-  parts: [{ name: "Mexico Veracruz", origin: "Mexico", pct: 50, color: "#EE8A1E" }, { name: "Strawberry Jam Co-ferment", origin: "Colombia", pct: 50, color: "#C43C7C" }],
-  radar: [[.35, -.49], [.27, -.09], [.31, .1], [.21, .28], [0, .45], [-.33, .45], [-.17, .05], [-.15, -.05], [-.17, -.23], [0, -.37]],
-  words: ["Brown sugar", "Berry", "Ferment"], roast: 3, roastName: "Medium", roastColor: "#C9404A", size: "1 lb",
+  name: "Custom blend", site: LABEL_SITE, roast: 3, size: "1 lb", grind: "Whole bean",
+  parts: [{ name: "Mexico Veracruz", origin: "Mexico", color: "#EE8A1E" }, { name: "Strawberry Jam Co-ferment", origin: "Colombia", color: "#C43C7C" }],
+  vals: { brownSugar: 6, berry: 7, ferment: 5, stoneFruit: 4, floral: 3, cocoa: 3 }, words: ["Brown sugar", "Berry", "Ferment"],
 };
 
 const loadImg = (src: string) => new Promise<HTMLImageElement | null>((r) => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
@@ -104,51 +94,11 @@ function filmCanvas(w: number, h: number, kind: "front" | "back" | "side", logo:
   drawFilm(c.getContext("2d")!, w, h, kind, logo); return c;
 }
 
-/** The blend card on the bag: blend name, components, radar, roast, size. */
+/** The label on the bag, drawn at 2× (1950 × 900). */
 async function paintCard(d: BagCard) {
-  const { mono: monoFam, mark } = await assets();
-  const w = 1762, h = 824, c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d")!;
-  g.fillStyle = BOX_PAPER; g.fillRect(0, 0, w, h);
-  const mono = (wt: number, px: number) => `${wt} ${px}px ${monoFam}`;
-  const name = String(d.name || "Custom blend").toUpperCase().slice(0, 40);
-  let fs = 84; g.font = mono(500, fs); if ("letterSpacing" in g) (g as unknown as { letterSpacing: string }).letterSpacing = "8px";
-  while (g.measureText(name).width > 1400 && fs > 36) { fs -= 2; g.font = mono(500, fs); }
-  text(g, name, 48, 120, mono(500, fs), BOX_RED, "left", 8);
-  if (mark) { g.save(); g.globalCompositeOperation = "multiply"; g.drawImage(mark, 1540, 40, 176, 176 * mark.height / mark.width); g.restore(); }
-  const n = Math.max(1, d.parts.length), rh = Math.min(128, 380 / n), y0 = 470 - (rh * n) / 2;
-  d.parts.forEach((p, i) => {
-    const y = y0 + i * rh; g.fillStyle = p.color; g.beginPath();
-    if (g.roundRect) g.roundRect(47, y + 2, 132, rh - 10, 4); else g.rect(47, y + 2, 132, rh - 10);
-    g.fill();
-    const big = Math.min(46, rh * .38);
-    let nm = String(p.name).toUpperCase(); g.font = mono(500, big); if ("letterSpacing" in g) (g as unknown as { letterSpacing: string }).letterSpacing = "7px";
-    while (g.measureText(nm).width > 760 && nm.length > 4) nm = nm.slice(0, -2).trim() + "…";
-    text(g, nm, 222, y + rh * .3, mono(500, big), BOX_INK, "left", 7);
-    text(g, String(p.origin || "").toUpperCase(), 222, y + rh * .72, mono(400, Math.min(28, rh * .24)), "rgba(26,26,24,.62)", "left", 3);
-    text(g, p.pct + "%", 1110, y + rh * .3, mono(500, big), BOX_INK, "right", 3);
-  });
-  const cx = 1450, cy = 452, R = 210;
-  g.strokeStyle = "rgba(26,26,24,.18)"; g.lineWidth = 2;
-  [1, .727, .453].forEach((k) => { g.beginPath(); g.arc(cx, cy, R * k, 0, 7); g.stroke(); });
-  const pts = d.radar.map(([x, y]) => [cx + x * R, cy + y * R] as const);
-  pts.forEach(([x, y]) => { const a = Math.atan2(y - cy, x - cx); g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); g.stroke(); });
-  if (pts.length > 2) {
-    g.beginPath(); const N = pts.length;
-    for (let i = 0; i < N; i++) {
-      const p0 = pts[(i - 1 + N) % N], p1 = pts[i], p2 = pts[(i + 1) % N], p3 = pts[(i + 2) % N];
-      if (i === 0) g.moveTo(p1[0], p1[1]);
-      g.bezierCurveTo(p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6, p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6, p2[0], p2[1]);
-    }
-    g.closePath(); g.fillStyle = "rgba(196,60,124,.32)"; g.fill(); g.strokeStyle = "#C43C7C"; g.lineWidth = 5; g.lineJoin = "round"; g.stroke();
-    g.fillStyle = "#C43C7C"; pts.forEach(([x, y]) => { g.beginPath(); g.arc(x, y, 6.5, 0, 7); g.fill(); });
-  }
-  text(g, d.words.map((s) => s.toUpperCase()).join("  /  "), 48, 768, mono(500, 38), BOX_INK, "left", 6);
-  if (d.roastName) {
-    const label = (d.roastName + " roast").toUpperCase(); g.font = mono(500, 36); if ("letterSpacing" in g) (g as unknown as { letterSpacing: string }).letterSpacing = "6px";
-    const tw = g.measureText(label).width; text(g, label, 1714, 712, mono(500, 36), BOX_INK, "right", 6);
-    for (let i = 0; i < 5; i++) { g.fillStyle = i < Math.round(d.roast || 0) ? d.roastColor : "rgba(26,26,24,.16)"; g.fillRect(1714 - tw - 28 - (5 - i) * 30, 703, 26, 17); }
-  }
-  text(g, (d.size + " · Whole bean").toUpperCase(), 1714, 768, mono(500, 36), BOX_INK, "right", 6);
+  await assets(); resetMeasure();
+  const c = document.createElement("canvas"); c.width = LABEL_W * 2; c.height = LABEL_H * 2;
+  drawLabel(c.getContext("2d")!, d, 2);
   return c;
 }
 
@@ -214,7 +164,7 @@ export async function mountBox(host: HTMLElement, opts: {
   outer.castShadow = true; outer.receiveShadow = true;
 
   // tasting card: slipped on at a slight clockwise tilt over the lower label, curved to the pillowed front
-  const cw = BOX_W * .72, ch = cw * 824 / 1762, cxc = BOX_W * .07, cyc = BOX_H * .38, ang = -.11, ca = Math.cos(ang), sa = Math.sin(ang);
+  const cw = BOX_W * .72, ch = cw * LABEL_H / LABEL_W, cxc = BOX_W * .07, cyc = BOX_H * .38, ang = -.11, ca = Math.cos(ang), sa = Math.sin(ang);
   const cg = own(new THREE.PlaneGeometry(cw, ch, 24, 8)), cp = cg.attributes.position;
   for (let i = 0; i < cp.count; i++) {
     const lx = cp.getX(i), ly = cp.getY(i), x = lx * ca - ly * sa + cxc, y = lx * sa + ly * ca + cyc;

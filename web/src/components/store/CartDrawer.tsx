@@ -17,7 +17,7 @@ function countLabel(items: CartLine[]) {
   const b = `${bags} bag${bags === 1 ? "" : "s"}`, t = `${things} item${things === 1 ? "" : "s"}`;
   return bags && things ? `${b} + ${t}` : things ? t : b;
 }
-import { BC_COLORS } from "./BlendCard";
+import { LABEL_COLORS as BC_COLORS } from "@/lib/bag-label";
 import { trackCheckoutStarted } from "@/components/tracking/analytics";
 
 export function CartButton() {

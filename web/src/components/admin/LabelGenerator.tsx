@@ -5,118 +5,21 @@
 // (concentrate-label.ts). Either prints one per page or on US Letter sheets
 // (12-up / 3-up) via "Save as PDF" in the browser's print dialog; a spot
 // picker handles partly used sheets. Print styles live in labels.css.
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { GreenLot, Notes, StockCoffee } from "@/lib/domain/types";
 import type { AdminOrder, OrderItem } from "@/lib/domain/orders";
-import { AX, SHOP_SIZES, indexLots, radarGeom, rampColor, roastName, shopSize, weighted, type LotIndex } from "@/lib/domain/coffee";
+import { SHOP_SIZES, indexLots, rampColor, roastName, shopSize, weighted, type LotIndex } from "@/lib/domain/coffee";
 import { Btn, CO } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
 import { Segmented, Tabs } from "./parts";
 import { StatusChip } from "./OrdersView";
+import { LabelArt } from "@/components/label/BagLabel";
+import { LABEL_COLORS, LABEL_OFF, LABEL_RED, LABEL_SITE, clampRoast, country, today, topWords, type LabelData } from "@/lib/bag-label";
 import { CC_BASES, CC_FLAVORS, CC_H, CC_MAX_SUPPS, CC_SUPPS, CC_W, ccLabel, concentrateLabelPng } from "./concentrate-label";
 
-const W = 975, H = 450;
-const COLORS = ["#EE8A1E", "#C43C7C", "#D93D18", "#8E2F52"];
-const INK = "#1A1A18", SOFT = "#77726B", RED = "#DC3D1A", PAPER = "#F2EEE7", OFF = "#D6D1CB";
+const COLORS = LABEL_COLORS, RED = LABEL_RED, OFF = LABEL_OFF, SITE = LABEL_SITE;
 const GRINDS = ["Whole bean", "Filter / drip", "Espresso", "French press", "Moka pot"];
-const SITE = "blendedcoffeelab.com";
-
-export interface LabelData {
-  name: string; site: string; roastedOn?: string;
-  parts: { name: string; origin: string; color: string }[];
-  vals: Notes; words: string[]; roast: number; size: string; grind: string;
-}
-
-// ---------- text fitting (canvas measures the same font the SVG draws) ----------
-let ctx: CanvasRenderingContext2D | null = null, family = "monospace";
-const fontFamily = () => {
-  if (typeof document === "undefined") return "monospace";
-  const f = getComputedStyle(document.documentElement).getPropertyValue("--nf-martian").trim();
-  return f ? `${f}, ui-monospace, monospace` : "ui-monospace, monospace";
-};
-const textWidth = (t: string, size: number, wt: number, ls = 0) => {
-  if (typeof document === "undefined") return t.length * size * .62 + ls * size * Math.max(0, t.length - 1);
-  if (!ctx) { ctx = document.createElement("canvas").getContext("2d"); family = fontFamily(); }
-  ctx!.font = `${wt} ${size}px ${family}`;
-  return ctx!.measureText(t).width + ls * size * Math.max(0, t.length - 1);
-};
-const fit = (t: string, size: number, wt: number, ls: number, maxW: number, min: number) =>
-  Math.max(min, Math.min(size, size * maxW / Math.max(1, textWidth(t, size, wt, ls))));
-
-/**
- * True once in the browser with web fonts loaded. Labels are only drawn then:
- * text is sized by measuring the real font, which the server can't do (and
- * hydration would keep the server's guessed sizes).
- */
-const fontsSub = (cb: () => void) => { let live = true; document.fonts?.ready.then(() => { if (live) { ctx = null; cb(); } }); return () => { live = false; }; };
-const useFontsReady = () => useSyncExternalStore(fontsSub, () => !document.fonts || document.fonts.status === "loaded", () => false);
-
-const today = () => { const d = new Date(); return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}/${String(d.getFullYear()).slice(2)}`; };
-const topWords = (vals: Notes) => AX.map((a) => ({ l: a.l, v: vals[a.k] || 0 })).filter((a) => a.v > 0).sort((a, b) => b.v - a.v).slice(0, 3).map((a) => a.l);
-const country = (o = "") => o.split(/\s*·\s*/)[0];
-const clampRoast = (r: number) => Math.max(1, Math.min(5, Math.round(r)));
-
-/** One fitted line of label text; squeezes with textLength if still too wide at the floor size. */
-function LgText({ t, x, y, size, wt = 400, ls = 0, maxW, min, fill = INK, anchor = "start", upper }: {
-  t: string; x: number; y: number; size: number; wt?: number; ls?: number; maxW?: number; min?: number; fill?: string; anchor?: "start" | "end"; upper?: boolean;
-}) {
-  const s = upper ? t.toUpperCase() : t;
-  const fs = maxW ? fit(s, size, wt, ls, maxW, min || size * .5) : size;
-  const squeeze = maxW != null && textWidth(s, fs, wt, ls) > maxW;
-  return (
-    <text x={x} y={y} fill={fill} textAnchor={anchor} fontWeight={wt} fontSize={fs.toFixed(2)} letterSpacing={ls ? (ls * fs).toFixed(2) : undefined}
-      style={{ fontFamily: "var(--font-mono)", fontVariationSettings: '"wdth" 100' }} {...(squeeze ? { textLength: maxW, lengthAdjust: "spacingAndGlyphs" } : {})}>{s}</text>
-  );
-}
-
-export function LabelArt({ d }: { d: LabelData }) {
-  if (!useFontsReady()) return <div aria-hidden="true" style={{ aspectRatio: `${W} / ${H}`, background: PAPER }} />;
-  return <LabelSvg d={d} />;
-}
-
-function LabelSvg({ d }: { d: LabelData }) {
-  const parts = d.parts.slice(0, 4), n = Math.max(1, parts.length);
-  const top = 104, rowH = Math.min(86, 176 / n), swH = rowH - 9;
-  const g = radarGeom(d.vals);
-  const roastTxt = `${roastName(d.roast)} ROAST`;
-  const rs = fit(roastTxt, 19, 500, .2, 250, 11), rw = textWidth(roastTxt, rs, 500, .2);
-  const barR = 913 - rw - 12, seg = 14.5, gap = 2;
-  const c0 = parts[0]?.color || COLORS[0], c1 = (parts[1] || parts[0])?.color || COLORS[1];
-  const onW = textWidth("roasted on:", 21, 400);
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" style={{ display: "block", width: "100%", height: "auto" }} role="img" aria-label={`Label: ${d.name}`}>
-      <rect width={W} height={H} fill={PAPER} />
-      <circle cx="489" cy="157" r="110" fill={c0} opacity=".08" />
-      <circle cx="487" cy="289" r="113" fill={c1} opacity=".07" />
-      <path d="M491 168H600V302H531A40 40 0 0 1 491 262Z" fill="#6B5A50" opacity=".035" />
-      <LgText t={d.name || "Untitled"} x={52} y={76} size={72} wt={450} maxW={530} min={34} fill={RED} upper />
-      <LgText t="roasted on:" x={612} y={42} size={21} fill={SOFT} />
-      {d.roastedOn && <LgText t={d.roastedOn} x={612 + onW + 12} y={42} size={21} wt={500} maxW={913 - 624 - onW} min={12} />}
-      {parts.map((p, i) => {
-        const y = top + i * rowH;
-        return (
-          <g key={i}>
-            <rect x="52" y={y + 4} width="82" height={swH} rx="3" fill={p.color} />
-            <LgText t={p.name} x={153} y={y + rowH * .44} size={Math.min(31, rowH * .38)} wt={450} maxW={440} min={12} upper />
-            {p.origin && <LgText t={p.origin} x={153} y={y + rowH * .86} size={Math.min(20, rowH * .25)} maxW={440} min={9} fill={SOFT} upper />}
-          </g>
-        );
-      })}
-      <g transform={`translate(784 200) scale(${115 / 150}) translate(-240 -240)`}>
-        {[150, 109, 68].map((r) => <circle key={r} cx="240" cy="240" r={r} fill="none" stroke="rgba(26,26,24,.17)" strokeWidth="1.6" />)}
-        {g.axes.map((a, i) => <line key={i} x1="240" y1="240" x2={a.sx.toFixed(1)} y2={a.sy.toFixed(1)} stroke="rgba(26,26,24,.17)" strokeWidth="1.6" />)}
-        <path d={g.p1} fill="rgba(196,60,124,.32)" stroke="#C43C7C" strokeWidth="3.4" strokeLinejoin="round" />
-        {g.axes.map((a, i) => a.v > .05 && <circle key={i} cx={a.dx.toFixed(1)} cy={a.dy.toFixed(1)} r="4.6" fill="#C43C7C" />)}
-      </g>
-      <LgText t={d.site || ""} x={52} y={365} size={20.5} ls={.04} maxW={470} min={11} fill={SOFT} />
-      <LgText t={d.words.join(" / ")} x={52} y={405} size={18.5} wt={500} ls={.2} maxW={470} min={10} upper />
-      {[1, 2, 3, 4, 5].map((k) => <rect key={k} x={barR - (6 - k) * seg - (5 - k) * gap} y={367 - rs * .36 - 4.3} width={seg} height="8.6" rx="1.6" fill={k <= d.roast ? RED : OFF} />)}
-      <LgText t={roastTxt} x={913} y={367} size={rs} wt={500} ls={.2} anchor="end" />
-      <LgText t={`${d.size} · ${d.grind}`} x={913} y={405} size={19} wt={500} ls={.2} maxW={330} min={10} anchor="end" upper />
-    </svg>
-  );
-}
 
 // ---------- label data ----------
 function fromItem(it: OrderItem, idx: LotIndex, stock: StockCoffee[]): LabelData {
