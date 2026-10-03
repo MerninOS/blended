@@ -4,7 +4,7 @@ import "server-only";
 // process — enough to click through the flows locally.
 import type { GreenLot } from "@/lib/domain/types";
 import type { AdminOrder, OrderItem, Stage } from "@/lib/domain/orders";
-import { bagPrice, indexLots, retailSel, roastOf, shippingFor, shopSize, stockBagPrice } from "@/lib/domain/coffee";
+import { G_PER_LB, bagPrice, indexLots, retailSel, roastOf, shippingFor, shopSize, stockBagPrice } from "@/lib/domain/coffee";
 import { DEMO_GREEN, DEMO_STOCK } from "@/lib/fixtures";
 
 type RawItem =
@@ -80,7 +80,7 @@ function build(r: Raw): AdminOrder {
   return { ...r, name: r.id, items, money: { goods: gross, discount, shipping, total: goods + shipping } };
 }
 
-type State = { green: GreenLot[]; orders: AdminOrder[] };
+type State = { green: GreenLot[]; orders: AdminOrder[]; recipes?: Record<string, string> };
 const g = globalThis as unknown as { __blendedDemo?: State };
 const state = (): State => (g.__blendedDemo ??= {
   green: DEMO_GREEN.map((l) => ({ ...l, notes: { ...l.notes } })),
@@ -91,8 +91,12 @@ export const demoStore = {
   green: () => state().green,
   saveLot(lot: GreenLot) {
     const s = state();
+    lot = { ...lot, availG: Math.round(lot.avail * G_PER_LB) };
     s.green = s.green.some((l) => l.id === lot.id) ? s.green.map((l) => (l.id === lot.id ? lot : l)) : [...s.green, lot];
   },
+  /** Our coffees' recipes edited on the Inventory page (blended.recipe in a real store). */
+  recipes: () => (state().recipes ??= {}),
+  setRecipe(id: string, text: string) { const s = state(); (s.recipes ??= {})[id] = text; },
   deleteLot(id: string) { const s = state(); s.green = s.green.filter((l) => l.id !== id); },
   resetGreen() { state().green = DEMO_GREEN.map((l) => ({ ...l, notes: { ...l.notes } })); },
   orders: () => state().orders,

@@ -12,6 +12,7 @@ import {
   GREEN_LEVEL, GREEN_NODE, GREEN_QUERY, PRODUCT_SET, adjustGreen, gToLb, greenMetafields, greenProductInput, lbToG, lotFromProduct, resolveLocation,
   type AdminQ, type GreenNode,
 } from "@/lib/shopify/green-product";
+import { G_PER_LB } from "@/lib/domain/coffee";
 import { demoStore } from "@/lib/demo-store";
 
 export const adminQ: AdminQ = (query, variables) => admin(query, { variables });
@@ -138,7 +139,7 @@ export async function saveGreenLot(lot: GreenLot, imageFileId?: string): Promise
     }
     onHandG = grams;
   }
-  return { ...lot, onHandG, avail: onHandG == null ? lot.avail : gToLb(onHandG) };
+  return { ...lot, onHandG, avail: onHandG == null ? lot.avail : gToLb(onHandG), availG: onHandG ?? lot.avail * G_PER_LB };
 }
 
 /** Archive rather than delete, so Shopify keeps the lot's inventory history. */

@@ -17,6 +17,7 @@ export interface GreenLot {
   wholesale: number | null; // $/lb roasted; null = standard markup
   retail: number | null;    // $/lb roasted; null = standard markup
   avail: number;         // green lb available (Shopify inventory, shown in lb)
+  availG?: number;       // the same in exact grams, when loaded from Shopify
   onHandG?: number | null; // grams at the green location as loaded (compare-and-set on edit); null = not stocked there yet
   minG: number | null;   // smallest weight allowed in a blend (g); null = default
   kind: "anchor" | "limited" | "soon";
@@ -69,6 +70,10 @@ export interface StockCoffee {
   /** A house blend's recipe, "70% Cerrado Norte, 30% Sierra Alta" or "cerrado:70, sierra:30" (blended.recipe). */
   recipe?: string;
   images?: { url: string; alt: string }[];
+  /** Green lots it is roasted from (null = not linked to green), set by lib/domain/green.ts. */
+  greenSel?: SelItem[] | null;
+  /** Whole bags per size the green on hand can make (undefined = not limited by green). */
+  greenBags?: Partial<Record<ShopSizeId, number>>;
 }
 
 /** A component of a custom blend. */
@@ -77,4 +82,6 @@ export interface SelItem { id: string; pct: number }
 export interface Catalog {
   green: GreenLot[];
   stock: StockCoffee[];
+  /** Roast loss % by roast level 1–5 (store settings). */
+  roastLoss?: [number, number, number, number, number];
 }

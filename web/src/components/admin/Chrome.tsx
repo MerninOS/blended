@@ -11,6 +11,7 @@ const NAV = [
   { label: "Operations", items: [
     { href: "/admin/orders", icon: "cart", label: "Orders", countKey: "orders" as const },
     { href: "/admin/green", icon: "bean", label: "Green catalog" },
+    { href: "/admin/inventory", icon: "box", label: "Inventory" },
     { href: "/admin/labels", icon: "pkg", label: "Label generator" },
   ] },
 ];

@@ -5,11 +5,12 @@ import type { Catalog, GreenLot, SelItem } from "@/lib/domain/types";
 import type { RetailLine } from "@/lib/domain/requests";
 import {
   G_PER_LB, MAX_BAGS, grindOf, stockBagPrice, MAX_COMPONENTS, bagPrice, indexLots, minPctFor, minsFit, minsTotalG,
-  greenUsageG, retailSel, roastName, roastOf, round2, shippingFor, shopSize, type LotIndex,
+  retailSel, roastName, roastOf, round2, shippingFor, shopSize, type LotIndex,
 } from "@/lib/domain/coffee";
 import { env } from "@/lib/env";
 import { admin, assertNoUserErrors, gql } from "@/lib/shopify/client";
 import type { MerchProduct } from "@/lib/merch-types";
+import { DEFAULT_ROAST_LOSS, greenUsageG, lotGrams } from "@/lib/domain/green";
 
 export class CheckoutError extends Error {}
 
@@ -42,12 +43,16 @@ export function checkBlend(sel: SelItem[], batchG: number, idx: LotIndex): SelIt
   return clean;
 }
 
-/** Refuse an order that needs more green than Shopify has available. */
+/**
+ * Refuse an order that needs more green than Shopify has available. `usageG` covers
+ * every coffee in the order (custom blends and ours share the same green), roast loss included.
+ */
 export function assertGreenStock(usageG: Map<string, number>, idx: LotIndex) {
   for (const [id, g] of usageG) {
     const lot = idx.get(id);
-    if (lot && g / G_PER_LB > lot.avail + 0.05)
-      throw new CheckoutError(`Only ${Math.floor(lot.avail).toLocaleString("en-US")} lb of ${lot.name} is left — make a smaller batch or swap it out.`);
+    if (!lot) throw new CheckoutError("A coffee in your order is no longer available.");
+    if (g > lotGrams(lot) + 1)
+      throw new CheckoutError(`We don't have enough ${lot.name} green left for this order (${(lotGrams(lot) / G_PER_LB).toLocaleString("en-US", { maximumFractionDigits: 1 })} lb on hand) — try fewer bags, a smaller size, or swap it out.`);
   }
 }
 
@@ -65,10 +70,12 @@ const money = (amount: number) => ({ amount: round2(amount).toFixed(2), currency
 type DraftLine = Record<string, unknown>;
 export interface PricedCart { lines: DraftLine[]; goods: number; shipping: number }
 
-export function priceRetailCart(lines: RetailLine[], cat: Catalog, opts: { demo?: boolean; merch?: MerchProduct[] } = {}): PricedCart {
+/** `lots`: every non-archived green lot (our coffees can use lots the Lab doesn't offer); defaults to the listed ones. */
+export function priceRetailCart(lines: RetailLine[], cat: Catalog, opts: { demo?: boolean; merch?: MerchProduct[]; lots?: GreenLot[] } = {}): PricedCart {
   if (!Array.isArray(lines) || !lines.length) throw new CheckoutError("Your cart is empty.");
   if (lines.length > 30) throw new CheckoutError("Too many lines in the cart.");
-  const idx = indexLots(cat.green);
+  const idx = indexLots(cat.green), stockIdx = indexLots(opts.lots ?? cat.green);
+  const loss = cat.roastLoss ?? DEFAULT_ROAST_LOSS;
   const usage = new Map<string, number>();
   let goods = 0;
   const out: DraftLine[] = lines.map((l) => {
@@ -87,7 +94,9 @@ export function priceRetailCart(lines: RetailLine[], cat: Catalog, opts: { demo?
       const sku = cat.stock.find((s) => s.id === l.skuId);
       const v = sku?.variants[size.id] ?? (opts.demo && sku ? { id: "", price: stockBagPrice(sku, size), available: true } : undefined);
       if (!sku || !v) throw new CheckoutError("A coffee in your cart is no longer sold in that size.");
-      if (!v.available) throw new CheckoutError(`${sku.name} (${size.label}) is sold out.`);
+      if (!v.available || sku.greenBags?.[size.id] === 0) throw new CheckoutError(`${sku.name} (${size.label}) is sold out.`);
+      // roasted to order from the same green as custom blends
+      if (sku.greenSel) greenUsageG(sku.greenSel, size.lb * qty, sku.roast, loss, usage);
       goods += v.price * qty;
       return { variantId: v.id, quantity: qty, customAttributes: [{ key: "Grind", value: grindOf(l.grind) }] };
     }
@@ -95,7 +104,7 @@ export function priceRetailCart(lines: RetailLine[], cat: Catalog, opts: { demo?
     const sel = checkBlend(l.sel, batchG, idx);
     const name = cleanName(l.name, "House blend");
     const roast = clampRoast(l.roast, sel, idx);
-    greenUsageG(sel, size.lb * qty, usage);
+    greenUsageG(sel, size.lb * qty, roast, loss, usage);
     const unit = bagPrice(retailSel(sel, idx), size);
     goods += unit * qty;
     const recipe = recipeOf(name, roast, size.id, sel, idx);
@@ -116,7 +125,7 @@ export function priceRetailCart(lines: RetailLine[], cat: Catalog, opts: { demo?
       ],
     };
   });
-  assertGreenStock(usage, idx);
+  assertGreenStock(usage, stockIdx);
   return { lines: out, goods, shipping: shippingFor(goods) };
 }
 

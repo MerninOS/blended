@@ -4,14 +4,17 @@ import "server-only";
 import type { Catalog } from "@/lib/domain/types";
 import type { WholesaleOrderRequest } from "@/lib/domain/requests";
 import {
-  G_PER_LB, PL_BAGS, greenUsageG, PL_FILL, PL_LABEL_SIZES, PL_MIN, PL_PACK, indexLots, plQuote, roastName, round2, wholesaleSel,
+  G_PER_LB, PL_BAGS, PL_FILL, PL_LABEL_SIZES, PL_MIN, PL_PACK, indexLots, plQuote, roastName, round2, wholesaleSel,
 } from "@/lib/domain/coffee";
 import { BLEND_PROP, CheckoutError, assertGreenStock, waitForDraftReady, checkBlend, clampRoast, cleanName, recipeOf } from "@/lib/checkout";
 import { env } from "@/lib/env";
+import { DEFAULT_ROAST_LOSS, greenUsageG } from "@/lib/domain/green";
+import type { GreenLot } from "@/lib/domain/types";
 import { admin, assertNoUserErrors, gql } from "@/lib/shopify/client";
 
-export function priceWholesale(r: WholesaleOrderRequest, cat: Catalog) {
-  const idx = indexLots(cat.green);
+/** `lots`: every non-archived green lot (for our coffees); defaults to the listed ones. */
+export function priceWholesale(r: WholesaleOrderRequest, cat: Catalog, lots?: GreenLot[]) {
+  const idx = indexLots(cat.green), loss = cat.roastLoss ?? DEFAULT_ROAST_LOSS;
   const lbs = Math.round(Number(r.lbs));
   if (!(lbs >= PL_MIN && lbs <= 5000)) throw new CheckoutError(`Minimum private label run is ${PL_MIN} lb.`);
   if (!PL_BAGS.some((b) => b.id === r.bagId)) throw new CheckoutError("Pick a bag size.");
@@ -21,16 +24,19 @@ export function priceWholesale(r: WholesaleOrderRequest, cat: Catalog) {
   let productName: string, pricePerLb: number, roast: number, recipe = null as ReturnType<typeof recipeOf> | null;
   if (r.mode === "blend") {
     const sel = checkBlend(r.sel ?? [], lbs * G_PER_LB, idx);
-    assertGreenStock(greenUsageG(sel, lbs), idx);
     productName = cleanName(r.blendName, "");
     if (!productName) throw new CheckoutError("Name the blend before ordering.");
     roast = clampRoast(r.roast, sel, idx);
+    assertGreenStock(greenUsageG(sel, lbs, roast, loss), idx);
     pricePerLb = wholesaleSel(sel, idx);
     recipe = recipeOf(productName, roast, r.bagId, sel, idx);
   } else {
     const sku = cat.stock.find((s) => s.id === r.skuId);
     if (!sku || !sku.price) throw new CheckoutError("That coffee isn't available for private label.");
+    if (sku.greenBags && !sku.greenSel) throw new CheckoutError(`${sku.name} isn't available right now.`);
     productName = sku.name; pricePerLb = sku.price; roast = sku.roast;
+    // roasted to order from the same green as everything else
+    if (sku.greenSel) assertGreenStock(greenUsageG(sku.greenSel, lbs, roast, loss), indexLots(lots ?? cat.green));
   }
   const ownBags = Math.max(0, Math.round(Number(r.ownBags) || 0));
   const q = plQuote({ pricePerLb, lbs, bagId: r.bagId, packId: r.packId, ownBagCount: ownBags });

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getCatalog } from "@/lib/catalog";
+import { getCatalog, getInventoryLots } from "@/lib/catalog";
 import { CheckoutError } from "@/lib/checkout";
 import { getCustomer } from "@/lib/customer-account";
 import type { CheckoutResponse, WholesaleOrderRequest } from "@/lib/domain/requests";
@@ -22,7 +22,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<CheckoutRespo
     return NextResponse.json({ error: "Complete the shipping address (company, street, city, 2-letter state, ZIP)." }, { status: 422 });
 
   try {
-    const priced = priceWholesale(body, await getCatalog());
+    const [catalog, lots] = await Promise.all([getCatalog(), getInventoryLots()]);
+    const priced = priceWholesale(body, catalog, lots);
     if (isDemo()) return NextResponse.json({ demo: true, orderName: "PL-DEMO" });
     if (!(await getSettings()).wholesaleCheckout) return NextResponse.json({ error: "Wholesale ordering is paused. Contact us to place a run." }, { status: 503 });
     if (!(await isWholesaleCustomer(customer.customerId)))

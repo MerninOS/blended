@@ -161,6 +161,7 @@ export function lotFromProduct(p: GreenNode): GreenLot {
     wholesale: num(p.wholesale_price?.value),
     retail: num(p.retail_price?.value),
     avail: gToLb(grams),
+    availG: grams,
     onHandG: level ? grams : null, // only known when the location level was queried
     minG: num(p.min_grams?.value),
     kind: kind === "limited" || kind === "soon" ? kind : "anchor",

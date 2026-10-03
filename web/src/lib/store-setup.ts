@@ -14,13 +14,13 @@ const gql = String.raw;
 
 /** Webhook topics the app subscribes to (Settings → Register webhooks, setup script). */
 export const WEBHOOKS: { topic: string; use: string; filter?: string }[] = [
-  { topic: "ORDERS_CREATE", use: "Deducts the green each blend uses from Shopify inventory" },
-  { topic: "ORDERS_CANCELLED", use: "Puts that green back when an order is cancelled" },
+  { topic: "ORDERS_CREATE", use: "Deducts the green every coffee in the order uses from Shopify inventory" },
+  { topic: "ORDERS_CANCELLED", use: "Puts that green back when an unshipped order is cancelled" },
   { topic: "ORDERS_PAID", use: "Puts custom blends on QC hold" },
   { topic: "ORDERS_FULFILLED", use: "Moves the order to shipped" },
   { topic: "DRAFT_ORDERS_UPDATE", use: "Tracks draft checkouts as they're paid" },
   { topic: "PRODUCTS_UPDATE", use: "Refreshes Our coffees and the green catalog" },
-  { topic: "INVENTORY_LEVELS_UPDATE", use: "Refreshes green stock on the blend builder" },
+  { topic: "INVENTORY_LEVELS_UPDATE", use: "Refreshes green stock and re-syncs Our coffees’ counts" },
 ];
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const check = (payload: any, what: string) => {

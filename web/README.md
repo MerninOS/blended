@@ -50,11 +50,24 @@ Admin edits are kept in memory and checkout says it's in demo. Admin is open loc
   (or `SHOPIFY_LOCATION_ID`), so receiving, counts, adjustments and history happen in Shopify like any
   product. Listed = active, hidden = draft, deleted = archived. The product is never on a sales channel;
   the app reads it with the Admin API. Other details (origin, prices, notes, min grams…) are `blended.*` metafields.
-- **Green stock and orders**: checkout refuses a blend that needs more green than is available. When an
-  order is placed (`orders/create`), the app deducts each blend's green (roast loss included) with
-  `inventoryAdjustQuantities`, referencing the order and using an idempotency key, then tags it
-  `green:deducted`. `orders/cancelled` puts it back (`green:restocked`). Editing "on hand" in the admin is a
-  compare-and-set, so an order deducting at the same moment is never overwritten.
+- **Green is the only stock.** Everything is roasted to order, so custom blends and Our coffees draw
+  from the same green (`src/lib/domain/green.ts`). A bag takes its weight ÷ (1 − roast loss) of green, with
+  the loss set per roast level in Settings (default 13 / 14.5 / 16 / 17.5 / 19 % light → dark).
+- **Recipes**: each of Our coffees says what it's roasted from in `blended.recipe` (`cerrado:60, sierra:40`),
+  edited on Admin → Inventory. Without one, a sample blend's "70% Lot, 30% Lot" description line or (single
+  origins) the green lot of the same name is used; the Inventory page flags those, and anything unlinked.
+- **Green stock and orders**: checkout refuses a cart whose coffees together need more green than is
+  available, and Our coffees show sold out per size when the green can't roast another bag. When any order
+  with coffee is placed, on any channel (`orders/create`), the app deducts its green with
+  `inventoryAdjustQuantities` (order as reference, idempotency key), records what it took on the order
+  (`blended.green_usage`) and tags it `green:deducted`. `orders/cancelled` puts back exactly that unless the
+  order already shipped (`green:restocked`). Admin → Inventory → Ledger lists recent deductions and catches
+  orders that were never deducted. Editing "on hand" in the admin is a compare-and-set, so an order
+  deducting at the same moment is never overwritten.
+- **Stock sync (opt-in)**: with Settings → "Sync Our coffees' stock to Shopify" on, each linked Our coffees
+  variant is inventory-tracked (no overselling) with its count kept at the bags the green can roast, so
+  Shopify's own checkout and POS sell out with the green. Recomputed after orders and on
+  `inventory_levels/update` / `products/update`; turning it off makes those variants untracked again.
 - **Our coffees**: products in the `our-coffees` collection (tag `blended-stock`), with a `Size` option
   (8 oz / 1 lb / 2 lb / 5 lb). **The variant price is the shelf price.** Roast, tasting notes,
   wholesale $/lb and reviews come from `blended.*` metafields.

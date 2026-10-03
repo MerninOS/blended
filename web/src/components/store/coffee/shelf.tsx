@@ -18,7 +18,12 @@ export const sizesOf = (c: StockCoffee): ShopSize[] => {
   const ids = Object.keys(c.variants);
   return ids.length ? SHOP_SIZES.filter((s) => c.variants[s.id]) : SHOP_SIZES;
 };
-export const inStock = (c: StockCoffee, s: ShopSize) => c.variants[s.id]?.available ?? !Object.keys(c.variants).length;
+/** Sellable in this size: Shopify says so and the green can roast another bag. */
+export const inStock = (c: StockCoffee, s: ShopSize) => {
+  const v = c.variants[s.id];
+  if (v) return v.available;
+  return !Object.keys(c.variants).length && c.greenBags?.[s.id] !== 0;
+};
 /** The bag a card shows and quick-adds: 1 lb when it's sold and in stock, else the first in stock. */
 export const defaultSize = (c: StockCoffee) => {
   const sizes = sizesOf(c);

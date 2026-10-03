@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import type { ConnectionInfo, StoreSettings } from "@/lib/settings";
 import { Btn, CO, Pill, Toast } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
+import { G_PER_LB } from "@/lib/domain/coffee";
+import { ROAST_LOSS_LABELS, type RoastLoss } from "@/lib/domain/green";
 import { addSampleCoffeesAction, registerWebhooksAction, saveSettingsAction, setupStoreAction } from "@/app/admin/actions";
 
 const over = (o = {}) => CO.over({ fontSize: 10, color: "var(--ink-muted)", ...o });
@@ -43,13 +45,41 @@ function ToggleRow({ title, desc, on, onChange }: { title: string; desc: string;
   );
 }
 
+/** Roast loss by roast level: how much green a roasted pound takes. */
+function RoastLossRow({ loss, onChange }: { loss: RoastLoss; onChange: (v: RoastLoss) => void }) {
+  const field = { width: "100%", height: 34, padding: "0 26px 0 10px", border: "1px solid var(--hairline-strong)", borderRadius: "var(--r-sm)", background: "var(--surface)", color: "var(--ink)", ...CO.data({ fontSize: 13 }) };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "13px 0", borderBottom: "1px solid var(--hairline)" }}>
+      <div>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}>Roast loss</div>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 12.5, lineHeight: 1.5, color: "var(--ink-muted)", marginTop: 3, maxWidth: "66ch" }}>
+          Weight lost in the roaster at each roast level. A roasted pound takes 1 ÷ (1 − loss) of green: at {loss[2]}% (medium), a 1 lb bag uses {Math.round(G_PER_LB / (1 - loss[2] / 100))} g. Used for deductions, stock checks and sold-out. Set these from your roast logs.
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(110px,1fr))", gap: 8, maxWidth: 640 }}>
+        {loss.map((v, i) => (
+          <label key={i} style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            <span style={over({ fontSize: 9.5 })}>{ROAST_LOSS_LABELS[i]}</span>
+            <span style={{ position: "relative" }}>
+              <input type="number" min={0} max={40} step={0.5} value={v} aria-label={`${ROAST_LOSS_LABELS[i]} roast loss, percent`}
+                onChange={(e) => { const n = [...loss] as RoastLoss; n[i] = Math.max(0, Math.min(40, Number(e.target.value) || 0)); onChange(n); }} style={field} />
+              <span aria-hidden="true" style={{ position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)", ...CO.data({ fontSize: 12, color: "var(--ink-subtle)" }) }}>%</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const ROUTES = [
   { id: "retailCheckout" as const, channel: "Retail · Coffee Lab", target: "Draft order → checkout", detail: "Shopify hosted checkout", pay: "Captured at checkout by Shopify Payments", tag: "channel:retail", roast: "On the Orders board once paid" },
   { id: "wholesaleCheckout" as const, channel: "Wholesale · Private label", target: "Draft order → checkout", detail: "Shopify hosted checkout", pay: "Card, captured at checkout by Shopify Payments", tag: "channel:wholesale · private-label", roast: "On the Orders board once paid" },
 ];
 const MAP = [
   { from: "Green lot", to: "Product tagged blended-green", note: "Stock is Shopify inventory in grams. Listed = active, hidden = draft, never on a sales channel." },
-  { from: "Blend order", to: "Inventory adjustment", note: "Each blend deducts its green (roast loss included) when the order is placed. Cancelling puts it back." },
+  { from: "Any coffee order", to: "Inventory adjustment", note: "Custom blends and Our coffees deduct their green (roast loss by roast level) when the order is placed, from any channel. Cancelling puts it back." },
+  { from: "Our coffees recipe", to: "Metafield blended.recipe", note: "Green lots and shares, e.g. cerrado:60, sierra:40. Edit on the Inventory page." },
   { from: "Our coffees", to: "Products in our-coffees", note: "Tag products blended-stock. Size option: 8 oz / 1 lb / 2 lb / 5 lb." },
   { from: "Bag size", to: "Variant", note: "Variant price is the shelf price shown on the storefront." },
   { from: "Custom blend", to: "Custom line item", note: "Priced from the ratios; recipe rides as line-item properties (_blend)." },
@@ -166,7 +196,9 @@ export function SettingsView({ conn, initial }: { conn: ConnectionInfo; initial:
       </Section>
 
       <Section title="Inventory and fulfillment">
-        <ToggleRow title="Deduct green from Shopify inventory when blend orders are placed" desc="Each custom blend takes the green it used (16% roast loss included) out of its lot’s inventory, with the order as the reference. Cancelled orders put it back." on={s.drawDownGreen} onChange={(v) => set("drawDownGreen", v)} />
+        <ToggleRow title="Deduct green from Shopify inventory for every coffee ordered" desc="Everything is roasted to order, so every order with coffee — a custom blend or one of Our coffees, from this site, the Online Store, POS or wholesale — takes its green (roast loss below included) out of the lots’ inventory, with the order as the reference. What it took is recorded on the order; cancelling before it ships puts that back." on={s.drawDownGreen} onChange={(v) => set("drawDownGreen", v)} />
+        <ToggleRow title="Sync Our coffees’ stock to Shopify" desc="Tracks each Our coffees size in Shopify (no selling past zero) and keeps its count at the bags the green on hand can roast, so Shopify’s own checkout and POS sell out with the green too. Recomputed after every order and green change. Check recipes on the Inventory page before turning this on; turning it off makes those sizes untracked again." on={s.syncStock} onChange={(v) => set("syncStock", v)} />
+        <RoastLossRow loss={s.roastLoss} onChange={(v) => set("roastLoss", v)} />
         <ToggleRow title="Email tracking when an order is marked shipped" desc="Marking an order shipped on the Orders board files a Shopify fulfillment; with this on, Shopify emails the customer." on={s.notifyOnShip} onChange={(v) => set("notifyOnShip", v)} />
       </Section>
 

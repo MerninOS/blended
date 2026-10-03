@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getCatalog } from "@/lib/catalog";
+import { getCatalog, getInventoryLots } from "@/lib/catalog";
 import { CheckoutError, createRetailDraft, priceRetailCart } from "@/lib/checkout";
 import type { CheckoutResponse, RetailCheckoutRequest } from "@/lib/domain/requests";
 import { env, isDemo } from "@/lib/env";
@@ -17,8 +17,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<CheckoutRespo
 
   try {
     const hasItems = Array.isArray(body.lines) && body.lines.some((l) => l?.kind === "item");
-    const [catalog, merch] = await Promise.all([getCatalog(), hasItems ? getMerch() : Promise.resolve([])]);
-    const priced = priceRetailCart(body.lines, catalog, { demo: isDemo(), merch });
+    const [catalog, lots, merch] = await Promise.all([getCatalog(), getInventoryLots(), hasItems ? getMerch() : Promise.resolve([])]);
+    const priced = priceRetailCart(body.lines, catalog, { demo: isDemo(), merch, lots });
     if (isDemo()) {
       return NextResponse.json({ demo: true, error: "Demo mode — connect a Shopify store to take real orders." }, { status: 503 });
     }

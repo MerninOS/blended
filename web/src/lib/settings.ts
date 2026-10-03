@@ -2,16 +2,19 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { env, hasAdmin, hasCustomerAccounts, hasStorefront, isDemo } from "@/lib/env";
 import { CACHE_TAGS, admin, assertNoUserErrors, gql } from "@/lib/shopify/client";
+import { DEFAULT_ROAST_LOSS, cleanRoastLoss, type RoastLoss } from "@/lib/domain/green";
 
 // Operational switches, stored as JSON in the shop metafield blended.settings.
 export interface StoreSettings {
   retailCheckout: boolean;     // Retail tab hands carts to Shopify
   wholesaleCheckout: boolean;  // Wholesale tab places draft orders
   qcHoldNewBlends: boolean;    // paid orders with custom blends get a qc-hold tag
-  drawDownGreen: boolean;      // deduct green (Shopify inventory) when blend orders are placed
+  drawDownGreen: boolean;      // deduct green (Shopify inventory) for every coffee ordered, from any channel
+  syncStock: boolean;          // keep Our coffees' Shopify stock = bags the green can make
+  roastLoss: RoastLoss;        // % weight lost roasting, by roast level 1–5
   notifyOnShip: boolean;       // Shopify emails tracking when an order is marked shipped
 }
-export const DEFAULT_SETTINGS: StoreSettings = { retailCheckout: true, wholesaleCheckout: true, qcHoldNewBlends: true, drawDownGreen: true, notifyOnShip: true };
+export const DEFAULT_SETTINGS: StoreSettings = { retailCheckout: true, wholesaleCheckout: true, qcHoldNewBlends: true, drawDownGreen: true, syncStock: false, roastLoss: [...DEFAULT_ROAST_LOSS], notifyOnShip: true };
 
 const SHOP = gql`
   query ShopSettings {
@@ -49,14 +52,17 @@ const SET = gql`
 type ShopRes = { shop: { id: string; name: string; myshopifyDomain: string; currencyCode: string; metafield: { value: string } | null }; };
 
 let demoSettings = { ...DEFAULT_SETTINGS };
+/** Saved settings over the defaults, with a valid roast-loss table. */
+export const cleanSettings = (s: Partial<StoreSettings>): StoreSettings => ({ ...DEFAULT_SETTINGS, ...s, roastLoss: cleanRoastLoss(s.roastLoss) });
 
 export const getSettings = unstable_cache(async (): Promise<StoreSettings> => {
   if (isDemo()) return demoSettings;
   const r = await admin<ShopRes>(SHOP);
-  try { return { ...DEFAULT_SETTINGS, ...JSON.parse(r.shop.metafield?.value || "{}") }; } catch { return DEFAULT_SETTINGS; }
+  try { return cleanSettings(JSON.parse(r.shop.metafield?.value || "{}")); } catch { return DEFAULT_SETTINGS; }
 }, ["blended-settings"], { tags: [CACHE_TAGS.settings], revalidate: 300 });
 
 export async function saveSettings(s: StoreSettings) {
+  s = cleanSettings(s);
   if (isDemo()) { demoSettings = s; return; }
   const r = await admin<ShopRes>(SHOP);
   const w = await admin<{ metafieldsSet: { userErrors: { message: string }[] } }>(SET, {

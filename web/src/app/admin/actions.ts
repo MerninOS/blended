@@ -1,12 +1,17 @@
 "use server";
 import { revalidatePath, revalidateTag, updateTag } from "next/cache";
+import { after } from "next/server";
 import type { GreenLot } from "@/lib/domain/types";
 import type { Stage } from "@/lib/domain/orders";
 import { requireAdmin } from "@/lib/admin-auth";
 import { setOrderStage } from "@/lib/orders";
 import { deleteGreenLot, listGreenLotsAdmin, saveGreenLot } from "@/lib/green-admin";
 import { finalizeUpload, stageUpload } from "@/lib/shopify/files";
-import { registerWebhooks, saveSettings, type StoreSettings } from "@/lib/settings";
+import { getSettings, registerWebhooks, saveSettings, type StoreSettings } from "@/lib/settings";
+import { cleanRoastLoss, recipeText } from "@/lib/domain/green";
+import type { SelItem } from "@/lib/domain/types";
+import { deductOrder } from "@/lib/green-ledger";
+import { stopStockSync, syncQuietly, syncStockFromGreen } from "@/lib/green-sync";
 import { CACHE_TAGS, admin } from "@/lib/shopify/client";
 import { env, isDemo } from "@/lib/env";
 import { seedSampleCoffees, setupStore, type AdminQ } from "@/lib/store-setup";
@@ -71,7 +76,70 @@ export async function finalizeLotImage(resourceUrl: string, filename: string, al
 
 export async function saveSettingsAction(s: StoreSettings): Promise<Result> {
   await requireAdmin();
-  try { await saveSettings(s); revalidateTag(CACHE_TAGS.settings, "max"); revalidatePath("/admin/settings"); return { ok: true }; } catch (e) { return fail(e); }
+  try {
+    const before = await getSettings();
+    await saveSettings(s);
+    revalidateTag(CACHE_TAGS.settings, "max");
+    revalidateTag(CACHE_TAGS.catalog, "max"); // roast loss changes what the green can make
+    // Coffee stock in Shopify: turning the sync on tracks and sets it; off hands it back to untracked.
+    if (s.syncStock) await syncStockFromGreen({ apply: true, force: true, loss: cleanRoastLoss(s.roastLoss) });
+    else if (before.syncStock) await stopStockSync();
+    revalidatePath("/admin/settings"); revalidatePath("/admin/inventory");
+    return { ok: true };
+  } catch (e) { return fail(e); }
+}
+
+// ---------- inventory: recipes, deductions, sync ----------
+const SET_RECIPE = `
+  mutation SaveRecipe($metafields: [MetafieldsSetInput!]!) { metafieldsSet(metafields: $metafields) { userErrors { field message } } }
+`;
+/** Save what one of Our coffees is roasted from (blended.recipe), then refresh the shop and Shopify's counts. */
+export async function saveRecipeAction(coffeeId: string, gid: string | undefined, sel: SelItem[]): Promise<Result> {
+  await requireAdmin();
+  try {
+    const lots = await listGreenLotsAdmin();
+    const clean = sel.map((s) => ({ id: String(s.id), pct: Math.round(Number(s.pct)) })).filter((s) => s.pct > 0);
+    if (!clean.length || clean.length > 4) throw new Error("A recipe uses one to four green lots.");
+    if (new Set(clean.map((s) => s.id)).size !== clean.length) throw new Error("A lot appears twice.");
+    if (clean.some((s) => !lots.some((l) => l.id === s.id))) throw new Error("Pick lots from the green catalog.");
+    if (clean.reduce((a, s) => a + s.pct, 0) !== 100) throw new Error("Shares must add up to 100%.");
+    const text = recipeText(clean);
+    if (isDemo()) demoStore.setRecipe(coffeeId, text);
+    else {
+      if (!gid) throw new Error("This coffee isn't in Shopify.");
+      const r = await admin<{ metafieldsSet: { userErrors: { message: string }[] } }>(SET_RECIPE, { variables: { metafields: [
+        { ownerId: gid, namespace: "blended", key: "recipe", type: "single_line_text_field", value: text },
+      ] } });
+      if (r.metafieldsSet.userErrors.length) throw new Error(r.metafieldsSet.userErrors.map((e) => e.message).join("; "));
+      after(() => syncQuietly("recipe"));
+    }
+    revalidateTag(CACHE_TAGS.catalog, "max"); revalidatePath("/admin/inventory");
+    return { ok: true };
+  } catch (e) { return fail(e); }
+}
+
+/** Deduct an order's green by hand (an order the webhook missed). */
+export async function deductOrderAction(gid: string): Promise<Result> {
+  await requireAdmin();
+  if (isDemo()) return { ok: false, error: "Connect a Shopify store first." };
+  try {
+    const r = await deductOrder(gid, { force: true });
+    if (!r.done) throw new Error(r.reason);
+    revalidatePath("/admin/inventory");
+    return { ok: true };
+  } catch (e) { return fail(e); }
+}
+
+/** Recompute Our coffees' Shopify stock from green now. */
+export async function syncNowAction(): Promise<Result & { changed?: number }> {
+  await requireAdmin();
+  if (isDemo()) return { ok: false, error: "Connect a Shopify store first." };
+  try {
+    const r = await syncStockFromGreen({ apply: true });
+    if (!r.ran) throw new Error("Turn on “Sync Our coffees’ stock to Shopify” in Settings first.");
+    revalidatePath("/admin/inventory");
+    return { ok: true, changed: r.changed };
+  } catch (e) { return fail(e); }
 }
 
 export async function registerWebhooksAction(): Promise<Result> {
