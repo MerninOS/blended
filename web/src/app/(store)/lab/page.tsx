@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getCatalog } from "@/lib/catalog";
 import { CatalogProvider } from "@/components/store/catalog-context";
 import { ShopView } from "@/components/store/ShopView";
+import { landingData } from "@/lib/landing";
 
 export const revalidate = 300;
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export default async function LabPage() {
   const catalog = await getCatalog();
   return (
     <CatalogProvider catalog={catalog}>
-      <ShopView />
+      <ShopView intro={landingData(catalog.green, catalog.stock.length).intro} />
     </CatalogProvider>
   );
 }

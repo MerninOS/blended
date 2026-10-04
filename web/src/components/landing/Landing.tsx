@@ -14,6 +14,7 @@ import { CartDrawer } from "@/components/store/CartDrawer";
 import { cartStore, useCart } from "@/components/store/cart-store";
 import { Icon } from "@/components/ui/Icon";
 import { LabIntro } from "./LabIntro";
+import { loadBagModel } from "@/components/store/box3d";
 
 function LandingCart() {
   const { items } = useCart();
@@ -100,9 +101,12 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
   }, []);
   useEffect(() => { router.prefetch(LAB); }, [router]);
 
+  // Start the 3D bag downloading as soon as someone heads for the lab (hover, touch, focus or
+  // click): it's kept in memory, so the lab opens with the model already loaded.
+  const warm = () => { void loadBagModel(); };
   const toLab = (e: MouseEvent) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-    e.preventDefault(); if (busy.current) return; busy.current = true;
+    e.preventDefault(); warm(); if (busy.current) return; busy.current = true;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches || data.intro.length < 2) { router.push(LAB); return; }
     setIntro(true);
   };
@@ -154,7 +158,7 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
             <Link className="lp-link" href="/wholesale">Wholesale</Link>
           </nav>
           <div className="lp-actions">
-            <a className="lp-btn sm lp-cta" href={LAB} onClick={toLab}>Build a blend</a>
+            <a className="lp-btn sm lp-cta" href={LAB} onClick={toLab} onPointerEnter={warm} onTouchStart={warm} onFocus={warm}>Build a blend</a>
             <LandingCart />
             <button type="button" className="lp-burger" aria-label={menu ? "Close menu" : "Open menu"} aria-expanded={menu} aria-controls="lp-menu" onClick={() => setMenu((m) => !m)}>
               <span className="sf-burger-lines" data-open={menu}><span></span><span></span><span></span></span>
@@ -164,7 +168,7 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
         {menu && <>
           <nav id="lp-menu" className="lp-menu" aria-label="Menu">
             {menuItems.map((m) => (
-              <a key={m.t} className="lp-menu-item" href={m.href} onClick={(e) => { setMenu(false); if (m.lab) toLab(e); }}>
+              <a key={m.t} className="lp-menu-item" href={m.href} onClick={(e) => { setMenu(false); if (m.lab) toLab(e); }} onTouchStart={m.lab ? warm : undefined} onPointerEnter={m.lab ? warm : undefined}>
                 <span>{m.t}</span><span className="lp-menu-note">{m.d}</span>
               </a>
             ))}
@@ -184,7 +188,7 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
               <p style={{ fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.5, margin: 0, maxWidth: "44ch", color: "rgba(255,255,255,.88)", textWrap: "pretty" }}>We buy from farmers we know by name and roast every order fresh. Start with a coffee from this week&apos;s shelf, or combine them into a blend that is yours alone.</p>
               <div className="lp-hero-ctas" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, marginTop: 8 }}>
                 <Link className="lp-btn lg light" href={SHOP}>Explore our offerings <Arrow /></Link>
-                <a className="lp-btn lg ghost" href={LAB} onClick={toLab}>Build your blend <Arrow /></a>
+                <a className="lp-btn lg ghost" href={LAB} onClick={toLab} onPointerEnter={warm} onTouchStart={warm} onFocus={warm}>Build your blend <Arrow /></a>
               </div>
             </div>
           </div>
@@ -198,7 +202,7 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
             <h2 id="lp-lab-h" className="lp-disp" style={disp("clamp(56px,8vw,128px)")}>Your<br />ratios.<br /><span style={{ color: "var(--brand)" }}>Your<br />coffee.</span></h2>
             <div className="lp-notes"><span>Up to 4 coffees</span><span>Any ratio</span><span>Your name on the bag</span></div>
             <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: "var(--ink-muted)", maxWidth: "46ch", textWrap: "pretty" }}>Start with a base, add something bright, move the sliders. The tasting wheel and roast level update as the blend changes. When it tastes right, name it and we roast it.</p>
-            <div><a className="lp-btn lg" href={LAB} onClick={toLab}>Open the Coffee Lab <Arrow /></a></div>
+            <div><a className="lp-btn lg" href={LAB} onClick={toLab} onPointerEnter={warm} onTouchStart={warm} onFocus={warm}>Open the Coffee Lab <Arrow /></a></div>
           </div>
         </section>
 
@@ -310,7 +314,7 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
         <section className="lp-close" aria-labelledby="lp-close-h">
           <div className="lp-wrap" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 36 }}>
             <h2 id="lp-close-h" className="lp-disp" style={disp("clamp(52px,9vw,150px)")}>Your coffee,<br /><span style={{ color: "var(--brand)" }}>your ratios.</span></h2>
-            <a className="lp-btn lg" href={LAB} onClick={toLab}>Start building <Arrow /></a>
+            <a className="lp-btn lg" href={LAB} onClick={toLab} onPointerEnter={warm} onTouchStart={warm} onFocus={warm}>Start building <Arrow /></a>
           </div>
         </section>
       </main>
@@ -327,7 +331,7 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
         </div>
       </footer>
       <CartDrawer />
-      {intro && <LabIntro blends={data.intro} onDone={() => router.push(LAB)} />}
+      {intro && <LabIntro blends={data.intro} ready={loadBagModel()} onDone={() => router.push(LAB)} />}
     </div>
   );
 }

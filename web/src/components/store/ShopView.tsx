@@ -2,7 +2,10 @@
 // Coffee Lab (ShopView.jsx): build a blend — choose coffees, set the ratios and
 // roast, pick a bag size — then add it to the cart. Single coffees by the bag
 // live on /coffees. Checkout happens from the cart drawer.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { IntroBlend } from "@/lib/landing";
+import { LabIntro } from "@/components/landing/LabIntro";
+import { bagModelSettled, loadBagModel } from "./box3d";
 import { useRouter } from "next/navigation";
 import type { SelItem, ShopSizeId } from "@/lib/domain/types";
 import {
@@ -19,9 +22,12 @@ import { CartDrawer } from "./CartDrawer";
 import { cartStore } from "./cart-store";
 import { trackAddToCart } from "@/components/tracking/analytics";
 
-export function ShopView() {
+/** `intro`: sample blends for the loading screen shown while the 3D bag model loads. */
+export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
   const { idx } = useCatalog();
   const router = useRouter();
+  const [loading, setLoading] = useState(() => typeof window === "undefined" || !bagModelSettled());
+  const modelReady = useMemo(() => (typeof window === "undefined" ? undefined : loadBagModel()), []);
   const [sel, setSel] = useState<SelItem[]>([]);
   const [roast, setRoast] = useState<number | null>(null);
   const [blendName, setBlendName] = useState("");
@@ -79,6 +85,10 @@ export function ShopView() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- one-time read of the URL on mount
 
   return (<>
+    {/* Opened directly (or the model isn't in memory yet): the "Opening the Coffee Lab" screen
+        covers the page until the bag model is ready. Arriving from the landing page's intro, it
+        already is, so this never shows. */}
+    {loading && intro.length > 0 && <LabIntro blends={intro} minMs={1400} ready={modelReady} onDone={() => setLoading(false)} />}
     <BoxHero cta={{ label: "Build your coffee blend", onClick: scrollToStart }} />
     <div className="pv-page" style={{ maxWidth: "var(--content-max)", margin: "0 auto", padding: "24px 24px 96px", display: "flex", flexDirection: "column", gap: 40 }}>
       <div ref={startRef} id="build" style={{ display: "flex", flexDirection: "column", gap: 40, scrollMarginTop: "calc(var(--topbar-h) + 16px)" }}>

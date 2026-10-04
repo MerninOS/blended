@@ -1,14 +1,17 @@
 "use client";
 // "Opening the Coffee Lab": sample blend cards dealt onto the tan stage, the
-// top one zooms away, then we navigate. Click anywhere to skip.
+// top one zooms away, then we go on. It also covers the 3D bag model loading:
+// with `ready`, it holds on the last card until that settles (never longer
+// than CAP_MS), so the lab opens with the model in place. Click to skip.
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { IntroBlend } from "@/lib/landing";
+import "./lab-intro.css";
 
 const IC_COLORS = ["#EE8A1E", "#C43C7C", "#D93D18", "#8E2F52"];
 const IC_ROAST = ["#8C9A6B", "#D9A441", "#C4763C", "#9A4F26", "#6B3018", "#3A2118"];
 const track = { fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: ".14em", color: "#1A1A18" } as const;
-const STEP = 520;
+const STEP = 520, CAP_MS = 12000;
 
 function IntroCard({ b }: { b: IntroBlend }) {
   return (
@@ -55,15 +58,27 @@ function IntroCard({ b }: { b: IntroBlend }) {
   );
 }
 
-export function LabIntro({ blends, onDone }: { blends: IntroBlend[]; onDone: () => void }) {
-  const end = 700 + blends.length * STEP + 500;
+/**
+ * `minMs` overrides how long the deck plays (default: every card dealt). `ready`: wait
+ * for it too before leaving. `onDone` fires after the exit animation, or on click.
+ */
+export function LabIntro({ blends, onDone, ready, minMs }: { blends: IntroBlend[]; onDone: () => void; ready?: Promise<unknown>; minMs?: number }) {
+  const end = minMs ?? 700 + blends.length * STEP + 500;
   const [out, setOut] = useState(false);
-  const done = useRef(onDone);
+  const done = useRef(onDone), wait = useRef(ready);
   useEffect(() => { done.current = onDone; });
   useEffect(() => {
-    const t1 = setTimeout(() => setOut(true), end);
-    const t2 = setTimeout(() => done.current(), end + 750);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    let live = true;
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    (async () => {
+      await sleep(end);
+      if (wait.current) await Promise.race([wait.current, sleep(CAP_MS - end)]);
+      if (!live) return;
+      setOut(true);
+      await sleep(750);
+      if (live) done.current();
+    })();
+    return () => { live = false; };
   }, [end]);
   return (
     <div className={"ic-stage" + (out ? " out" : "")} onClick={() => done.current()} role="dialog" aria-label="Opening the Coffee Lab">

@@ -134,35 +134,3 @@
 @media (prefers-reduced-motion: reduce) { .lp-tick-row { animation: none; } }
 
 /* ---- "Opening the Coffee Lab" intro: a deck of sample blend cards ---- */
-.ic-stage { position: fixed; inset: 0; z-index: 100; background: var(--bag-stage); overflow: hidden; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; animation: ic-wipe 700ms cubic-bezier(.7,0,.2,1) both; }
-@keyframes ic-wipe { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
-.ic-marq { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); white-space: nowrap; color: rgba(26,26,24,.07); font-size: clamp(90px, 16vw, 260px); pointer-events: none; }
-.ic-marq > div { display: inline-flex; animation: lp-tick 9s linear infinite; }
-.ic-deck { position: relative; width: min(760px, 88vw); aspect-ratio: 780/415; }
-.ic-slot { position: absolute; inset: 0; opacity: 0; animation: ic-deal 700ms cubic-bezier(.16,1,.3,1) both; }
-@keyframes ic-deal { 0% { opacity: 0; transform: translate(70vw, 8vh) rotate(18deg) scale(.9); } 60% { opacity: 1; } 100% { opacity: 1; transform: translate(0,0) rotate(var(--rot)) scale(1); } }
-.ic-slot:last-child { --rot: 0deg; }
-.ic-card { width: 100%; height: 100%; box-sizing: border-box; background: #F0EDE5; border-radius: var(--r-sm); box-shadow: 0 1px 0 rgba(26,26,24,.04), 0 30px 60px -24px rgba(26,26,24,.45); padding: clamp(16px, 2.6vw, 26px); display: flex; flex-direction: column; justify-content: space-between; gap: 12px; }
-.ic-radar { transform-origin: 240px 240px; animation: ic-pop 900ms cubic-bezier(.16,1,.3,1) both; }
-.ic-slot .ic-radar { animation-delay: calc(700ms + var(--i) * 520ms + 200ms); }
-@keyframes ic-pop { from { transform: scale(.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-.ic-foot { position: absolute; left: 0; right: 0; bottom: clamp(20px, 5vh, 44px); display: flex; align-items: center; justify-content: center; gap: 20px; padding: 0 24px; }
-.ic-prog { width: min(220px, 30vw); height: 2px; background: rgba(26,26,24,.14); overflow: hidden; }
-.ic-prog i { display: block; height: 100%; background: var(--brand); transform-origin: left; animation: ic-bar linear both; }
-@keyframes ic-bar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-.ic-stage.out .ic-slot:not(:last-child) { transition: transform 600ms cubic-bezier(.7,0,.2,1), opacity 400ms; transform: translateY(-12vh) scale(.9) !important; opacity: 0 !important; }
-.ic-stage.out .ic-slot:last-child { animation: ic-zoom 750ms cubic-bezier(.7,0,.2,1) both; }
-@keyframes ic-zoom { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(1.6); } }
-.ic-stage.out .ic-foot, .ic-stage.out .ic-marq { opacity: 0; transition: opacity 300ms; }
-@media (max-width: 640px) {
-  .ic-deck { width: min(88vw, 400px); aspect-ratio: auto; height: auto; display: grid; margin-top: 0; }
-  .ic-deck > .ic-slot { position: relative; inset: auto; grid-area: 1/1; }
-  .ic-card { height: auto; min-height: 100%; padding: 16px; gap: 12px; }
-  .ic-body { grid-template-columns: minmax(0,1fr) !important; gap: 18px !important; }
-  .ic-svg { max-width: min(130px, 20vh) !important; }
-  .ic-card > div:last-child { flex-direction: column; align-items: flex-start !important; gap: 10px !important; }
-  .ic-card > div:last-child > span:last-child { align-items: flex-start !important; }
-  .ic-foot { position: static; flex-direction: column; gap: 8px; margin-top: 18px; }
-  .ic-stage { justify-content: center; padding: 16px 0; }
-  .ic-marq { font-size: 120px; }
-}

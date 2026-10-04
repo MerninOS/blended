@@ -104,9 +104,13 @@ async function paintCard(d: BagCard) {
 
 // ---- the Meshy bag model (BoxHero.jsx bagLoadModel), with the drawn bag as the fallback ----
 export const BAG_MODEL_URL = "/models/coffee-bag.fbx";
-let bagModel: Promise<THREE_NS.Group | null> | null = null;
-/** Load the bag model once per page; null when it's missing or fails (the drawn bag is used instead). */
-function loadBagModel(): Promise<THREE_NS.Group | null> {
+let bagModel: Promise<THREE_NS.Group | null> | null = null, bagSettled = false;
+/**
+ * Load (download + parse) the bag model once per page session; null when it's missing or
+ * fails (the drawn bag is used instead). Kept in memory across client-side navigation, so
+ * starting it on the landing page means the Coffee Lab opens with the model ready.
+ */
+export function loadBagModel(): Promise<THREE_NS.Group | null> {
   bagModel ??= (async () => {
     try {
       const head = await fetch(BAG_MODEL_URL, { method: "HEAD" });
@@ -114,9 +118,52 @@ function loadBagModel(): Promise<THREE_NS.Group | null> {
       const { FBXLoader } = await import("three/examples/jsm/loaders/FBXLoader.js");
       return await new FBXLoader().loadAsync(BAG_MODEL_URL);
     } catch (e) { console.warn("[bag] model unavailable, drawing the bag instead", e); return null; }
-  })();
+  })().finally(() => { bagSettled = true; });
   return bagModel;
 }
+/** True once the model has loaded (or failed and the drawn bag will be used): nothing left to wait for. */
+export const bagModelSettled = () => bagSettled;
+/**
+ * The model's front surface as a height map: every triangle is rasterised onto an x/y
+ * grid keeping the frontmost z (a tiny z-buffer), then sampled bilinearly. A few ms for
+ * the ~73k-triangle bag, against seconds for a raycast per point; the sticker and card
+ * are laid onto it.
+ */
+function frontSurface(model: THREE_NS.Object3D, bb: THREE_NS.Box3) {
+  const NX = 64, NY = 128, x0 = bb.min.x, y0 = bb.min.y, sx = (bb.max.x - x0) / (NX - 1), sy = (bb.max.y - y0) / (NY - 1);
+  const z = new Float32Array(NX * NY).fill(-Infinity);
+  const w = new Float32Array(9);
+  model.traverse((o) => {
+    const m = o as THREE_NS.Mesh; if (!m.isMesh) return;
+    const p = m.geometry.attributes.position, idx = m.geometry.index, e = m.matrixWorld.elements;
+    const n = idx ? idx.count : p.count;
+    for (let t = 0; t + 2 < n; t += 3) {
+      for (let v = 0; v < 3; v++) { // vertex → grid space (gx, gy) and world z
+        const q = idx ? idx.getX(t + v) : t + v, vx = p.getX(q), vy = p.getY(q), vz = p.getZ(q);
+        w[v * 3] = (e[0] * vx + e[4] * vy + e[8] * vz + e[12] - x0) / sx;
+        w[v * 3 + 1] = (e[1] * vx + e[5] * vy + e[9] * vz + e[13] - y0) / sy;
+        w[v * 3 + 2] = e[2] * vx + e[6] * vy + e[10] * vz + e[14];
+      }
+      const [ax, ay, az, bx, by, bz, cx, cy, cz] = w;
+      const d = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
+      if (Math.abs(d) < 1e-12) continue; // edge-on to the camera
+      const i0 = Math.max(0, Math.ceil(Math.min(ax, bx, cx))), i1 = Math.min(NX - 1, Math.floor(Math.max(ax, bx, cx)));
+      const j0 = Math.max(0, Math.ceil(Math.min(ay, by, cy))), j1 = Math.min(NY - 1, Math.floor(Math.max(ay, by, cy)));
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+        const l1 = ((by - cy) * (i - cx) + (cx - bx) * (j - cy)) / d, l2 = ((cy - ay) * (i - cx) + (ax - cx) * (j - cy)) / d, l3 = 1 - l1 - l2;
+        if (l1 < -1e-6 || l2 < -1e-6 || l3 < -1e-6) continue;
+        const zz = l1 * az + l2 * bz + l3 * cz, k = j * NX + i;
+        if (zz > z[k]) z[k] = zz;
+      }
+    }
+  });
+  const at = (i: number, j: number) => { const v = z[Math.min(NY - 1, Math.max(0, j)) * NX + Math.min(NX - 1, Math.max(0, i))]; return v > -Infinity ? v : bb.max.z; };
+  return (x: number, y: number) => {
+    const fx = (x - x0) / sx, fy = (y - y0) / sy, i = Math.floor(fx), j = Math.floor(fy), tx = fx - i, ty = fy - j;
+    return (at(i, j) * (1 - tx) + at(i + 1, j) * tx) * (1 - ty) + (at(i, j + 1) * (1 - tx) + at(i + 1, j + 1) * tx) * ty;
+  };
+}
+
 /** The vertical BLENDED sticker on the model's front panel. */
 function stickerCanvas(aspect: number, logo: string) {
   const w = 512, h = Math.round(w * aspect), c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d")!;
@@ -211,8 +258,7 @@ export async function mountBox(host: HTMLElement, opts: {
     bb = new THREE.Box3().setFromObject(bag); const c = bb.getCenter(new THREE.Vector3());
     bag.position.x -= c.x; bag.position.z -= c.z; bag.position.y -= bb.min.y; bag.updateMatrixWorld(true);
     bb = new THREE.Box3().setFromObject(bag); sz = bb.getSize(new THREE.Vector3());
-    const ray = new THREE.Raycaster(), dir = new THREE.Vector3(0, 0, -1), o = new THREE.Vector3();
-    const front = (x: number, y: number) => { o.set(x, y, 10); ray.set(o, dir); return ray.intersectObject(bag, true)[0]?.point.z ?? bb.max.z; };
+    const front = frontSurface(bag, bb);
     // vertical BLENDED sticker beneath the card
     const sw = sz.x * .5, sh = BOX_H * .64, scy = BOX_H * .45;
     const sgeo = own(new THREE.PlaneGeometry(sw, sh, 16, 32)), sp = sgeo.attributes.position;
