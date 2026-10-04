@@ -79,7 +79,7 @@ export function ShopView() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- one-time read of the URL on mount
 
   return (<>
-    <BoxHero cta={{ label: "Build your blend", onClick: scrollToStart }} />
+    <BoxHero cta={{ label: "Build your coffee blend", onClick: scrollToStart }} />
     <div className="pv-page" style={{ maxWidth: "var(--content-max)", margin: "0 auto", padding: "24px 24px 96px", display: "flex", flexDirection: "column", gap: 40 }}>
       <div ref={startRef} id="build" style={{ display: "flex", flexDirection: "column", gap: 40, scrollMarginTop: "calc(var(--topbar-h) + 16px)" }}>
         <Step n={1} title="Choose your coffees">
