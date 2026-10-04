@@ -383,4 +383,4 @@ html[data-product="coroasted-coffee-os"] body {
 .policy-body a { color: var(--ink); text-decoration: underline; }
 
 /* Coffee Lab hero: the "choose your coffees below" arrow nudges downward */
-.bx-cta:hover { background: var(--brand-hover) !important }
+.bx-cta:hover { background: #222 !important }

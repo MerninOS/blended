@@ -102,6 +102,32 @@ async function paintCard(d: BagCard) {
   return c;
 }
 
+// ---- the Meshy bag model (BoxHero.jsx bagLoadModel), with the drawn bag as the fallback ----
+export const BAG_MODEL_URL = "/models/coffee-bag.fbx";
+let bagModel: Promise<THREE_NS.Group | null> | null = null;
+/** Load the bag model once per page; null when it's missing or fails (the drawn bag is used instead). */
+function loadBagModel(): Promise<THREE_NS.Group | null> {
+  bagModel ??= (async () => {
+    try {
+      const head = await fetch(BAG_MODEL_URL, { method: "HEAD" });
+      if (!head.ok) return null;
+      const { FBXLoader } = await import("three/examples/jsm/loaders/FBXLoader.js");
+      return await new FBXLoader().loadAsync(BAG_MODEL_URL);
+    } catch (e) { console.warn("[bag] model unavailable, drawing the bag instead", e); return null; }
+  })();
+  return bagModel;
+}
+/** The vertical BLENDED sticker on the model's front panel. */
+function stickerCanvas(aspect: number, logo: string) {
+  const w = 512, h = Math.round(w * aspect), c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d")!;
+  g.fillStyle = "#DED9D1"; g.fillRect(0, 0, w, h);
+  g.save(); g.translate(w / 2, h * .52); g.rotate(-Math.PI / 2);
+  const f = (px: number) => `800 ${px}px ${logo}`; g.font = f(300);
+  g.font = f(300 * (h * .9) / g.measureText("BLENDED").width);
+  g.fillStyle = BOX_INK; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("BLENDED", 0, 0); g.restore();
+  return c;
+}
+
 export interface BoxScene {
   three: Three;
   camera: THREE_NS.PerspectiveCamera;
@@ -154,29 +180,60 @@ export async function mountBox(host: HTMLElement, opts: {
   ground.rotation.x = -Math.PI / 2; ground.position.y = .002;
   const rig = new THREE.Group(); scene.add(rig); rig.add(ground);
 
-  // the bag
-  const { logo } = await assets();
+  // the bag: the Meshy model when it's there (paper finish, sticker and card wrapped onto its
+  // front), else the drawn pouch
+  const [{ logo }, model] = await Promise.all([assets(), loadBagModel()]);
   if (dead) return { dispose: () => {}, setCard: () => {} };
-  const shellGeo = own(bagDeform(new THREE.BoxGeometry(BOX_W, BOX_H, BOX_D, 24, 48, 12).translate(0, BOX_H / 2, 0)));
-  const film = (c: HTMLCanvasElement) => own(new THREE.MeshPhysicalMaterial({ map: tex(c), color: 0xffffff, metalness: 0, clearcoat: 0, roughness: .95, sheen: .15, sheenRoughness: .9, sheenColor: new THREE.Color(0xffffff) }));
-  const side = film(filmCanvas(480, 1620, "side", logo)), plain = film(filmCanvas(256, 256, "back", logo));
-  const outer = new THREE.Mesh(shellGeo, [side, side, plain, plain, film(filmCanvas(1024, 1620, "front", logo)), film(filmCanvas(1024, 1620, "back", logo))]);
-  outer.castShadow = true; outer.receiveShadow = true;
-
-  // tasting card: slipped on at a slight clockwise tilt over the lower label, curved to the pillowed front
-  const cw = BOX_W * .72, ch = cw * LABEL_H / LABEL_W, cxc = BOX_W * .07, cyc = BOX_H * .38, ang = -.11, ca = Math.cos(ang), sa = Math.sin(ang);
-  const cg = own(new THREE.PlaneGeometry(cw, ch, 24, 8)), cp = cg.attributes.position;
-  for (let i = 0; i < cp.count; i++) {
-    const lx = cp.getX(i), ly = cp.getY(i), x = lx * ca - ly * sa + cxc, y = lx * sa + ly * ca + cyc;
-    cp.setXYZ(i, x * (1 - .02 * y / BOX_H), y, bagSurfZ(x, y / BOX_H) + .008);
-  }
-  cg.computeVertexNormals();
   const cardMat = own(new THREE.MeshPhysicalMaterial({ color: BOX_PAPER, roughness: .75, clearcoat: 0 }));
-  const cardFront = new THREE.Mesh(cg, cardMat); cardFront.receiveShadow = true;
-  const cardBack = new THREE.Mesh(cg, own(new THREE.MeshStandardMaterial({ color: 0xE4E0D6, roughness: .8, side: THREE.BackSide })));
   const catcher = new THREE.Mesh(own(new THREE.PlaneGeometry(10, 10)), own(new THREE.ShadowMaterial({ opacity: .28 })));
   catcher.rotation.x = -Math.PI / 2; catcher.position.y = .001; catcher.receiveShadow = true;
-  rig.add(catcher, cardFront, cardBack, outer);
+  rig.add(catcher);
+  /** Card geometry: the label at a slight clockwise tilt, lying on the bag's front at `surfZ`. */
+  const cardGeo = (cw: number, cxc: number, cyc: number, surfZ: (x: number, y: number) => number) => {
+    const ch = cw * LABEL_H / LABEL_W, ang = -.11, ca = Math.cos(ang), sa = Math.sin(ang);
+    const cg = own(new THREE.PlaneGeometry(cw, ch, 24, 8)), cp = cg.attributes.position;
+    for (let i = 0; i < cp.count; i++) {
+      const lx = cp.getX(i), ly = cp.getY(i), x = lx * ca - ly * sa + cxc, y = lx * sa + ly * ca + cyc;
+      cp.setXYZ(i, x, y, surfZ(x, y));
+    }
+    cg.computeVertexNormals(); return cg;
+  };
+  let cg: THREE_NS.BufferGeometry;
+  if (model) {
+    const bag = model.clone(true);
+    const paper = own(new THREE.MeshPhysicalMaterial({ color: 0xC9C1B5, roughness: .9, metalness: 0, sheen: .25, sheenRoughness: .8, sheenColor: new THREE.Color(0xffffff), side: THREE.DoubleSide }));
+    bag.traverse((o) => { const m = o as THREE_NS.Mesh; if (m.isMesh) { m.material = paper; m.castShadow = m.receiveShadow = true; } });
+    // normalise: front facing +z, BOX_H tall, centred, standing on y = 0 (measured unparented)
+    bag.updateMatrixWorld(true);
+    let bb = new THREE.Box3().setFromObject(bag), sz = bb.getSize(new THREE.Vector3());
+    if (sz.z > sz.x * 1.05) { bag.rotation.y = Math.PI / 2; bag.updateMatrixWorld(true); bb = new THREE.Box3().setFromObject(bag); sz = bb.getSize(new THREE.Vector3()); }
+    bag.scale.multiplyScalar(BOX_H / sz.y); bag.updateMatrixWorld(true);
+    bb = new THREE.Box3().setFromObject(bag); const c = bb.getCenter(new THREE.Vector3());
+    bag.position.x -= c.x; bag.position.z -= c.z; bag.position.y -= bb.min.y; bag.updateMatrixWorld(true);
+    bb = new THREE.Box3().setFromObject(bag); sz = bb.getSize(new THREE.Vector3());
+    const ray = new THREE.Raycaster(), dir = new THREE.Vector3(0, 0, -1), o = new THREE.Vector3();
+    const front = (x: number, y: number) => { o.set(x, y, 10); ray.set(o, dir); return ray.intersectObject(bag, true)[0]?.point.z ?? bb.max.z; };
+    // vertical BLENDED sticker beneath the card
+    const sw = sz.x * .5, sh = BOX_H * .64, scy = BOX_H * .45;
+    const sgeo = own(new THREE.PlaneGeometry(sw, sh, 16, 32)), sp = sgeo.attributes.position;
+    for (let i = 0; i < sp.count; i++) { const x = sp.getX(i), y = sp.getY(i) + scy; sp.setXYZ(i, x, y, front(x, y) + .004); }
+    sgeo.computeVertexNormals();
+    const sticker = new THREE.Mesh(sgeo, own(new THREE.MeshPhysicalMaterial({ map: tex(stickerCanvas(sh / sw, logo)), roughness: .85, metalness: 0, polygonOffset: true, polygonOffsetFactor: -1 })));
+    sticker.receiveShadow = true;
+    cg = cardGeo(sz.x * .62, sz.x * .05, BOX_H * .38, (x, y) => front(x, y) + .014);
+    rig.add(bag, sticker);
+  } else {
+    const shellGeo = own(bagDeform(new THREE.BoxGeometry(BOX_W, BOX_H, BOX_D, 24, 48, 12).translate(0, BOX_H / 2, 0)));
+    const film = (c: HTMLCanvasElement) => own(new THREE.MeshPhysicalMaterial({ map: tex(c), color: 0xffffff, metalness: 0, clearcoat: 0, roughness: .95, sheen: .15, sheenRoughness: .9, sheenColor: new THREE.Color(0xffffff) }));
+    const side = film(filmCanvas(480, 1620, "side", logo)), plain = film(filmCanvas(256, 256, "back", logo));
+    const outer = new THREE.Mesh(shellGeo, [side, side, plain, plain, film(filmCanvas(1024, 1620, "front", logo)), film(filmCanvas(1024, 1620, "back", logo))]);
+    outer.castShadow = true; outer.receiveShadow = true;
+    cg = cardGeo(BOX_W * .72, BOX_W * .07, BOX_H * .38, (x, y) => bagSurfZ(x, y / BOX_H) + .008);
+    rig.add(outer);
+  }
+  const cardFront = new THREE.Mesh(cg, cardMat); cardFront.receiveShadow = true;
+  const cardBack = new THREE.Mesh(cg, own(new THREE.MeshStandardMaterial({ color: 0xE4E0D6, roughness: .8, side: THREE.BackSide })));
+  rig.add(cardFront, cardBack);
 
   let cardTex: THREE_NS.CanvasTexture | null = null, cardSeq = 0;
   const setCard = (d: BagCard) => {

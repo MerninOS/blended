@@ -40,7 +40,7 @@ export function BoxHero({ cta }: { cta: { label: string; onClick: () => void } }
         </div>
         <div ref={canvasHost} style={{ position: "absolute", inset: 0, opacity: ready ? 1 : 0, transition: "opacity 600ms var(--ease)" }} />
         <div ref={cueRef} style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "0 24px clamp(20px,4vh,40px)", zIndex: 3, display: "flex", justifyContent: "center" }}>
-          <button type="button" onClick={cta.onClick} className="bx-cta" style={{ ...disp, fontSize: 17, lineHeight: 1, display: "inline-flex", alignItems: "center", gap: 10, padding: "15px 26px", minHeight: 48, whiteSpace: "nowrap", border: 0, borderRadius: "var(--r-md)", background: "var(--brand)", color: "var(--on-brand, #fff)", cursor: "pointer", boxShadow: "var(--shadow-sm)", transition: "background var(--dur) var(--ease)" }}>
+          <button type="button" onClick={cta.onClick} className="bx-cta" style={{ fontFamily: "var(--font-mono)", fontVariationSettings: '"wdth" 100, "wght" 500', fontWeight: 500, fontSize: 12, letterSpacing: 0, textTransform: "uppercase", lineHeight: 1, display: "inline-flex", alignItems: "center", gap: 10, padding: "15px 26px", minHeight: 48, whiteSpace: "nowrap", border: 0, borderRadius: 100, background: "#000", color: "#fff", cursor: "pointer", boxShadow: "var(--shadow-sm)", transition: "background var(--dur) var(--ease)" }}>
             {cta.label}<Icon name="arrow" size={16} stroke={2} />
           </button>
         </div>
