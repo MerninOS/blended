@@ -36,7 +36,14 @@ export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
   const [justAdded, setJustAdded] = useState(false);
 
   const emptyBlend = sel.length === 0;
-  const size = SHOP_SIZES.find((s) => s.id === sizeId)!;
+  // A bag too small for the coffees' minimum weights can't be chosen; if the picked size
+  // stops fitting (a coffee added, fewer bags), the smallest size that fits is used instead.
+  const sizeFits = (s: ShopSize) => !sel.length || minsFit(sel, s.lb * qty * G_PER_LB, idx);
+  const sizeWhy = (s: ShopSize) => sizeFits(s) ? null
+    : `Too small for this blend. ${sel.length === 1 ? "This coffee needs" : `Your ${sel.length} coffees need`} at least ${minsTotalG(sel, idx).toLocaleString()} g together; ${qty > 1 ? `${qty} × ` : ""}${s.label} is ${Math.round(s.lb * qty * G_PER_LB).toLocaleString()} g.`;
+  const picked = SHOP_SIZES.find((s) => s.id === sizeId)!;
+  const maxBatchG = SHOP_SIZES[SHOP_SIZES.length - 1].lb * qty * G_PER_LB;
+  const size = sizeFits(picked) ? picked : SHOP_SIZES.find(sizeFits) ?? picked;
   const effRoast = roast != null ? roast : (sel.length ? roastOf(sel, idx) : 3);
   const perLb = sel.length ? retailSel(sel, idx) : 0;
   const priceFor = (s: ShopSize) => bagPrice(perLb, s);
@@ -64,7 +71,7 @@ export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
   });
   const addToCart = () => {
     if (blocked) return;
-    cartStore.add({ kind: "blend", key: null, sizeId, sizeLabel: size.label, name, qty, unit, roast: effRoast, roastOverride: roast, sel,
+    cartStore.add({ kind: "blend", key: null, sizeId: size.id, sizeLabel: size.label, name, qty, unit, roast: effRoast, roastOverride: roast, sel,
       parts: sel.map((x) => ({ id: x.id, pct: x.pct, name: idx.get(x.id)?.name ?? x.id })) }, true);
     const items = cartStore.get().items;
     trackAddToCart({ kind: "blend", name, price: unit, quantity: qty, variantName: size.label, image: null },
@@ -93,7 +100,9 @@ export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
     <div className="pv-page" style={{ maxWidth: "var(--content-max)", margin: "0 auto", padding: "24px 24px 96px", display: "flex", flexDirection: "column", gap: 40 }}>
       <div ref={startRef} id="build" style={{ display: "flex", flexDirection: "column", gap: 40, scrollMarginTop: "calc(var(--topbar-h) + 16px)" }}>
         <Step n={1} title="Choose your coffees">
-          <BlendRatios sel={sel} setSel={setSel} batchG={batchG} batchLabel={`${qty} × ${size.label}`} retail sections={["add"]} />
+          {/* Picking coffees checks against the biggest bag: a coffee is only off-limits when no size
+              could hold the blend's minimums. Step 3 then moves to the smallest bag that fits. */}
+          <BlendRatios sel={sel} setSel={setSel} batchG={maxBatchG} batchLabel={`${qty} × ${size.label}`} retail sections={["add"]} />
         </Step>
 
         <Step n={2} title="Adjust your ratios">
@@ -114,13 +123,15 @@ export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
       <Step n={3} title="Choose your bag size">
         <div role="radiogroup" aria-label="Bag size" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8 }}>
           {SHOP_SIZES.map((s) => {
-            const on = s.id === sizeId, p = priceFor(s);
+            const on = s.id === size.id, p = priceFor(s), why = sizeWhy(s);
             return (
-              <button type="button" role="radio" aria-checked={on} key={s.id} onClick={() => setSizeId(s.id)} style={{ padding: "13px 14px", textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 5,
-                border: on ? "1.5px solid var(--brand)" : "1px solid var(--hairline-strong)", borderRadius: "var(--r-md)", background: on ? "var(--brand-soft)" : "var(--surface)", transition: "all var(--dur) var(--ease)" }}>
-                <span style={{ ...disp, fontSize: 15, color: "var(--ink)", lineHeight: 1 }}>{s.label}</span>
-                <span style={{ ...mono, fontSize: 14, color: on ? "var(--brand-hover)" : "var(--ink)" }}>{emptyBlend ? "—" : money(p)}</span>
-                <span style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, color: "var(--ink-subtle)" }}>{s.note}{emptyBlend ? "" : ` · ${money(p / s.lb)}/lb`}</span>
+              <button type="button" role="radio" aria-checked={on} key={s.id} onClick={() => !why && setSizeId(s.id)} disabled={!!why} aria-disabled={!!why} title={why ?? undefined}
+                style={{ padding: "13px 14px", textAlign: "left", cursor: why ? "not-allowed" : "pointer", display: "flex", flexDirection: "column", gap: 5,
+                  border: on ? "1.5px solid var(--brand)" : "1px solid var(--hairline-strong)", borderRadius: "var(--r-md)", background: why ? "var(--surface-sunken)" : on ? "var(--brand-soft)" : "var(--surface)", transition: "all var(--dur) var(--ease)" }}>
+                <span style={{ ...disp, fontSize: 15, color: why ? "var(--ink-subtle)" : "var(--ink)", lineHeight: 1 }}>{s.label}</span>
+                <span style={{ ...mono, fontSize: 14, color: why ? "var(--ink-subtle)" : on ? "var(--brand-hover)" : "var(--ink)", textDecoration: why ? "line-through" : "none" }}>{emptyBlend ? "—" : money(p)}</span>
+                {why ? <span style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, lineHeight: 1.35, color: "var(--danger)" }}>{why}</span>
+                  : <span style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, color: "var(--ink-subtle)" }}>{s.note}{emptyBlend ? "" : ` · ${money(p / s.lb)}/lb`}</span>}
               </button>
             );
           })}
