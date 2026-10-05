@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { CoffeeReviewsData } from "@/lib/domain/types";
 import { mono, over } from "@/components/ui/primitives";
 
-function Stars({ n, size = 11 }: { n: number; size?: number }) {
+export function Stars({ n, size = 11 }: { n: number; size?: number }) {
   return (
     <span aria-label={`${n} of 5 stars`} style={{ display: "inline-flex", gap: 1, color: "var(--brand)", fontSize: size, lineHeight: 1, letterSpacing: 0 }}>
       {[1, 2, 3, 4, 5].map((i) => <span key={i} aria-hidden="true" style={{ opacity: i <= Math.round(n) ? 1 : .22 }}>★</span>)}

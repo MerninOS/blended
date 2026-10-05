@@ -12,6 +12,7 @@ import { Btn, Dot, Pill, RuleHead, Stepper, mono, over, disp, Photo } from "@/co
 import { Icon } from "@/components/ui/Icon";
 import { useCatalog } from "./catalog-context";
 import { CoffeeReviews } from "./CoffeeReviews";
+import { CoffeePicker } from "./CoffeePicker";
 
 type Section = "add" | "ratios" | "roast" | "name";
 
@@ -175,7 +176,15 @@ export function BlendRatios({ sel, setSel, roast, setRoast, blendName, setBlendN
       </div>
     ) : null,
 
-    add: (
+    add: retail ? (
+      <CoffeePicker key="add" lots={green} sel={sel} onAdd={add} onRemove={remove} reasonFor={(c) => {
+        if (c.avail === 0) return c.tag || "Out of stock";
+        if (sel.some((s) => s.id === c.id)) return null;
+        if (sel.length >= MAX_COMPONENTS) return "Blend is full — remove one to add this";
+        if (minPct(c.id) > minRoom || !minsFit([...sel, { id: c.id, pct: 0 }], batchG, idx)) return `Needs at least ${minG(c)} g — won't fit this batch`;
+        return null;
+      }} />
+    ) : (
       <div key="add">
         <RuleHead label="Add a coffee" right={<span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ink-subtle)" }}>{retail ? "Up to four coffees" : "Anchors stocked year-round"}</span>} />
         {rest.map((c) => {
