@@ -7,7 +7,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
-import type { LandingData } from "@/lib/landing";
+import type { LandingData, Pic } from "@/lib/landing";
+import { headlineRuns, plainHeadline } from "@/lib/landing-copy";
 import type { ShopPolicy } from "@/lib/shop";
 import { CookiePrefsLink } from "@/components/store/FooterClient";
 import { CartDrawer } from "@/components/store/CartDrawer";
@@ -32,19 +33,19 @@ const LAB = "/lab", BUILD = "/lab#build", SHOP = "/coffees";
 
 const Arrow = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>;
 
-const ORIGINS = [
-  { id: "brazil", name: "Brazil", where: "Minas Gerais · 1,100 m", desc: "Sweet, low-acid naturals that give a blend its body and chocolate base." },
-  { id: "colombia", name: "Colombia", where: "Huila & Tolima · 1,700 m", desc: "Washed lots and co-ferments with red fruit and a bright, clean finish." },
-  { id: "ethiopia", name: "Ethiopia", where: "Guji · 2,000 m", desc: "Floral, tea-like coffees grown in the highlands by smallholder farmers." },
-] as const;
-const PROCESS = [
-  ["01", "Harvest", "Cherries are picked by hand at peak ripeness."],
-  ["02", "Process", "Washed, natural or co-fermented at the farm, then dried on raised beds."],
-  ["03", "Roast", "We roast your blend to order in small batches, then rest it before packing."],
-  ["04", "Brew", "It ships in your own bag, with the recipe on the card."],
-] as const;
+/** A headline from the copy: new lines break, *asterisked* words are orange. */
+function Headline({ text }: { text: string }) {
+  return <>{headlineRuns(text).map((line, i) => (
+    <span key={i}>{i > 0 && <br />}{line.map((r, j) => r.hi ? <span key={j} style={{ color: "var(--brand)" }}>{r.t}</span> : r.t)}</span>
+  ))}</>;
+}
 
-function HeroVideo({ src, poster }: { src: string | null; poster: string }) {
+/** A filling photo, kept on its focal point when cropped. */
+const Photo = ({ pic, sizes, priority, alt = "" }: { pic: Pic; sizes: string; priority?: boolean; alt?: string }) => (
+  <Image src={pic.src} alt={pic.alt ?? alt} fill priority={priority} sizes={sizes} className="lp-fill" style={{ objectFit: "cover", objectPosition: pic.pos }} />
+);
+
+function HeroVideo({ src, poster }: { src: string | null; poster: Pic }) {
   const v = useRef<HTMLVideoElement>(null);
   const [ok, setOk] = useState(!!src), [playing, setPlaying] = useState(true), [ready, setReady] = useState(false);
   useEffect(() => {
@@ -52,7 +53,7 @@ function HeroVideo({ src, poster }: { src: string | null; poster: string }) {
   }, []);
   const toggle = () => { const el = v.current; if (!el) return; if (el.paused) { void el.play(); setPlaying(true); } else { el.pause(); setPlaying(false); } };
   // The still shows immediately and stays up until the video is actually playing (or if it fails).
-  const still = <Image src={poster} alt="" fill priority sizes="100vw" className="lp-fill" style={{ objectFit: "cover" }} />;
+  const still = <Photo pic={poster} priority sizes="100vw" />;
   if (!src || !ok) return still;
   return (<>
     {still}
@@ -67,14 +68,15 @@ function HeroVideo({ src, poster }: { src: string | null; poster: string }) {
 }
 
 /** The Coffee Lab panel: a video if one is dropped in, otherwise the bag photo. */
-function LabMedia({ video, image }: { video: string | null; image: string }) {
+function LabMedia({ video, image }: { video: string | null; image: Pic }) {
   const [ok, setOk] = useState(true);
-  if (video && ok) return <video className="lp-fill" src={video} poster={image} autoPlay muted loop playsInline preload="auto" onError={() => setOk(false)} />;
-  return <Image src={image} alt="A Blended bag with its blend card" fill sizes="(max-width:900px) 100vw, 50vw" style={{ objectFit: "cover" }} />;
+  if (video && ok) return <video className="lp-fill" src={video} poster={image.src} autoPlay muted loop playsInline preload="auto" onError={() => setOk(false)} style={{ objectFit: "cover", objectPosition: image.pos }} />;
+  return <Photo pic={image} alt="A Blended bag with its blend card" sizes="(max-width:900px) 100vw, 50vw" />;
 }
 
 export function Landing({ data, policies }: { data: LandingData; policies: ShopPolicy[] }) {
   const router = useRouter();
+  const c = data.copy;
   const [solid, setSolid] = useState(false);
   const [intro, setIntro] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -114,13 +116,13 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
   const extras = [
     { t: "Build your blend" },
     ...(data.merchUrl ? [{ t: "New merch" }] : []), ...(data.gearUrl ? [{ t: "Brew gear" }] : []),
-    { t: "Free shipping over $50" },
+    { t: c.smallPrint.shipping },
   ];
   const tickItems: { t: string; dot?: string }[] = [...data.lineup.map((c) => ({ t: c.name, dot: c.color })), ...extras];
   const shopMore = [
-    data.merchUrl && { id: "merch", t: "Merch", d: "Hats, tees and patches from the roastery.", cta: "Shop merch", href: data.merchUrl, img: data.media.merch },
-    data.gearUrl && { id: "gear", t: "Brew gear", d: "The grinders, kettles and drippers we use on our own bar.", cta: "Shop gear", href: data.gearUrl, img: data.media.gear },
-  ].filter(Boolean) as { id: string; t: string; d: string; cta: string; href: string; img: string | null }[];
+    data.merchUrl && { id: "merch", t: c.merch.title, d: c.merch.text, cta: c.merch.cta, href: data.merchUrl, img: data.media.merch },
+    data.gearUrl && { id: "gear", t: c.gear.title, d: c.gear.text, cta: c.gear.cta, href: data.gearUrl, img: data.media.gear },
+  ].filter(Boolean) as { id: string; t: string; d: string; cta: string; href: string; img: Pic | null }[];
   const menuItems: { t: string; d: string; href: string; lab?: boolean }[] = [
     { t: "Build a blend", d: "Mix up to four coffees, set the roast", href: LAB, lab: true },
     { t: "Our coffees", d: "Single origins and house blends", href: SHOP },
@@ -178,17 +180,17 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
       {menu && <div className="lp-menu-scrim" onClick={() => setMenu(false)} />}
 
       <main>
-        <section className="lp-hero" aria-label="Know the farm. Choose the cup.">
+        <section className="lp-hero" aria-label={plainHeadline(c.hero.headline)}>
           <HeroVideo src={data.media.heroVideo} poster={data.media.heroPoster} />
           <div className="lp-shade" />
           <div className="lp-hero-copy">
             <div className="lp-wrap" style={{ display: "flex", flexDirection: "column", gap: 24, alignItems: "flex-start" }}>
-              <div className="lp-over" style={{ color: "rgba(255,255,255,.85)" }}><span style={{ color: "var(--brand)" }}>●</span> Sourced direct · Roasted to order</div>
-              <h1 className="lp-disp" style={{ fontSize: "clamp(38px,7vw,112px)", color: "#fff", lineHeight: .95 }}>Know the farm.<br />Choose the <span style={{ color: "var(--brand)" }}>cup.</span></h1>
-              <p style={{ fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.5, margin: 0, maxWidth: "44ch", color: "rgba(255,255,255,.88)", textWrap: "pretty" }}>We buy from farmers we know by name and roast every order fresh. Start with a coffee from this week&apos;s shelf, or combine them into a blend that is yours alone.</p>
+              <div className="lp-over" style={{ color: "rgba(255,255,255,.85)" }}><span style={{ color: "var(--brand)" }}>●</span> {c.hero.eyebrow}</div>
+              <h1 className="lp-disp" style={{ fontSize: "clamp(38px,7vw,112px)", color: "#fff", lineHeight: .95 }}><Headline text={c.hero.headline} /></h1>
+              <p style={{ fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.5, margin: 0, maxWidth: "44ch", color: "rgba(255,255,255,.88)", textWrap: "pretty" }}>{c.hero.body}</p>
               <div className="lp-hero-ctas" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, marginTop: 8 }}>
-                <Link className="lp-btn lg light" href={SHOP}>Explore our offerings <Arrow /></Link>
-                <a className="lp-btn lg ghost" href={LAB} onClick={toLab} onPointerEnter={warm} onTouchStart={warm} onFocus={warm}>Build your blend <Arrow /></a>
+                <Link className="lp-btn lg light" href={SHOP}>{c.hero.primaryCta} <Arrow /></Link>
+                <a className="lp-btn lg ghost" href={LAB} onClick={toLab} onPointerEnter={warm} onTouchStart={warm} onFocus={warm}>{c.hero.secondaryCta} <Arrow /></a>
               </div>
             </div>
           </div>
@@ -198,11 +200,11 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
         <section className="lp-feat" aria-labelledby="lp-lab-h">
           <div className="lp-hero-art"><LabMedia video={data.media.labVideo} image={data.media.labImage} /></div>
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-            <span className="lp-over" style={{ color: "var(--ink-muted)" }}>The Coffee Lab</span>
-            <h2 id="lp-lab-h" className="lp-disp" style={disp("clamp(56px,8vw,128px)")}>Your<br />ratios.<br /><span style={{ color: "var(--brand)" }}>Your<br />coffee.</span></h2>
-            <div className="lp-notes"><span>Up to 4 coffees</span><span>Any ratio</span><span>Your name on the bag</span></div>
-            <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: "var(--ink-muted)", maxWidth: "46ch", textWrap: "pretty" }}>Start with a base, add something bright, move the sliders. The tasting wheel and roast level update as the blend changes. When it tastes right, name it and we roast it.</p>
-            <div><a className="lp-btn lg" href={LAB} onClick={toLab} onPointerEnter={warm} onTouchStart={warm} onFocus={warm}>Open the Coffee Lab <Arrow /></a></div>
+            <span className="lp-over" style={{ color: "var(--ink-muted)" }}>{c.lab.eyebrow}</span>
+            <h2 id="lp-lab-h" className="lp-disp" style={disp("clamp(56px,8vw,128px)")}><Headline text={c.lab.headline} /></h2>
+            {c.lab.chips.length > 0 && <div className="lp-notes">{c.lab.chips.map((t, i) => <span key={i}>{t}</span>)}</div>}
+            <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: "var(--ink-muted)", maxWidth: "46ch", textWrap: "pretty" }}>{c.lab.body}</p>
+            <div><a className="lp-btn lg" href={LAB} onClick={toLab} onPointerEnter={warm} onTouchStart={warm} onFocus={warm}>{c.lab.cta} <Arrow /></a></div>
           </div>
         </section>
 
@@ -210,21 +212,21 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
           <div className="lp-wrap">
             <div className="lp-head">
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <span className="lp-over" style={{ color: "rgba(255,255,255,.66)" }}>Where it comes from</span>
-                <h2 id="lp-farms-h" className="lp-disp" style={disp("clamp(44px,6vw,96px)")}>The farms</h2>
+                <span className="lp-over" style={{ color: "rgba(255,255,255,.66)" }}>{c.farms.eyebrow}</span>
+                <h2 id="lp-farms-h" className="lp-disp" style={disp("clamp(44px,6vw,96px)")}><Headline text={c.farms.headline} /></h2>
               </div>
-              <p style={{ margin: 0, fontSize: 16, lineHeight: 1.55, color: "rgba(255,255,255,.75)", maxWidth: "38ch" }}>Every lot in the lineup names the farm and the people who grew it.</p>
+              <p style={{ margin: 0, fontSize: 16, lineHeight: 1.55, color: "rgba(255,255,255,.75)", maxWidth: "38ch" }}>{c.farms.body}</p>
             </div>
             <div className="lp-origins">
-              {ORIGINS.map((o) => (
-                <div className="lp-tile" key={o.id}>
-                  <Image src={data.media.origins[o.id]} alt="" fill sizes="(max-width:980px) 78vw, 34vw" style={{ objectFit: "cover" }} />
+              {c.farms.origins.map((o, i) => (
+                <div className="lp-tile" key={i}>
+                  {data.media.origins[i] && <Photo pic={data.media.origins[i]} sizes="(max-width:980px) 78vw, 34vw" />}
                   <div className="lp-shade" />
                   <div className="lp-cap">
                     <span className="lp-over" style={{ color: "rgba(255,255,255,.75)", fontSize: 10.5 }}>{o.where}</span>
                     <h3 className="lp-disp" style={disp("clamp(36px,3.6vw,56px)")}>{o.name}</h3>
-                    <p>{o.desc}</p>
-                    <Link className="lp-over" href={SHOP} style={{ color: "#fff", fontSize: 10.5, display: "inline-flex", gap: 8, alignItems: "center", marginTop: 4 }}>Meet the producers <Arrow /></Link>
+                    <p>{o.text}</p>
+                    <Link className="lp-over" href={SHOP} style={{ color: "#fff", fontSize: 10.5, display: "inline-flex", gap: 8, alignItems: "center", marginTop: 4 }}>{c.farms.linkLabel} <Arrow /></Link>
                   </div>
                 </div>
               ))}
@@ -236,19 +238,19 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
           <div className="lp-wrap">
             <div className="lp-head">
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <span className="lp-over" style={{ color: "var(--ink-muted)" }}>The process</span>
-                <h2 id="lp-proc-h" className="lp-disp" style={disp("clamp(44px,6vw,96px)")}>Cherry to cup</h2>
+                <span className="lp-over" style={{ color: "var(--ink-muted)" }}>{c.process.eyebrow}</span>
+                <h2 id="lp-proc-h" className="lp-disp" style={disp("clamp(44px,6vw,96px)")}><Headline text={c.process.headline} /></h2>
               </div>
             </div>
             <div className="lp-steps">
-              {PROCESS.map(([n, t, d], i) => (
-                <div className="lp-step" key={n}>
+              {c.process.steps.map((st, i) => (
+                <div className="lp-step" key={i}>
                   <div style={{ position: "relative", aspectRatio: "4/5", background: "var(--surface-sunken)", borderRadius: "var(--r-sm)", overflow: "hidden" }}>
-                    <Image src={data.media.steps[i]} alt="" fill sizes="(max-width:560px) 100vw, (max-width:980px) 50vw, 25vw" style={{ objectFit: "cover" }} />
+                    {data.media.steps[i] && <Photo pic={data.media.steps[i]} sizes="(max-width:560px) 100vw, (max-width:980px) 50vw, 25vw" />}
                   </div>
-                  <span className="lp-num">{n}</span>
-                  <h3 className="lp-disp" style={disp("clamp(30px,2.8vw,44px)")}>{t}</h3>
-                  <p>{d}</p>
+                  <span className="lp-num">{String(i + 1).padStart(2, "0")}</span>
+                  <h3 className="lp-disp" style={disp("clamp(30px,2.8vw,44px)")}>{st.title}</h3>
+                  <p>{st.text}</p>
                 </div>
               ))}
             </div>
@@ -257,16 +259,16 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
 
         {data.house && (
           <section className="lp-band" aria-labelledby="lp-house-h">
-            <Image src={data.media.band} alt="" fill sizes="100vw" style={{ objectFit: "cover" }} />
+            <Photo pic={data.media.band} sizes="100vw" />
             <div className="lp-shade" />
             <div className="lp-band-copy">
               <div className="lp-wrap" style={{ width: "100%" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 22, maxWidth: 560, alignItems: "flex-start" }}>
-                  <span className="lp-over" style={{ color: "rgba(255,255,255,.8)" }}>House blend · This month</span>
+                  <span className="lp-over" style={{ color: "rgba(255,255,255,.8)" }}>{c.house.eyebrow}</span>
                   <h2 id="lp-house-h" className="lp-disp lp-band-title" style={disp("clamp(52px,7vw,112px)")}>{data.house.title.split(" + ")[0]}<br />+ {data.house.title.split(" + ")[1]}</h2>
                   {data.house.notes.length > 0 && <div className="lp-notes" style={{ color: "#fff" }}>{data.house.notes.map((n) => <span key={n}>{n}</span>)}</div>}
                   <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: "rgba(255,255,255,.86)", maxWidth: "44ch" }}>{data.house.copy}</p>
-                  <Link className="lp-btn lg light" href={data.house.href}>Start from this blend <Arrow /></Link>
+                  <Link className="lp-btn lg light" href={data.house.href}>{c.house.cta} <Arrow /></Link>
                 </div>
               </div>
             </div>
@@ -278,7 +280,7 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
             <div className={"lp-wrap" + (shopMore.length > 1 ? " lp-two" : "")}>
               {shopMore.map((x) => (
                 <div className="lp-tile" key={x.id} style={{ aspectRatio: shopMore.length > 1 ? "1/1" : "16/7" }}>
-                  {x.img && <Image src={x.img} alt="" fill sizes="(max-width:900px) 100vw, 50vw" style={{ objectFit: "cover" }} />}
+                  {x.img && <Photo pic={x.img} sizes="(max-width:900px) 100vw, 50vw" />}
                   <div className="lp-shade" />
                   <div className="lp-cap" style={{ alignItems: "center", textAlign: "center" }}>
                     <h3 className="lp-disp" style={disp("clamp(34px,3.6vw,56px)")}>{x.t}</h3>
@@ -294,8 +296,8 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
         {data.lineup.length > 0 && (
           <section aria-labelledby="lp-lineup-h" style={{ borderTop: "1px solid var(--hairline)" }}>
             <div className="lp-wrap" style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 24, flexWrap: "wrap", padding: "clamp(48px,6vw,80px) clamp(18px,4vw,48px) 28px" }}>
-              <h2 id="lp-lineup-h" className="lp-disp" style={disp("clamp(40px,5vw,72px)")}>The lineup</h2>
-              <span className="lp-over" style={{ color: "var(--ink-muted)" }}>Mix any of these · 100 g minimum each</span>
+              <h2 id="lp-lineup-h" className="lp-disp" style={disp("clamp(40px,5vw,72px)")}><Headline text={c.lineup.headline} /></h2>
+              <span className="lp-over" style={{ color: "var(--ink-muted)" }}>{c.lineup.note}</span>
             </div>
             <div style={{ borderTop: "1px solid var(--ink)" }}>
               {data.lineup.map((c) => (
@@ -313,15 +315,15 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
 
         <section className="lp-close" aria-labelledby="lp-close-h">
           <div className="lp-wrap" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 36 }}>
-            <h2 id="lp-close-h" className="lp-disp" style={disp("clamp(52px,9vw,150px)")}>Your coffee,<br /><span style={{ color: "var(--brand)" }}>your ratios.</span></h2>
-            <a className="lp-btn lg" href={LAB} onClick={toLab} onPointerEnter={warm} onTouchStart={warm} onFocus={warm}>Start building <Arrow /></a>
+            <h2 id="lp-close-h" className="lp-disp" style={disp("clamp(52px,9vw,150px)")}><Headline text={c.closing.headline} /></h2>
+            <a className="lp-btn lg" href={LAB} onClick={toLab} onPointerEnter={warm} onTouchStart={warm} onFocus={warm}>{c.closing.cta} <Arrow /></a>
           </div>
         </section>
       </main>
 
       <footer className="lp-foot">
         <div className="lp-wrap lp-over" style={{ fontSize: 10.5 }}>
-          <span style={{ color: "var(--ink)" }}>Blended</span><span>Whole bean · Roasted to order</span><span>Free shipping over $50</span>
+          <span style={{ color: "var(--ink)" }}>Blended</span><span>{c.smallPrint.footer}</span><span>{c.smallPrint.shipping}</span>
           <span style={{ marginLeft: "auto", display: "flex", gap: "12px 24px", flexWrap: "wrap" }}>
             <Link href={SHOP}>Our coffees</Link>
             <Link href="/wholesale">Wholesale</Link>

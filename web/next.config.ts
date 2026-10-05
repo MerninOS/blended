@@ -3,7 +3,7 @@ import { withBotId } from "botid/next/config";
 
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [{ protocol: "https", hostname: "cdn.shopify.com" }],
+    remotePatterns: [{ protocol: "https", hostname: "cdn.shopify.com" }, { protocol: "https", hostname: "cdn.sanity.io" }],
   },
   // The 3D bag model (~3 MB): cache it for a day and serve a stale copy while
   // revalidating for a week, so return visits open the lab without the download.

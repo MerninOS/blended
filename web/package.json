@@ -16,14 +16,19 @@
     "check": "npm run typecheck && npm run lint && npm run validate:graphql"
   },
   "dependencies": {
+    "@sanity/client": "^8.9.0",
+    "@sanity/image-url": "^2.1.1",
     "@shopify/hydrogen-react": "^2026.4.3",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "botid": "^1.5.11",
     "next": "16.3.6",
+    "next-sanity": "^13.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "sanity": "^6.17.0",
     "server-only": "^0.0.1",
+    "styled-components": "^6.5.3",
     "three": "^0.186.0"
   },
   "devDependencies": {
