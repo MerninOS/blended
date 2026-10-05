@@ -161,7 +161,7 @@ export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
       </Step>
 
       {/* sticky bar */}
-      <div className="co-confirmbar" style={{ position: "sticky", bottom: 16, background: "var(--surface)", border: "1px solid var(--hairline)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-pop)", padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+      <div className="co-confirmbar" style={{ position: "sticky", bottom: 16, zIndex: 40, background: "var(--surface)", border: "1px solid var(--hairline)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-pop)", padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
         <div className="cb-icon" style={{ width: 44, height: 44, background: "var(--surface-sunken)", borderRadius: "var(--r-md)", display: "flex", alignItems: "center", justifyContent: "center", color: rampColor(effRoast), flexShrink: 0 }}><Icon name="flame" size={20} stroke={2} /></div>
         <div style={{ flex: "1 1 260px", minWidth: 0 }}>
           <div className="cb-title" style={{ ...disp, fontSize: 18, color: "var(--ink)", lineHeight: 1.1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>

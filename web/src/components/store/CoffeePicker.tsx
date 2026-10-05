@@ -44,7 +44,7 @@ function Card({ c, on, block, onToggle, onDetails }: { c: GreenLot; on: boolean;
   const out = c.avail === 0, r = c.reviews, locked = !!block && !on;
   return (
     <div className="cp-card" onClick={() => { if (!locked) onToggle(); }}
-      style={{ display: "grid", position: "relative", gridTemplateColumns: "minmax(96px,30%) minmax(0,1fr)", height: 140, borderRadius: "var(--r-lg)", overflow: "hidden", background: "var(--surface)", cursor: locked ? "default" : "pointer" }}>
+      style={{ display: "grid", position: "relative", isolation: "isolate", gridTemplateColumns: "minmax(96px,30%) minmax(0,1fr)", height: 140, borderRadius: "var(--r-lg)", overflow: "hidden", background: "var(--surface)", cursor: locked ? "default" : "pointer" }}>
       <span aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 3, pointerEvents: "none", borderRadius: "inherit", boxShadow: on ? "inset 0 0 0 2px var(--ink)" : "inset 0 0 0 1px var(--hairline-strong)", transition: "box-shadow var(--dur) var(--ease)" }} />
       <div style={{ position: "relative", height: "100%", minHeight: 0, overflow: "hidden", background: "var(--surface-sunken)", opacity: out ? .6 : 1 }}>
         <Tag c={c} style={{ position: "absolute", top: 12, left: 12, zIndex: 2 }} />
