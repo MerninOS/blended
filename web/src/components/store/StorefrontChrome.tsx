@@ -23,19 +23,27 @@ export function StorefrontChrome() {
   const [lastPath, setLastPath] = useState(path);
   if (path !== lastPath) { setLastPath(path); setMenu(false); }
   // Phones and tablets: the header slides away while scrolling down and comes back on the way up.
+  // On the Coffee Lab it stays out of the way the whole time the cup is pinned at the top (either
+  // direction), and is back once the cup has scrolled off. Desktop never hides it.
   // <html data-head-hidden> lets things pinned under it (the Lab's cup, the shop toolbar) move up too.
   const [hidden, setHidden] = useState(false);
   useEffect(() => {
     let last = scrollY;
     const f = () => {
+      if (innerWidth > 1024) { setHidden(false); last = scrollY; return; }
+      const lab = document.querySelector<HTMLElement>(".cp-layout"), cup = lab?.querySelector<HTMLElement>(".cp-layout-cup");
+      if (lab && cup) {
+        const r = lab.getBoundingClientRect(), headH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--topbar-h")) || 52;
+        setHidden(r.top <= headH && r.bottom > cup.offsetHeight); last = scrollY; return;
+      }
       const y = scrollY, d = y - last;
       if (Math.abs(d) < 6) return;
-      const h = innerWidth <= 1024 && d > 0 && y > 80;
-      setHidden(h); last = y;
+      setHidden(d > 0 && y > 80); last = y;
     };
-    addEventListener("scroll", f, { passive: true });
-    return () => { removeEventListener("scroll", f); delete document.documentElement.dataset.headHidden; };
-  }, []);
+    f();
+    addEventListener("scroll", f, { passive: true }); addEventListener("resize", f);
+    return () => { removeEventListener("scroll", f); removeEventListener("resize", f); delete document.documentElement.dataset.headHidden; };
+  }, [path]);
   const off = hidden && !menu;
   useEffect(() => { document.documentElement.dataset.headHidden = String(off); }, [off]);
   useEffect(() => {
