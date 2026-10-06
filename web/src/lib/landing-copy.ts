@@ -7,6 +7,8 @@
 // the brand orange.
 
 export interface Item { title: string; text: string }
+/** A button: its words and where it goes (a site path like /lab, a #section, or a full URL). */
+export interface Button { label: string; link: string }
 export interface Origin { name: string; where: string; text: string }
 
 export const DEFAULT_COPY = {
@@ -18,8 +20,8 @@ export const DEFAULT_COPY = {
     eyebrow: "Sourced direct · Roasted to order",
     headline: "Know the farm.\nChoose the *cup.*",
     body: "We buy from farmers we know by name and roast every order fresh. Start with a coffee from this week's shelf, or combine them into a blend that is yours alone.",
-    primaryCta: "Explore our offerings",
-    secondaryCta: "Build your blend",
+    primaryButton: { label: "Build your blend", link: "/lab" } as Button,
+    secondaryButton: { label: "Explore our offerings", link: "/coffees" } as Button,
   },
   lab: {
     eyebrow: "The Coffee Lab",

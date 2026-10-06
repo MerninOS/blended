@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import type { LandingData, Pic } from "@/lib/landing";
-import { headlineRuns, plainHeadline } from "@/lib/landing-copy";
+import { headlineRuns, plainHeadline, type Button } from "@/lib/landing-copy";
 import type { ShopPolicy } from "@/lib/shop";
 import { CookiePrefsLink } from "@/components/store/FooterClient";
 import { CartDrawer } from "@/components/store/CartDrawer";
@@ -106,11 +106,23 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
   // Start the 3D bag downloading as soon as someone heads for the lab (hover, touch, focus or
   // click): it's kept in memory, so the lab opens with the model already loaded.
   const warm = () => { void loadBagModel(); };
-  const toLab = (e: MouseEvent) => {
+  // Where the intro lands: the link's own path (/lab, /lab#build, /lab?blend=…).
+  const labDest = useRef(LAB);
+  const toLab = (e: MouseEvent<HTMLAnchorElement>) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey) return;
     e.preventDefault(); warm(); if (busy.current) return; busy.current = true;
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches || data.intro.length < 2) { router.push(LAB); return; }
+    const u = new URL(e.currentTarget.href, location.href);
+    labDest.current = u.origin === location.origin ? u.pathname + u.search + u.hash : LAB;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches || data.intro.length < 2) { router.push(labDest.current); return; }
     setIntro(true);
+  };
+  /** A button from the copy: a link into the lab plays the intro, other site paths are client-side links. */
+  const cta = (b: Button, className: string) => {
+    const href = b.link.trim() || LAB;
+    const inner = <>{b.label} <Arrow /></>;
+    if (/^\/lab(?=$|[/?#])/.test(href)) return <a className={className} href={href} onClick={toLab} onPointerEnter={warm} onTouchStart={warm} onFocus={warm}>{inner}</a>;
+    if (href.startsWith("/") && !href.startsWith("//")) return <Link className={className} href={href}>{inner}</Link>;
+    return <a className={className} href={href}>{inner}</a>;
   };
 
   const extras = [
@@ -189,8 +201,8 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
               <h1 className="lp-disp" style={{ fontSize: "clamp(38px,7vw,112px)", color: "#fff", lineHeight: .95 }}><Headline text={c.hero.headline} /></h1>
               <p style={{ fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.5, margin: 0, maxWidth: "44ch", color: "rgba(255,255,255,.88)", textWrap: "pretty" }}>{c.hero.body}</p>
               <div className="lp-hero-ctas" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, marginTop: 8 }}>
-                <Link className="lp-btn lg light" href={SHOP}>{c.hero.primaryCta} <Arrow /></Link>
-                <a className="lp-btn lg ghost" href={LAB} onClick={toLab} onPointerEnter={warm} onTouchStart={warm} onFocus={warm}>{c.hero.secondaryCta} <Arrow /></a>
+                {cta(c.hero.primaryButton, "lp-btn lg light")}
+                {cta(c.hero.secondaryButton, "lp-btn lg ghost")}
               </div>
             </div>
           </div>
@@ -333,7 +345,7 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
         </div>
       </footer>
       <CartDrawer />
-      {intro && <LabIntro blends={data.intro} ready={loadBagModel()} onDone={() => router.push(LAB)} />}
+      {intro && <LabIntro blends={data.intro} ready={loadBagModel()} onDone={() => router.push(labDest.current)} />}
     </div>
   );
 }

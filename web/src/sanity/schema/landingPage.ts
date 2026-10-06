@@ -19,6 +19,21 @@ const video = (name: string, title: string, description?: string) => [
   defineField({ name: `${name}Url`, title: `${title} (link instead)`, type: "url", description: "Or paste a link to a video hosted elsewhere (e.g. Shopify Files). The upload wins if both are set." }),
 ];
 
+// A site path (/lab, /coffees, /collections/merch, /wholesale), a #section on the landing page, or a full URL.
+const LINK_OK = /^(\/(?!\/)|#|https?:\/\/|mailto:)/;
+const button = (name: string, title: string, description: string) =>
+  defineField({
+    name, title, type: "object", description, options: { collapsible: false },
+    fields: [
+      text("label", "Button text"),
+      defineField({
+        name: "link", title: "Link", type: "string",
+        description: "A page on the site, like /lab (the Coffee Lab), /coffees, /collections/merch or /wholesale; a section of this page, like #farmers; or a full https:// address. Links to /lab play the \"Opening the Coffee Lab\" intro.",
+        validation: (r) => r.custom((v) => !v || LINK_OK.test(String(v).trim()) || "Start with / for a page on the site, # for a section of this page, or https:// for another site."),
+      }),
+    ],
+  });
+
 const section = (name: string, title: string, fields: ReturnType<typeof defineField>[], description?: string) =>
   defineField({ name, title, type: "object", description, options: { collapsible: false }, fields });
 
@@ -47,8 +62,8 @@ export const landingPage = defineType({
       text("eyebrow", "Eyebrow"),
       text("headline", "Headline", 2, HEADLINE),
       text("body", "Intro", 3),
-      text("primaryCta", "Button: shop"),
-      text("secondaryCta", "Button: build"),
+      button("primaryButton", "Primary button", "The solid button, on the left."),
+      button("secondaryButton", "Secondary button", "The outlined button, on the right."),
       ...video("video", "Background video"),
       photo("poster", "Still image", "Shows while the video loads, and instead of it if it can't play. Wide, at least 2400 px."),
     ], "The full-screen video at the top."),
