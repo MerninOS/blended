@@ -22,9 +22,10 @@ export function CoffeeReviews({ coffee, compact }: { coffee: { reviews?: CoffeeR
     <div onClick={stop} onKeyDown={stop} style={{ borderTop: "1px solid var(--hairline)" }}>
       <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)}
         style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: compact ? "8px 0" : "9px 0", background: "none", border: "none", cursor: "pointer", textAlign: "left", color: "var(--ink)" }}>
-        <Stars n={d.avg} />
-        <span style={{ ...mono, fontSize: 11.5, color: "var(--ink)" }}>{d.avg.toFixed(1)}</span>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, color: "var(--ink-subtle)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.count} reviews{d.grader ? " · grader notes" : ""}</span>
+        {d.count > 0 && <><Stars n={d.avg} /><span style={{ ...mono, fontSize: 11.5, color: "var(--ink)" }}>{d.avg.toFixed(1)}</span></>}
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, color: "var(--ink-subtle)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {d.count > 0 ? `${d.count} review${d.count === 1 ? "" : "s"}${d.grader ? " · grader notes" : ""}` : "Tasting notes from our roaster"}
+        </span>
         <span style={{ display: "inline-flex", transform: open ? "rotate(180deg)" : "none", transition: "transform var(--dur) var(--ease)", color: "var(--ink-subtle)", fontSize: 10 }}>▾</span>
       </button>
       {open && (
@@ -33,10 +34,10 @@ export function CoffeeReviews({ coffee, compact }: { coffee: { reviews?: CoffeeR
             <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px", background: "var(--surface-sunken)", borderRadius: "var(--r-sm)" }}>
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
                 <span style={{ ...over, fontSize: 9.5, color: "var(--ink-muted)" }}>What our graders say</span>
-                <span style={{ ...mono, fontSize: 12, color: "var(--ink)" }}>{d.grader.score}</span>
+                {d.grader.score && <span style={{ ...mono, fontSize: 12, color: "var(--ink)" }}>{d.grader.score}</span>}
               </div>
               <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: 12.5, lineHeight: 1.5, color: "var(--ink)", textWrap: "pretty" }}>{d.grader.note}</p>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ink-subtle)" }}>{d.grader.who} · {d.grader.role}</span>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ink-subtle)" }}>{[d.grader.who, d.grader.role].filter(Boolean).join(" · ")}</span>
             </div>
           )}
           {d.reviews.length > 0 && (

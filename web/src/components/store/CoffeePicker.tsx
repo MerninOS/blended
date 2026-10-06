@@ -74,7 +74,7 @@ function Card({ c, on, block, onToggle, onDetails }: { c: GreenLot; on: boolean;
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "nowrap", minWidth: 0 }}>
           <span style={{ ...mono, fontSize: 15, color: "var(--ink)", whiteSpace: "nowrap" }}>{price(c)}<span style={{ fontSize: 12, color: "var(--ink-subtle)" }}> / lb</span></span>
-          {r && <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, overflow: "hidden" }}><Stars n={r.avg} size={12} /><span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ink-muted)", whiteSpace: "nowrap" }}>{r.count}</span></span>}
+          {r && r.count > 0 && <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, overflow: "hidden" }}><Stars n={r.avg} size={12} /><span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ink-muted)", whiteSpace: "nowrap" }}>{r.count}</span></span>}
         </div>
         <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           {locked
@@ -122,7 +122,7 @@ function Drawer({ c, on, block, onToggle, onClose }: { c: GreenLot; on: boolean;
               <Tag c={c} style={{ alignSelf: "flex-start", fontSize: 12 }} />
               <h2 style={{ margin: 0, ...disp, fontSize: "clamp(36px,5vw,64px)", lineHeight: 1, color: "var(--ink)", textWrap: "balance" }}>{c.name}</h2>
               <span style={{ ...mono, fontSize: 13, color: "var(--ink-muted)" }}>{c.origin} · {c.process}</span>
-              {r && <span style={{ display: "flex", alignItems: "center", gap: 10 }}><Stars n={r.avg} size={15} /><span style={{ fontFamily: "var(--font-sans)", fontSize: 14, color: "var(--ink-muted)" }}>{r.avg.toFixed(1)} · {r.count} reviews</span></span>}
+              {r && r.count > 0 && <span style={{ display: "flex", alignItems: "center", gap: 10 }}><Stars n={r.avg} size={15} /><span style={{ fontFamily: "var(--font-sans)", fontSize: 14, color: "var(--ink-muted)" }}>{r.avg.toFixed(1)} · {r.count} reviews</span></span>}
               <span style={{ ...mono, fontSize: 20, color: "var(--ink)" }}>{price(c)}<span style={{ fontSize: 13, color: "var(--ink-subtle)" }}> / lb roasted</span></span>
               <div style={{ borderTop: "1px solid var(--hairline)" }}>
                 {top(c).length > 0 && row("Tastes like:", top(c).map((n) => n.l))}

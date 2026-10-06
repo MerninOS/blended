@@ -1,6 +1,6 @@
 // Cup math, pricing and blend constraints. Pure functions shared by the
 // storefront (live preview) and the server (authoritative checkout prices).
-import type { BlendRole, FlavorKey, GreenLot, Notes, SelItem, ShopSizeId, StockCoffee } from "./types";
+import type { BlendRole, CoffeeReviewsData, FlavorKey, GreenLot, Notes, SelItem, ShopSizeId, StockCoffee } from "./types";
 
 // ---- flavor axes (cupping scores, 0–10) ----
 export const AX: { k: FlavorKey; l: string }[] = [
@@ -249,3 +249,29 @@ export function autoRole(c: Pick<GreenLot, "process" | "origin">): BlendRole {
   return "base";
 }
 export const roleOf = (c: GreenLot): BlendRole => c.role ?? autoRole(c);
+
+// ---------- reviews ----------
+/**
+ * The `reviews` JSON field, made safe to render: entries missing a quote are dropped, a missing
+ * count or average is worked out from the listed reviews, and a grader block needs a note.
+ * Nothing usable (or not JSON at all) gives null, so a bad field never breaks a page.
+ */
+export function parseReviews(raw: string | null | undefined): CoffeeReviewsData | null {
+  let v: unknown;
+  try { v = raw ? JSON.parse(raw) : null; } catch { return null; }
+  if (!v || typeof v !== "object") return null;
+  const o = v as Record<string, unknown>, str = (x: unknown) => (typeof x === "string" ? x.trim() : typeof x === "number" ? String(x) : "");
+  const num = (x: unknown) => { const n = typeof x === "number" ? x : typeof x === "string" ? Number(x) : NaN; return isFinite(n) ? n : null; };
+  const reviews = (Array.isArray(o.reviews) ? o.reviews : []).flatMap((r) => {
+    if (!r || typeof r !== "object") return [];
+    const x = r as Record<string, unknown>, text = str(x.text);
+    return text ? [{ who: str(x.who) || "Customer", brew: str(x.brew), stars: Math.max(1, Math.min(5, num(x.stars) ?? 5)), text }] : [];
+  });
+  const g = o.grader && typeof o.grader === "object" ? o.grader as Record<string, unknown> : null;
+  const grader = g && str(g.note) ? { who: str(g.who), role: str(g.role) || undefined, score: str(g.score) || undefined, note: str(g.note) } : null;
+  const count = Math.max(0, Math.round(num(o.count) ?? reviews.length));
+  const listedAvg = reviews.length ? reviews.reduce((a, r) => a + r.stars, 0) / reviews.length : 0;
+  const avg = count > 0 ? Math.max(0, Math.min(5, num(o.avg) ?? listedAvg)) : 0;
+  if (!grader && !reviews.length && !count) return null;
+  return { avg, count, grader, reviews };
+}

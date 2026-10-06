@@ -1,4 +1,5 @@
-import type { CoffeeReviewsData, GreenLot, Notes, ShopSizeId, StockCoffee } from "@/lib/domain/types";
+import type { GreenLot, Notes, ShopSizeId, StockCoffee } from "@/lib/domain/types";
+import { parseReviews } from "@/lib/domain/coffee";
 
 // ---------- legacy green_lot metaobject -> GreenLot (migration only) ----------
 
@@ -32,7 +33,7 @@ export function lotFromFields(node: { id: string; handle: string; fields: MetaFi
     listed: node.capabilities?.publishable ? node.capabilities.publishable.status === "ACTIVE" : true,
     notes: json<Notes>(val("tasting_notes"), {}),
     image: f.image?.reference?.image?.url ?? null,
-    reviews: json<CoffeeReviewsData | null>(val("reviews"), null),
+    reviews: parseReviews(val("reviews")),
   };
 }
 
@@ -92,7 +93,7 @@ export function stockFromProduct(p: SfProduct): StockCoffee {
     notes: json<Notes>(p.notes?.value, {}),
     blurb: p.description,
     image: p.featuredImage?.url ?? null,
-    reviews: json<CoffeeReviewsData | null>(p.reviews?.value, null),
+    reviews: parseReviews(p.reviews?.value),
     kind: (txt(p.kind)?.toLowerCase().startsWith("blend") ? "blend" : txt(p.kind) ? "single" : undefined) ?? subParts(p.subtitle?.value || "").kind,
     origin: subParts(p.subtitle?.value || "").origin || undefined,
     process: txt(p.process), tasting: words(p.tasting?.value), farm: txt(p.farm), producer: txt(p.producer),

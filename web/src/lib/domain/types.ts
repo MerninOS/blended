@@ -32,11 +32,11 @@ export interface GreenLot {
   reviews?: CoffeeReviewsData | null;
 }
 
-/** Grader read + customer reviews for a coffee (JSON field `reviews`). */
+/** Grader read + customer reviews for a coffee (JSON field `reviews`, cleaned by parseReviews). */
 export interface CoffeeReviewsData {
-  avg: number;
-  count: number;
-  grader?: { who: string; role: string; score: string; note: string } | null;
+  avg: number;           // 0 when there are no customer reviews yet
+  count: number;         // customer reviews; 0 = none yet (stars stay hidden)
+  grader?: { who: string; role?: string; score?: string; note: string } | null;
   reviews: { who: string; brew: string; stars: number; text: string }[];
 }
 

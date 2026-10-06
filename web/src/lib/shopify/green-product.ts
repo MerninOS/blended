@@ -6,8 +6,8 @@
 // custom line items, then the order webhook deducts the grams each blend used.
 //
 // Shared by the app and scripts/setup-shopify.ts (no "server-only" import).
-import type { BlendRole, CoffeeReviewsData, GreenLot, Notes } from "../domain/types.ts";
-import { G_PER_LB, isRole } from "../domain/coffee.ts";
+import type { BlendRole, GreenLot, Notes } from "../domain/types.ts";
+import { G_PER_LB, isRole, parseReviews } from "../domain/coffee.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AdminQ = (query: string, variables?: Record<string, unknown>) => Promise<any>;
@@ -172,7 +172,7 @@ export function lotFromProduct(p: GreenNode): GreenLot {
     listed: p.status === "ACTIVE",
     notes: json<Notes>(p.tasting_notes?.value, {}),
     image: p.media.nodes[0]?.image?.url ?? null,
-    reviews: json<CoffeeReviewsData | null>(p.reviews?.value, null),
+    reviews: parseReviews(p.reviews?.value),
   };
 }
 

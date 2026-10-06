@@ -153,7 +153,7 @@ export function CoffeeProductView({ c, related, blendHref }: { c: StockCoffee; r
           </section>
         )}
 
-        {c.reviews && c.reviews.count > 0 && <section style={{ marginTop: "clamp(56px,7vw,100px)" }} aria-label="Reviews"><CoffeeReviews coffee={c} /></section>}
+        {c.reviews && <section style={{ marginTop: "clamp(56px,7vw,100px)" }} aria-label="Reviews"><CoffeeReviews coffee={c} /></section>}
 
         <section className="cp-blend" aria-labelledby="cp-blend-h">
           <div>
