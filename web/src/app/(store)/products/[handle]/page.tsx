@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getMerch } from "@/lib/merch";
 import { COLLECTION_META, COLLECTION_PATH, catLabel, priceLabel } from "@/lib/merch-types";
 import { env } from "@/lib/env";
-import { SITE_NAME, abs } from "@/lib/seo";
+import { SHARE_IMAGE, SITE_NAME, abs } from "@/lib/seo";
 import { ProductView } from "@/components/store/merch/ProductView";
 import { JsonLd } from "@/components/seo/JsonLd";
 import "../../shop.css";
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: PageProps<"/products/[handle]
     title: `${p.name} · ${catLabel(p.cat)}`,
     description,
     alternates: { canonical: `/products/${p.handle}` },
-    openGraph: { type: "website", title: p.name, description: p.blurb, url: abs(`/products/${p.handle}`), images: img ? [{ url: img, alt: p.name }] : undefined },
+    openGraph: { type: "website", title: p.name, description: p.blurb, url: abs(`/products/${p.handle}`), images: img ? [{ url: img, alt: p.name }] : [SHARE_IMAGE] },
     twitter: { card: img ? "summary_large_image" : "summary", title: p.name, description: p.blurb, images: img ? [img] : undefined },
     other: { "product:price:amount": p.price.toFixed(2), "product:price:currency": env.currency },
   };

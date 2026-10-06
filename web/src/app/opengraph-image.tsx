@@ -1,11 +1,23 @@
 import { ImageResponse } from "next/og";
+import { SANITY_TAG, cmsImageUrl, getSiteSettings } from "@/lib/sanity";
 
-// Default share preview (product pages use the coffee's photo instead).
+// Default share preview (product pages use the coffee's photo instead): the share image
+// from Sanity's "Site settings", cut to 1200 × 630, or this drawn card when there isn't one.
 export const alt = "Blended · build your own coffee blend";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+export const revalidate = 60;
 
-export default function OpengraphImage() {
+export default async function OpengraphImage() {
+  const { shareImage } = await getSiteSettings();
+  if (shareImage) {
+    try {
+      const r = await fetch(cmsImageUrl(shareImage, size.width, size.height, "png"), { next: { revalidate: 60, tags: [SANITY_TAG] } });
+      if (r.ok) return new Response(await r.arrayBuffer(), { headers: { "content-type": contentType } });
+    } catch (e) {
+      console.error("[og] share image:", e instanceof Error ? e.message : e);
+    }
+  }
   return new ImageResponse(
     (
       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 72, background: "#F6F1EA", color: "#241812", fontFamily: "sans-serif" }}>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getMerch } from "@/lib/merch";
 import { COLLECTION_META, COLLECTION_PATH, type CollectionFilter } from "@/lib/merch-types";
-import { SITE_NAME, abs } from "@/lib/seo";
+import { SHARE_IMAGE, SITE_NAME, abs } from "@/lib/seo";
 import { CollectionView } from "@/components/store/merch/CollectionView";
 import { JsonLd } from "@/components/seo/JsonLd";
 import "../../shop.css";
@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: PageProps<"/collections/[hand
   return {
     title: m.title, description: DESCRIPTION[f],
     alternates: { canonical: COLLECTION_PATH[f] },
-    openGraph: { type: "website", title: `${m.title} · ${SITE_NAME}`, description: m.intro, url: abs(COLLECTION_PATH[f]) },
+    openGraph: { type: "website", title: `${m.title} · ${SITE_NAME}`, description: m.intro, url: abs(COLLECTION_PATH[f]), images: [SHARE_IMAGE] },
   };
 }
 

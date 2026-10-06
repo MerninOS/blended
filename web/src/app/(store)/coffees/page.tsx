@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getStockCoffees } from "@/lib/catalog";
-import { SITE_NAME, abs } from "@/lib/seo";
+import { SHARE_IMAGE, SITE_NAME, abs } from "@/lib/seo";
 import { CoffeeCollectionView } from "@/components/store/coffee/CoffeeCollectionView";
 import { JsonLd } from "@/components/seo/JsonLd";
 import "../shop.css";
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: "Our Coffees: Single Origins & House Blends",
   description: "Single origins and house blends roasted to order, whole bean or ground. Free shipping on orders over $50.",
   alternates: { canonical: "/coffees" },
-  openGraph: { type: "website", title: `Our coffees · ${SITE_NAME}`, description: INTRO, url: abs("/coffees") },
+  openGraph: { type: "website", title: `Our coffees · ${SITE_NAME}`, description: INTRO, url: abs("/coffees"), images: [SHARE_IMAGE] },
 };
 
 export default async function CoffeesPage() {

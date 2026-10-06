@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCatalog, getStockCoffees } from "@/lib/catalog";
-import { abs, absImg, coffeeTitle, describe, fromPrice, productJsonLd } from "@/lib/seo";
+import { SHARE_IMAGE, abs, absImg, coffeeTitle, describe, fromPrice, productJsonLd } from "@/lib/seo";
 import { env } from "@/lib/env";
 import { CoffeeProductView } from "@/components/store/coffee/CoffeeProductView";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: PageProps<"/coffees/[handle]"
     title: coffeeTitle(c),
     description,
     alternates: { canonical: `/coffees/${c.id}` },
-    openGraph: { type: "website", title: c.name, description, url: abs(`/coffees/${c.id}`), images: img ? [{ url: img, alt: c.name }] : undefined },
+    openGraph: { type: "website", title: c.name, description, url: abs(`/coffees/${c.id}`), images: img ? [{ url: img, alt: c.name }] : [SHARE_IMAGE] },
     twitter: { card: img ? "summary_large_image" : "summary", title: c.name, description, images: img ? [img] : undefined },
     ...(fromPrice(c) != null ? { other: { "product:price:amount": fromPrice(c)!.toFixed(2), "product:price:currency": env.currency } } : {}),
   };

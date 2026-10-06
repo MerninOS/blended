@@ -4,6 +4,9 @@ import { SHOP_SIZES, stockBagPrice, topNotes } from "@/lib/domain/coffee";
 import { env } from "@/lib/env";
 
 export const SITE_NAME = "Blended";
+/** The site share image (app/opengraph-image.tsx: Sanity's share image, or the drawn card), for pages
+ * that set their own openGraph without a photo of their own — a page's openGraph replaces the layout's. */
+export const SHARE_IMAGE = { url: "/opengraph-image", width: 1200, height: 630, alt: "Blended · build your own coffee blend" };
 export const abs = (path: string) => `${env.appUrl}${path.startsWith("/") ? path : `/${path}`}`;
 /** Shopify CDN images are already absolute; local fallbacks aren't. */
 export const absImg = (src: string | null | undefined) => (!src ? null : /^https?:\/\//.test(src) ? src : abs(src));
