@@ -1,7 +1,8 @@
 "use client";
-// Coffee Lab "Choose your coffees" (CoffeePicker.jsx): large coffee cards with a
-// check to add or remove each from the blend, and a bottom-sheet details drawer.
-// Selection is the blend itself; reasonFor says why a coffee can't be added.
+// Coffee Lab "Choose your coffees" (CoffeePicker.jsx): coffees grouped by the
+// role they play in a blend (tabs), as cards with a check to add or remove each,
+// and a bottom-sheet details drawer. Selection is the blend itself; reasonFor
+// says why a coffee can't be added.
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { GreenLot, SelItem } from "@/lib/domain/types";
@@ -21,6 +22,35 @@ const feel = (c: GreenLot) => {
   f.push(c.roast >= 4 ? "Full-bodied" : c.roast <= 2 ? "Delicate" : "Balanced");
   return f.slice(0, 3);
 };
+/** The role a coffee plays in a blend, and how each is pitched on its tab. */
+type Role = "base" | "lift" | "fruit" | "funk";
+const ROLES: { k: Role; l: string; d: string }[] = [
+  { k: "base", l: "Base", d: "Chocolate, nut and body. Start here; most balanced blends are at least half base." },
+  { k: "lift", l: "Lift", d: "Floral and citrus. A little brightens the whole cup." },
+  { k: "fruit", l: "Fruit", d: "Juicy, sweet fruit that adds depth without taking over." },
+  { k: "funk", l: "Funk", d: "Coffees with intense, loud flavor. A small share goes a long way." },
+];
+const roleOf = (c: GreenLot): Role => {
+  const p = (c.process || "").toLowerCase(), o = (c.origin || "").toLowerCase();
+  if (p.includes("co-ferment") || p.includes("coferment")) return "funk";
+  if (o.includes("ethiopia")) return "lift";
+  if (o.includes("colombia") || o.includes("kenya")) return "fruit";
+  return "base";
+};
+
+function Tab({ label, count, on, onClick, id, panel }: { label: string; count: number; on: boolean; onClick: () => void; id: string; panel: string }) {
+  return (
+    <button type="button" role="tab" id={id} aria-selected={on} aria-controls={panel} tabIndex={on ? 0 : -1} onClick={onClick}
+      style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8, minHeight: 44, padding: "0 18px", borderRadius: "var(--r-md)", cursor: "pointer",
+        border: "1.5px solid var(--ink)", background: on ? "var(--ink)" : "var(--surface)", color: on ? "#fff" : "var(--ink)", transition: "background var(--dur) var(--ease)",
+        fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 12, textTransform: "uppercase", letterSpacing: ".08em" }}>
+      {label}
+      {count > 0 && <span aria-label={`${count} selected`} style={{ minWidth: 20, height: 20, padding: "0 6px", borderRadius: 100, display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: "var(--brand)", color: "#fff", ...mono, fontSize: 11, lineHeight: 1, letterSpacing: 0 }}>{count}</span>}
+    </button>
+  );
+}
+
 const chip = { ...mono, fontSize: 12, lineHeight: 1, padding: "7px 10px", background: "var(--surface-sunken)", color: "var(--ink)", borderRadius: "var(--r-sm)", whiteSpace: "nowrap" } as const;
 const price = (c: GreenLot) => `$${retailOf(c).toFixed(2)}`;
 
@@ -134,17 +164,39 @@ export function CoffeePicker({ lots, sel, onAdd, onRemove, reasonFor }: {
   lots: GreenLot[]; sel: SelItem[]; onAdd: (id: string) => void; onRemove: (id: string) => void; reasonFor: (c: GreenLot) => string | null;
 }) {
   const [detail, setDetail] = useState<string | null>(null);
+  const roles = ROLES.filter((r) => lots.some((c) => roleOf(c) === r.k));
+  const [tab, setTab] = useState<Role | undefined>(roles[0]?.k);
   const dc = detail ? lots.find((c) => c.id === detail) : undefined;
   const isOn = (id: string) => sel.some((s) => s.id === id);
   const toggle = (id: string) => (isOn(id) ? onRemove(id) : onAdd(id));
+  const r = roles.find((x) => x.k === tab) ?? roles[0];
+  const list = r ? lots.filter((c) => roleOf(c) === r.k) : lots;
+  const tabKeys = (e: React.KeyboardEvent) => {
+    const i = roles.findIndex((x) => x.k === r?.k), d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+    if (!d || i < 0) return;
+    e.preventDefault();
+    const next = roles[(i + d + roles.length) % roles.length];
+    setTab(next.k); document.getElementById(`cp-tab-${next.k}`)?.focus();
+  };
   return (
-    <div key="add" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
         <span style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink-muted)" }}>Pick up to four. You&rsquo;ll set the ratio next.</span>
         <span style={{ ...mono, fontSize: 12, color: "var(--ink-subtle)" }}>{sel.length} / 4 selected</span>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,360px),1fr))", gap: 12 }}>
-        {lots.map((c) => <Card key={c.id} c={c} on={isOn(c.id)} block={reasonFor(c)} onToggle={() => toggle(c.id)} onDetails={() => setDetail(c.id)} />)}
+      {roles.length > 1 && r && (
+        <div style={{ borderBottom: "1px solid var(--hairline)" }}>
+          <div className="cp-tabs" role="tablist" aria-label="Coffee roles" onKeyDown={tabKeys}>
+            {roles.map((x) => <Tab key={x.k} id={`cp-tab-${x.k}`} panel="cp-tabpanel" label={x.l} on={x.k === r.k} onClick={() => setTab(x.k)}
+              count={sel.filter((s) => { const c = lots.find((g) => g.id === s.id); return c && roleOf(c) === x.k; }).length} />)}
+          </div>
+        </div>
+      )}
+      <div id="cp-tabpanel" role={roles.length > 1 ? "tabpanel" : undefined} aria-labelledby={roles.length > 1 && r ? `cp-tab-${r.k}` : undefined} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {r && roles.length > 1 && <span style={{ fontFamily: "var(--font-sans)", fontSize: 13.5, lineHeight: 1.4, color: r.k === "funk" ? "var(--ink)" : "var(--ink-muted)", fontWeight: r.k === "funk" ? 500 : 400, maxWidth: "64ch", textWrap: "pretty" }}>{r.d}</span>}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,340px),1fr))", gap: 12 }}>
+          {list.map((c) => <Card key={c.id} c={c} on={isOn(c.id)} block={reasonFor(c)} onToggle={() => toggle(c.id)} onDetails={() => setDetail(c.id)} />)}
+        </div>
       </div>
       {dc && <Drawer c={dc} on={isOn(dc.id)} block={reasonFor(dc)} onToggle={() => toggle(dc.id)} onClose={() => setDetail(null)} />}
     </div>

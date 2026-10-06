@@ -64,6 +64,14 @@ export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
     : null;
 
   const startRef = useRef<HTMLDivElement>(null);
+  // On small screens the order bar only appears once checkout is (nearly) in view.
+  const checkoutRef = useRef<HTMLDivElement>(null);
+  const [atCheckout, setAtCheckout] = useState(false);
+  useEffect(() => {
+    const f = () => { const el = checkoutRef.current; if (el) setAtCheckout(el.getBoundingClientRect().top < innerHeight * 0.85); };
+    f(); addEventListener("scroll", f, { passive: true }); addEventListener("resize", f);
+    return () => { removeEventListener("scroll", f); removeEventListener("resize", f); };
+  }, []);
   const scrollToStart = () => requestAnimationFrame(() => {
     const el = startRef.current; if (!el) return;
     const top = el.getBoundingClientRect().top + scrollY - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--topbar-h")) || 52) - 16;
@@ -99,25 +107,23 @@ export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
     <BoxHero cta={{ label: "Build your coffee blend", onClick: scrollToStart }} />
     <div className="pv-page" style={{ maxWidth: "var(--content-max)", margin: "0 auto", padding: "24px 24px 96px", display: "flex", flexDirection: "column", gap: 40 }}>
       <div ref={startRef} id="build" style={{ display: "flex", flexDirection: "column", gap: 40, scrollMarginTop: "calc(var(--topbar-h) + 16px)" }}>
-        <Step n={1} title="Choose your coffees">
-          {/* Picking coffees checks against the biggest bag: a coffee is only off-limits when no size
-              could hold the blend's minimums. Step 3 then moves to the smallest bag that fits. */}
-          <BlendRatios sel={sel} setSel={setSel} batchG={maxBatchG} batchLabel={`${qty} × ${size.label}`} retail sections={["add"]} />
-        </Step>
-
-        <Step n={2} title="Adjust your ratios">
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "clamp(24px,3vw,40px)", alignItems: "flex-start" }}>
-            <div style={{ flex: "1 1 420px", minWidth: 0 }}>
+        {/* Steps 1–2 beside the cup, which follows along as coffees and ratios change. */}
+        <div className="cp-layout">
+          <div style={{ display: "flex", flexDirection: "column", gap: 64, minWidth: 0 }}>
+            <Step n={1} title="Choose your coffees">
+              {/* Picking coffees checks against the biggest bag: a coffee is only off-limits when no size
+                  could hold the blend's minimums. Step 3 then moves to the smallest bag that fits. */}
+              <BlendRatios sel={sel} setSel={setSel} batchG={maxBatchG} batchLabel={`${qty} × ${size.label}`} retail sections={["add"]} />
+            </Step>
+            <Step n={2} title="Adjust your ratios">
               <BlendRatios sel={sel} setSel={setSel} roast={roast} setRoast={setRoast} retail
                 blendName={blendName} setBlendName={setBlendName}
                 batchG={batchG} batchLabel={`${qty} × ${size.label}`} sections={["ratios", "roast", "name"]}
                 nameHint="Your name for it. It prints on the bag alongside the roast date, and you can reorder it in one click." />
-            </div>
-            <div className="pl-cup-col" style={{ flex: "1 1 360px", minWidth: 320, position: "sticky", top: 96 }}>
-              <TastingWheel vals={vals} roast={effRoast} empty={emptyBlend} title="The cup" />
-            </div>
+            </Step>
           </div>
-        </Step>
+          <div className="cp-layout-cup"><TastingWheel vals={vals} roast={effRoast} empty={emptyBlend} title="The cup" /></div>
+        </div>
       </div>
 
       <Step n={3} title="Choose your bag size">
@@ -138,6 +144,7 @@ export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
         </div>
       </Step>
 
+      <div ref={checkoutRef} aria-hidden="true" style={{ height: 0, marginBottom: -40 }} />
       <Step n={4} title="Checkout">
         {!emptyBlend && (
           <div className="bc-preview" style={{ display: "grid", gridTemplateColumns: "minmax(220px,1fr) minmax(0,2fr)", gap: 24, alignItems: "stretch", marginBottom: 8 }}>
@@ -161,7 +168,7 @@ export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
       </Step>
 
       {/* sticky bar */}
-      <div className="co-confirmbar" style={{ position: "sticky", bottom: 16, zIndex: 40, background: "var(--surface)", border: "1px solid var(--hairline)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-pop)", padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+      <div className={"co-confirmbar" + (atCheckout ? "" : " cb-wait")} style={{ position: "sticky", bottom: 16, zIndex: 40, background: "var(--surface)", border: "1px solid var(--hairline)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-pop)", padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
         <div className="cb-icon" style={{ width: 44, height: 44, background: "var(--surface-sunken)", borderRadius: "var(--r-md)", display: "flex", alignItems: "center", justifyContent: "center", color: rampColor(effRoast), flexShrink: 0 }}><Icon name="flame" size={20} stroke={2} /></div>
         <div style={{ flex: "1 1 260px", minWidth: 0 }}>
           <div className="cb-title" style={{ ...disp, fontSize: 18, color: "var(--ink)", lineHeight: 1.1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>

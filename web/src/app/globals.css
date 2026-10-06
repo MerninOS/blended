@@ -384,3 +384,22 @@ html[data-product="coroasted-coffee-os"] body {
 
 /* Coffee Lab hero: the "choose your coffees below" arrow nudges downward */
 .bx-cta:hover { background: #222 !important }
+
+/* Coffee Lab: steps 1–2 beside "the cup". Below 1024px the cup pins under the header,
+   shrunk to the wheel alone, so it stays in view while coffees and ratios change. */
+.cp-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); gap: clamp(24px, 3vw, 40px); align-items: start }
+.cp-layout-cup { position: sticky; top: 96px }
+.cp-tabs { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 14px }
+.cp-tabs::-webkit-scrollbar { display: none }
+@media (max-width: 1024px) {
+  .cp-layout { grid-template-columns: minmax(0, 1fr) }
+  .cp-layout-cup { order: -1; position: sticky; top: var(--topbar-h); z-index: 20; max-height: 40vh; overflow: visible; margin: 0; padding: 8px 0 12px; background: var(--canvas, var(--surface)) }
+  .cp-layout-cup::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 40px; pointer-events: none; background: linear-gradient(to bottom, var(--canvas, var(--surface)), transparent) }
+  .cp-layout-cup .tw-card { padding: 8px 0 0 !important; border: none !important; border-radius: 0 !important }
+  .cp-layout-cup .tw-pad { padding: 0 48px !important }
+  .cp-layout-cup .tw-plot { max-width: max(110px, calc(40vh - 88px)) !important }
+  .cp-layout-cup .tw-bars, .cp-layout-cup .tw-card > p, .cp-layout-cup .tw-empty-hint { display: none }
+  .cp-layout-cup .tw-plot h3 { font-size: 14px !important }
+  /* The order bar waits for checkout on small screens, where it would cover the builder. */
+  .co-confirmbar.cb-wait { display: none !important }
+}

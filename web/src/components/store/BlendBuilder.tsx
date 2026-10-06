@@ -219,8 +219,16 @@ export function BlendRatios({ sel, setSel, roast, setRoast, blendName, setBlendN
             <label htmlFor="pl-blend-name" style={{ ...over, fontSize: 10.5, color: "var(--brand)" }}>Name the blend</label>
             <span style={{ ...over, fontSize: 9.5, color: "var(--ink-subtle)" }}>Prints on the bag</span>
           </div>
-          <input id="pl-blend-name" value={blendName} onChange={(e) => setBlendName(e.target.value)} placeholder="House blend" maxLength={32}
-            style={{ ...disp, fontSize: "clamp(22px,2.6vw,30px)", lineHeight: 1.1, color: "var(--ink)", background: "transparent", border: "none", borderBottom: "2px solid var(--ink)", borderRadius: 0, padding: "4px 0 8px", outline: "none", width: "100%", minWidth: 0 }} />
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 10, borderBottom: "2px solid var(--ink)" }}>
+            <input id="pl-blend-name" value={blendName} onChange={(e) => setBlendName(e.target.value)} placeholder="House blend" maxLength={32}
+              style={{ ...disp, fontSize: "clamp(22px,2.6vw,30px)", lineHeight: 1.1, color: "var(--ink)", background: "transparent", border: "none", borderRadius: 0, padding: "4px 0 8px", outline: "none", flex: 1, width: "100%", minWidth: 0 }} />
+            <button type="button" onClick={() => setBlendName(randomName(blendName ?? ""))} aria-label="Generate a random name" title="Random name"
+              style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, minHeight: 36, padding: "0 12px", marginBottom: 8, borderRadius: "var(--r-md)", border: "1.5px solid var(--ink)", background: "var(--surface)", color: "var(--ink)", cursor: "pointer",
+                fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: ".08em" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" /><path d="m18 2 4 4-4 4" /><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2" /><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8" /><path d="m18 14 4 4-4 4" /></svg>
+              Random
+            </button>
+          </div>
           <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: 12.5, lineHeight: 1.5, color: "var(--ink-muted)", textWrap: "pretty" }}>{nameHint}</p>
         </div>
       </div>
@@ -230,6 +238,12 @@ export function BlendRatios({ sel, setSel, roast, setRoast, blendName, setBlendN
   return <div style={{ display: "flex", flexDirection: "column", gap }}>{sections.map((s) => blocks[s])}</div>;
 }
 
+// Random blend names: an adjective-ish word and a noun, never the same name twice in a row.
+const NAME_A = ["Early", "Slow", "Golden", "Low", "Quiet", "Second", "Copper", "Night", "Sunday", "Back Porch", "Wild", "Velvet", "Long", "Red", "Morning", "Last", "Burnt", "Bright", "High", "Little"];
+const NAME_B = ["Shift", "Hour", "Light", "Tide", "Riser", "Wake", "Ember", "Drift", "Static", "Bloom", "Orchard", "Signal", "Harbor", "Fever", "Mile", "Cut", "Season", "Thunder", "Hum", "Ritual"];
+const pick = (a: string[]) => a[Math.floor(Math.random() * a.length)];
+const randomName = (prev: string) => { let n; do { n = `${pick(NAME_A)} ${pick(NAME_B)}`; } while (n === prev); return n; };
+
 // ---- the cup: live radar of weighted cupping scores ----
 export function TastingWheel({ vals, roast, empty, title = "The cup", note }: { vals: Notes; roast: number; empty?: boolean; title?: string; note?: string }) {
   const g = radarGeom(vals);
@@ -237,13 +251,13 @@ export function TastingWheel({ vals, roast, empty, title = "The cup", note }: { 
   const soft = (a: number) => rgb.replace("rgb(", "rgba(").replace(")", `,${a})`);
   const top = AX.map((a) => ({ label: a.l, v: vals[a.k] || 0 })).sort((x, y) => y.v - x.v).slice(0, 5);
   return (
-    <div style={{ background: "var(--surface)", border: "1px solid var(--hairline)", borderRadius: "var(--r-lg)", padding: "20px 22px 22px" }}>
+    <div className="tw-card" style={{ background: "var(--surface)", border: "1px solid var(--hairline)", borderRadius: "var(--r-lg)", padding: "20px 22px 22px" }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 6 }}>
         <span style={{ ...over, fontSize: 10.5, color: "var(--ink-muted)" }}>{title}</span>
         {!empty && <span style={{ display: "inline-flex", alignItems: "center", gap: 6, ...over, fontSize: 10, color: "var(--brand)" }}><Dot color="tomato" pulse size={6} />Live</span>}
       </div>
-      <div style={{ padding: "0 clamp(16px,13%,62px)" }}>
-        <div style={{ position: "relative", width: "100%", maxWidth: 400, margin: "0 auto", aspectRatio: "1 / 1" }}>
+      <div className="tw-pad" style={{ padding: "0 clamp(16px,13%,62px)" }}>
+        <div className="tw-plot" style={{ position: "relative", width: "100%", maxWidth: 400, margin: "0 auto", aspectRatio: "1 / 1" }}>
           <svg viewBox="0 0 480 480" role="img" aria-label={`Tasting wheel: ${top.filter((t) => t.v >= .05).map((t) => `${t.label} ${t.v.toFixed(1)}`).join(", ") || "empty"}`} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible" }}>
             {[150, 109, 68, 27].map((r) => <circle key={r} cx="240" cy="240" r={r} fill="none" stroke="var(--viz-grid)" strokeWidth="1" />)}
             {g.axes.map((a, i) => <line key={i} x1="240" y1="240" x2={a.sx.toFixed(1)} y2={a.sy.toFixed(1)} stroke="var(--viz-grid)" strokeWidth="1" />)}
@@ -252,20 +266,20 @@ export function TastingWheel({ vals, roast, empty, title = "The cup", note }: { 
           </svg>
           {!empty && g.axes.map((a, i) => (
             <div key={i} aria-hidden="true" style={{ position: "absolute", display: "flex", flexDirection: "column", gap: 1, whiteSpace: "nowrap", left: a.lx + "%", top: a.ly + "%", transform: a.tf, alignItems: a.al, opacity: a.op }}>
-              <span style={{ ...over, fontSize: 9, color: "var(--ink-muted)" }}>{a.label}</span>
-              <span style={{ ...mono, fontSize: 11.5, color: "var(--ink)" }}>{a.valStr}</span>
+              <span style={{ ...over, fontSize: 8, letterSpacing: ".04em", color: "var(--ink-muted)" }}>{a.label}</span>
+              <span style={{ ...mono, fontSize: 10, color: "var(--ink)" }}>{a.valStr}</span>
             </div>
           ))}
           {empty && (
             <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 10, padding: "0 14%" }}>
               <h3 style={{ margin: 0, ...disp, fontSize: 22, color: "var(--ink)", lineHeight: 1.1 }}>Empty cup</h3>
-              <p style={{ margin: 0, maxWidth: "32ch", fontFamily: "var(--font-sans)", fontSize: 13.5, lineHeight: 1.55, color: "var(--ink-muted)" }}>Add a coffee and the wheel fills in. Move a ratio and it moves with you.</p>
+              <p className="tw-empty-hint" style={{ margin: 0, maxWidth: "32ch", fontFamily: "var(--font-sans)", fontSize: 13.5, lineHeight: 1.55, color: "var(--ink-muted)" }}>Add a coffee and the wheel fills in. Move a ratio and it moves with you.</p>
             </div>
           )}
         </div>
       </div>
       {!empty && (
-        <div style={{ marginTop: 14 }}>
+        <div className="tw-bars" style={{ marginTop: 14 }}>
           {top.map((n) => (
             <div key={n.label} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderTop: "1px solid var(--hairline)" }}>
               <span style={{ flex: "0 0 86px", ...over, fontSize: 9.5, color: "var(--ink-muted)" }}>{n.label}</span>
