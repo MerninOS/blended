@@ -403,3 +403,12 @@ html[data-product="coroasted-coffee-os"] body {
   /* The order bar waits for checkout on small screens, where it would cover the builder. */
   .co-confirmbar.cb-wait { display: none !important }
 }
+
+/* The storefront header hides while scrolling down on phones and tablets (StorefrontChrome);
+   whatever is pinned under it follows it up. */
+.sf-head { transition: transform 220ms cubic-bezier(.2, .6, .2, 1) }
+@media (max-width: 1024px) {
+  .sf-head[data-hidden="true"] { transform: translateY(-100%) }
+  .cp-layout-cup, .sh-tools { transition: top 220ms cubic-bezier(.2, .6, .2, 1) }
+  html[data-head-hidden="true"] .cp-layout-cup, html[data-head-hidden="true"] .sh-tools { top: 0 !important }
+}

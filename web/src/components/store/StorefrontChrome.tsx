@@ -22,6 +22,22 @@ export function StorefrontChrome() {
   const [menu, setMenu] = useState(false);
   const [lastPath, setLastPath] = useState(path);
   if (path !== lastPath) { setLastPath(path); setMenu(false); }
+  // Phones and tablets: the header slides away while scrolling down and comes back on the way up.
+  // <html data-head-hidden> lets things pinned under it (the Lab's cup, the shop toolbar) move up too.
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    let last = scrollY;
+    const f = () => {
+      const y = scrollY, d = y - last;
+      if (Math.abs(d) < 6) return;
+      const h = innerWidth <= 1024 && d > 0 && y > 80;
+      setHidden(h); last = y;
+    };
+    addEventListener("scroll", f, { passive: true });
+    return () => { removeEventListener("scroll", f); delete document.documentElement.dataset.headHidden; };
+  }, []);
+  const off = hidden && !menu;
+  useEffect(() => { document.documentElement.dataset.headHidden = String(off); }, [off]);
   useEffect(() => {
     if (!menu) return;
     const k = (e: KeyboardEvent) => { if (e.key === "Escape") setMenu(false); };
@@ -29,7 +45,7 @@ export function StorefrontChrome() {
   }, [menu]);
 
   return (
-    <header style={{ position: "sticky", top: 0, zIndex: 50, background: "var(--surface)", borderBottom: "1px solid var(--hairline)" }}>
+    <header className="sf-head" data-hidden={off} style={{ position: "sticky", top: 0, zIndex: 50, background: "var(--surface)", borderBottom: "1px solid var(--hairline)" }}>
       <div className="pc-bar" style={{ maxWidth: "var(--content-max)", margin: "0 auto", display: "flex", alignItems: "center", gap: 24, height: "var(--topbar-h)", padding: "0 24px" }}>
         <button type="button" className="sf-burger" aria-label={menu ? "Close menu" : "Open menu"} aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
           <span className="sf-burger-lines" data-open={menu}><span></span><span></span><span></span></span>
