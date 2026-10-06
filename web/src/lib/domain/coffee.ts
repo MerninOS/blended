@@ -1,6 +1,6 @@
 // Cup math, pricing and blend constraints. Pure functions shared by the
 // storefront (live preview) and the server (authoritative checkout prices).
-import type { FlavorKey, GreenLot, Notes, SelItem, ShopSizeId, StockCoffee } from "./types";
+import type { BlendRole, FlavorKey, GreenLot, Notes, SelItem, ShopSizeId, StockCoffee } from "./types";
 
 // ---- flavor axes (cupping scores, 0–10) ----
 export const AX: { k: FlavorKey; l: string }[] = [
@@ -230,3 +230,22 @@ export const plQuote = ({ pricePerLb, lbs, bagId, packId, ownBagCount }:
 };
 
 export const round2 = (n: number) => Math.round(n * 100) / 100;
+
+// ---------- blend roles ----------
+/** The Coffee Lab's tabs: the part each coffee plays in a blend, and how it's pitched. */
+export const ROLES: { k: BlendRole; l: string; d: string }[] = [
+  { k: "base", l: "Base", d: "Chocolate, nut and body. Start here; most balanced blends are at least half base." },
+  { k: "lift", l: "Lift", d: "Floral and citrus. A little brightens the whole cup." },
+  { k: "fruit", l: "Fruit", d: "Juicy, sweet fruit that adds depth without taking over." },
+  { k: "funk", l: "Funk", d: "Coffees with intense, loud flavor. A small share goes a long way." },
+];
+export const isRole = (v: unknown): v is BlendRole => ROLES.some((r) => r.k === v);
+/** The role worked out from process and origin, for lots without one set. */
+export function autoRole(c: Pick<GreenLot, "process" | "origin">): BlendRole {
+  const p = (c.process || "").toLowerCase(), o = (c.origin || "").toLowerCase();
+  if (p.includes("co-ferment") || p.includes("coferment")) return "funk";
+  if (o.includes("ethiopia")) return "lift";
+  if (o.includes("colombia") || o.includes("kenya")) return "fruit";
+  return "base";
+}
+export const roleOf = (c: GreenLot): BlendRole => c.role ?? autoRole(c);

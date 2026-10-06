@@ -9,6 +9,7 @@ import { deleteGreenLot, listGreenLotsAdmin, saveGreenLot } from "@/lib/green-ad
 import { finalizeUpload, stageUpload } from "@/lib/shopify/files";
 import { getSettings, registerWebhooks, saveSettings, type StoreSettings } from "@/lib/settings";
 import { cleanRoastLoss, recipeText } from "@/lib/domain/green";
+import { isRole } from "@/lib/domain/coffee";
 import type { SelItem } from "@/lib/domain/types";
 import { deductOrder } from "@/lib/green-ledger";
 import { stopStockSync, syncQuietly, syncStockFromGreen } from "@/lib/green-sync";
@@ -35,7 +36,7 @@ function cleanLot(l: GreenLot): GreenLot {
     process: String(l.process || "Washed").slice(0, 40), roast: Math.max(1, Math.min(5, Math.round(n(l.roast, 3)))), price: n(l.price),
     wholesale: l.wholesale == null ? null : n(l.wholesale), retail: l.retail == null ? null : n(l.retail),
     avail: Math.round(n(l.avail) * 10) / 10, onHandG: l.onHandG == null ? null : Math.round(n(l.onHandG)), minG: l.minG == null ? null : Math.round(n(l.minG)), notes,
-    kind: l.kind === "limited" || l.kind === "soon" ? l.kind : "anchor", tag: l.tag ? String(l.tag).slice(0, 30) : null, listed: !!l.listed,
+    kind: l.kind === "limited" || l.kind === "soon" ? l.kind : "anchor", role: isRole(l.role) ? l.role : null, tag: l.tag ? String(l.tag).slice(0, 30) : null, listed: !!l.listed,
   };
 }
 

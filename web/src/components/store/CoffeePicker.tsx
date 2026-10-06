@@ -5,8 +5,8 @@
 // says why a coffee can't be added.
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { GreenLot, SelItem } from "@/lib/domain/types";
-import { AX, retailOf } from "@/lib/domain/coffee";
+import type { BlendRole, GreenLot, SelItem } from "@/lib/domain/types";
+import { AX, ROLES, retailOf, roleOf } from "@/lib/domain/coffee";
 import { disp, mono, Photo } from "@/components/ui/primitives";
 import { CoffeeReviews, Stars } from "./CoffeeReviews";
 
@@ -22,22 +22,6 @@ const feel = (c: GreenLot) => {
   f.push(c.roast >= 4 ? "Full-bodied" : c.roast <= 2 ? "Delicate" : "Balanced");
   return f.slice(0, 3);
 };
-/** The role a coffee plays in a blend, and how each is pitched on its tab. */
-type Role = "base" | "lift" | "fruit" | "funk";
-const ROLES: { k: Role; l: string; d: string }[] = [
-  { k: "base", l: "Base", d: "Chocolate, nut and body. Start here; most balanced blends are at least half base." },
-  { k: "lift", l: "Lift", d: "Floral and citrus. A little brightens the whole cup." },
-  { k: "fruit", l: "Fruit", d: "Juicy, sweet fruit that adds depth without taking over." },
-  { k: "funk", l: "Funk", d: "Coffees with intense, loud flavor. A small share goes a long way." },
-];
-const roleOf = (c: GreenLot): Role => {
-  const p = (c.process || "").toLowerCase(), o = (c.origin || "").toLowerCase();
-  if (p.includes("co-ferment") || p.includes("coferment")) return "funk";
-  if (o.includes("ethiopia")) return "lift";
-  if (o.includes("colombia") || o.includes("kenya")) return "fruit";
-  return "base";
-};
-
 function Tab({ label, count, on, onClick, id, panel }: { label: string; count: number; on: boolean; onClick: () => void; id: string; panel: string }) {
   return (
     <button type="button" role="tab" id={id} aria-selected={on} aria-controls={panel} tabIndex={on ? 0 : -1} onClick={onClick}
@@ -165,7 +149,7 @@ export function CoffeePicker({ lots, sel, onAdd, onRemove, reasonFor }: {
 }) {
   const [detail, setDetail] = useState<string | null>(null);
   const roles = ROLES.filter((r) => lots.some((c) => roleOf(c) === r.k));
-  const [tab, setTab] = useState<Role | undefined>(roles[0]?.k);
+  const [tab, setTab] = useState<BlendRole | undefined>(roles[0]?.k);
   const dc = detail ? lots.find((c) => c.id === detail) : undefined;
   const isOn = (id: string) => sel.some((s) => s.id === id);
   const toggle = (id: string) => (isOn(id) ? onRemove(id) : onAdd(id));

@@ -6,8 +6,8 @@
 // custom line items, then the order webhook deducts the grams each blend used.
 //
 // Shared by the app and scripts/setup-shopify.ts (no "server-only" import).
-import type { CoffeeReviewsData, GreenLot, Notes } from "../domain/types.ts";
-import { G_PER_LB } from "../domain/coffee.ts";
+import type { BlendRole, CoffeeReviewsData, GreenLot, Notes } from "../domain/types.ts";
+import { G_PER_LB, isRole } from "../domain/coffee.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AdminQ = (query: string, variables?: Record<string, unknown>) => Promise<any>;
@@ -44,6 +44,7 @@ export const GREEN_FIELDS: [string, string, string][] = [
   ["retail_price", "Retail $/lb roasted", "number_decimal"],
   ["min_grams", "Min in a blend (g)", "number_integer"],
   ["kind", "Kind (anchor / limited / soon)", "single_line_text_field"],
+  ["role", "Blend role (base / lift / fruit / funk)", "single_line_text_field"],
   ["badge", "Badge", "single_line_text_field"],
   ["tasting_notes", "Tasting notes (0–10 scores)", "json"],
   ["reviews", "Grader + customer reviews", "json"],
@@ -57,7 +58,7 @@ export function greenMetafields(l: GreenLot) {
   const values: Record<string, string> = {
     origin: l.origin, lot_code: l.lot, process: l.process, roast_level: int(l.roast),
     green_price: dec(l.price), wholesale_price: dec(l.wholesale), retail_price: dec(l.retail), min_grams: int(l.minG),
-    kind: l.kind, badge: l.tag ?? "", tasting_notes: JSON.stringify(l.notes || {}),
+    kind: l.kind, role: l.role ?? "", badge: l.tag ?? "", tasting_notes: JSON.stringify(l.notes || {}),
     ...(l.reviews !== undefined ? { reviews: l.reviews ? JSON.stringify(l.reviews) : "" } : {}),
   };
   const set = Object.entries(values).filter(([, v]) => v !== "").map(([key, value]) => ({ namespace: NS, key, type: TYPE[key], value }));
@@ -123,6 +124,7 @@ export const GREEN_NODE = gql`
     retail_price: metafield(namespace: "blended", key: "retail_price") { value }
     min_grams: metafield(namespace: "blended", key: "min_grams") { value }
     kind: metafield(namespace: "blended", key: "kind") { value }
+    role: metafield(namespace: "blended", key: "role") { value }
     badge: metafield(namespace: "blended", key: "badge") { value }
     tasting_notes: metafield(namespace: "blended", key: "tasting_notes") { value }
     reviews: metafield(namespace: "blended", key: "reviews") { value }
@@ -165,6 +167,7 @@ export function lotFromProduct(p: GreenNode): GreenLot {
     onHandG: level ? grams : null, // only known when the location level was queried
     minG: num(p.min_grams?.value),
     kind: kind === "limited" || kind === "soon" ? kind : "anchor",
+    role: isRole(p.role?.value?.toLowerCase()) ? p.role!.value.toLowerCase() as BlendRole : null,
     tag: p.badge?.value || null,
     listed: p.status === "ACTIVE",
     notes: json<Notes>(p.tasting_notes?.value, {}),

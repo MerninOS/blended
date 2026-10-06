@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import type { GreenLot } from "@/lib/domain/types";
 import {
   AGTRON, AX, DROP_F, G_PER_LB, MING_DEFAULT, ROAST_DESC, minG, minPctFor, money, money0, radarGeom, rampColor, retailOf,
-  roastName, roastedCost, wholesaleOf,
+  ROLES, autoRole, roastName, roastedCost, roleOf, wholesaleOf,
 } from "@/lib/domain/coffee";
 import { Btn, CO, Photo, Pill, Toast } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
@@ -135,6 +135,23 @@ function Editor({ row, isNew, busy, error, onChange, onClose, onSave, onDelete, 
           </section>
 
           <section>
+            <Head label="Role in a blend" right={`Coffee Lab tab: ${ROLES.find((x) => x.k === roleOf(row))?.l}`} />
+            <div role="radiogroup" aria-label="Role in a blend" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(96px,1fr))", gap: 6, marginTop: 14 }}>
+              {[{ k: null, l: "Automatic", d: `From process and origin: ${ROLES.find((x) => x.k === autoRole(row))?.l}` }, ...ROLES].map((o) => {
+                const on = (row.role ?? null) === o.k;
+                return (
+                  <button type="button" role="radio" aria-checked={on} key={o.l} onClick={() => set("role", o.k)} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6, padding: "9px 10px 10px", cursor: "pointer", textAlign: "left",
+                    border: `1px solid ${on ? "var(--brand)" : "var(--hairline-strong)"}`, background: on ? "var(--brand-soft)" : "var(--surface)", borderRadius: "var(--r-sm)" }}>
+                    <span style={CO.over({ fontSize: 9.5, color: on ? "var(--brand-hover)" : "var(--ink)" })}>{o.l}</span>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, lineHeight: 1.3, color: "var(--ink-subtle)" }}>{o.d}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p style={{ margin: "10px 0 0", fontFamily: "var(--font-sans)", fontSize: 12, lineHeight: 1.5, color: "var(--ink-subtle)" }}>Which tab the coffee sits under in the Coffee Lab&rsquo;s &ldquo;Choose your coffees&rdquo;.</p>
+          </section>
+
+          <section>
             <Head label="Tasting notes" right="0–10 cupping scores" />
             <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginTop: 14 }}>
               <div style={{ flex: "1 1 260px", minWidth: 240, display: "flex", flexDirection: "column", gap: 9 }}>
@@ -230,8 +247,8 @@ export function GreenCatalogView({ rows, demo }: { rows: GreenLot[]; demo: boole
     if (r.ok) done(`${draft.name} deleted`); else setError(r.error);
   });
   const exportCsv = () => downloadCsv("green-catalog.csv", [
-    ["Name", "Origin", "Lot", "Process", "Roast", "Green $/lb", "Wholesale $/lb", "Retail $/lb", "On hand lb", "Min g", "Listed", ...AX.map((a) => a.l)],
-    ...rows.map((r) => [r.name, r.origin, r.lot, r.process, roastName(r.roast), r.price, wholesaleOf(r), retailOf(r), r.avail, minG(r), r.listed ? "yes" : "no", ...AX.map((a) => r.notes[a.k] ?? 0)]),
+    ["Name", "Origin", "Lot", "Process", "Role", "Roast", "Green $/lb", "Wholesale $/lb", "Retail $/lb", "On hand lb", "Min g", "Listed", ...AX.map((a) => a.l)],
+    ...rows.map((r) => [r.name, r.origin, r.lot, r.process, ROLES.find((x) => x.k === roleOf(r))?.l ?? "", roastName(r.roast), r.price, wholesaleOf(r), retailOf(r), r.avail, minG(r), r.listed ? "yes" : "no", ...AX.map((a) => r.notes[a.k] ?? 0)]),
   ]);
 
   return (
@@ -259,7 +276,7 @@ export function GreenCatalogView({ rows, demo }: { rows: GreenLot[]; demo: boole
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1120 }}>
             <thead>
               <tr style={{ background: "var(--surface-sunken)", borderBottom: "1px solid var(--hairline)" }}>
-                {([["Coffee", "left"], ["Process", "left"], ["Roast", "left"], ["Tasting notes", "left"], ["Green $", "right"], ["Wholesale", "right"], ["Retail", "right"], ["On hand", "right"], ["Min in blend", "right"], ["Listed", "left"]] as const).map(([h, al], i) => (
+                {([["Coffee", "left"], ["Process", "left"], ["Role", "left"], ["Roast", "left"], ["Tasting notes", "left"], ["Green $", "right"], ["Wholesale", "right"], ["Retail", "right"], ["On hand", "right"], ["Min in blend", "right"], ["Listed", "left"]] as const).map(([h, al], i) => (
                   <th key={i} scope="col" style={{ textAlign: al, padding: "9px 14px", whiteSpace: "nowrap", ...CO.over({ fontSize: 10, color: "var(--ink-muted)" }) }}>{h}</th>
                 ))}
               </tr>
@@ -283,6 +300,7 @@ export function GreenCatalogView({ rows, demo }: { rows: GreenLot[]; demo: boole
                       </div>
                     </td>
                     <td style={{ padding: "11px 14px" }}><span style={CO.over({ fontSize: 9.5, color: "var(--ink-muted)", whiteSpace: "nowrap" })}>{r.process}</span></td>
+                    <td style={{ padding: "11px 14px" }} title={r.role ? undefined : "Automatic, from process and origin"}><span style={CO.over({ fontSize: 9.5, color: r.role ? "var(--ink)" : "var(--ink-subtle)", whiteSpace: "nowrap" })}>{ROLES.find((x) => x.k === roleOf(r))?.l}{r.role ? "" : " · auto"}</span></td>
                     <td style={{ padding: "11px 14px" }}>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}>
                         <span style={{ width: 11, height: 11, borderRadius: "var(--r-sm)", background: rampColor(r.roast), boxShadow: "inset 0 0 0 1px rgba(0,0,0,.14)" }} />

@@ -4,6 +4,9 @@ export type FlavorKey =
 
 export type Notes = Partial<Record<FlavorKey, number>>;
 
+/** The part a coffee plays in a blend; it groups coffees into tabs in the Coffee Lab. */
+export type BlendRole = "base" | "lift" | "fruit" | "funk";
+
 /** A green coffee lot customers can put in a blend (Shopify product tagged `blended-green`, stock in grams). */
 export interface GreenLot {
   id: string;            // stable handle, e.g. "cerrado"
@@ -21,6 +24,7 @@ export interface GreenLot {
   onHandG?: number | null; // grams at the green location as loaded (compare-and-set on edit); null = not stocked there yet
   minG: number | null;   // smallest weight allowed in a blend (g); null = default
   kind: "anchor" | "limited" | "soon";
+  role?: BlendRole | null; // set in the admin; null/absent = worked out from process and origin (roleOf)
   tag: string | null;    // badge
   listed: boolean;
   notes: Notes;          // 0–10 cupping scores, drive the tasting wheel
