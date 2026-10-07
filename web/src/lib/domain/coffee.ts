@@ -275,3 +275,14 @@ export function parseReviews(raw: string | null | undefined): CoffeeReviewsData 
   if (!grader && !reviews.length && !count) return null;
   return { avg, count, grader, reviews };
 }
+
+/** Reviews as edited in the admin: trimmed, quotes required, count and average worked out from the list. Empty = null. */
+export function tidyReviews(r: CoffeeReviewsData | null | undefined): CoffeeReviewsData | null {
+  const s = (x: unknown, n: number) => String(x ?? "").trim().slice(0, n);
+  const reviews = (r?.reviews ?? []).map((x) => ({ who: s(x.who, 40) || "Customer", brew: s(x.brew, 30), stars: Math.max(1, Math.min(5, Math.round(Number(x.stars) || 5))), text: s(x.text, 500) })).filter((x) => x.text);
+  const g = r?.grader, note = s(g?.note, 600);
+  const grader = note ? { who: s(g?.who, 40), role: s(g?.role, 40) || undefined, score: s(g?.score, 12) || undefined, note } : null;
+  if (!grader && !reviews.length) return null;
+  const avg = reviews.length ? Math.round(reviews.reduce((a, x) => a + x.stars, 0) / reviews.length * 10) / 10 : 0;
+  return { avg, count: reviews.length, grader, reviews };
+}

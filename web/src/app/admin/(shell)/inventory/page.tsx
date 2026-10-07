@@ -26,7 +26,7 @@ async function load() {
     const link = linkCoffee(c, lots), ok = link && !link.missing.length;
     const shopRow = shop?.rows.find((r) => r.name === c.name);
     return {
-      id: c.id, gid: c.gid, name: c.name, sub: c.sub, roast: c.roast, link,
+      id: c.id, gid: c.gid, name: c.name, sub: c.sub, roast: c.roast, link, reviews: c.reviews ?? null,
       perLb: ok ? [...greenUsageG(link.sel, 1, c.roast, loss)].map(([id, g]) => ({ id, name: byId.get(id)?.name ?? id, g: Math.round(g) })) : [],
       sizes: SHOP_SIZES.map((s) => {
         const sh = shopRow?.sizes.find((x) => x.size === s.label);

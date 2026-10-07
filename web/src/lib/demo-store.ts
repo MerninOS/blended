@@ -2,7 +2,7 @@ import "server-only";
 // In-memory stand-in for Shopify while no store is connected. Mutations from
 // the admin (catalog edits, order stages) live for the life of the server
 // process — enough to click through the flows locally.
-import type { GreenLot } from "@/lib/domain/types";
+import type { CoffeeReviewsData, GreenLot } from "@/lib/domain/types";
 import type { AdminOrder, OrderItem, Stage } from "@/lib/domain/orders";
 import { G_PER_LB, bagPrice, indexLots, retailSel, roastOf, shippingFor, shopSize, stockBagPrice } from "@/lib/domain/coffee";
 import { DEMO_GREEN, DEMO_STOCK } from "@/lib/fixtures";
@@ -80,7 +80,7 @@ function build(r: Raw): AdminOrder {
   return { ...r, name: r.id, items, money: { goods: gross, discount, shipping, total: goods + shipping } };
 }
 
-type State = { green: GreenLot[]; orders: AdminOrder[]; recipes?: Record<string, string> };
+type State = { green: GreenLot[]; orders: AdminOrder[]; recipes?: Record<string, string>; reviews?: Record<string, CoffeeReviewsData | null> };
 const g = globalThis as unknown as { __blendedDemo?: State };
 const state = (): State => (g.__blendedDemo ??= {
   green: DEMO_GREEN.map((l) => ({ ...l, notes: { ...l.notes } })),
@@ -97,6 +97,9 @@ export const demoStore = {
   /** Our coffees' recipes edited on the Inventory page (blended.recipe in a real store). */
   recipes: () => (state().recipes ??= {}),
   setRecipe(id: string, text: string) { const s = state(); (s.recipes ??= {})[id] = text; },
+  /** Our coffees' tasting notes and reviews edited on the Inventory page (blended.reviews in a real store). */
+  reviews: () => (state().reviews ??= {}),
+  setReviews(id: string, r: CoffeeReviewsData | null) { const s = state(); (s.reviews ??= {})[id] = r; },
   deleteLot(id: string) { const s = state(); s.green = s.green.filter((l) => l.id !== id); },
   resetGreen() { state().green = DEMO_GREEN.map((l) => ({ ...l, notes: { ...l.notes } })); },
   orders: () => state().orders,

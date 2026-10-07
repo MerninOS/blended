@@ -12,14 +12,13 @@ import {
 import { Btn, CO, Photo, Pill, Toast } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
 import { HeroMetric, SearchInput, StatStrip, downloadCsv } from "./parts";
+import { F, Head, input, monoInput } from "./form";
+import { ReviewsEditor } from "./ReviewsEditor";
 import { deleteLotAction, finalizeLotImage, resetDemoCatalog, saveLotAction, stageLotImage } from "@/app/admin/actions";
 
 const PROCESS = ["Washed", "Natural", "Honey", "Co-ferment", "Anaerobic", "Sugarcane EA"];
 const top3 = (notes: GreenLot["notes"]) => AX.map((a) => ({ l: a.l, v: notes[a.k] || 0 })).filter((n) => n.v > 0).sort((a, b) => b.v - a.v).slice(0, 3);
 const blank = (): GreenLot => ({ id: "", name: "", origin: "", lot: "", process: "Washed", roast: 3, price: 7, wholesale: null, retail: null, avail: 0, minG: MING_DEFAULT, kind: "anchor", tag: null, listed: true, notes: {}, image: null });
-
-const input = { width: "100%", padding: "9px 11px", border: "1px solid var(--hairline-strong)", borderRadius: "var(--r-sm)", background: "var(--surface)", color: "var(--ink)", fontFamily: "var(--font-sans)", fontSize: 13.5 } as const;
-const monoInput = { ...input, fontFamily: "var(--font-mono)", fontVariationSettings: "var(--data-settings)" } as const;
 
 function Wheel({ notes, roast }: { notes: GreenLot["notes"]; roast: number }) {
   const g = radarGeom(notes), rgb = rampColor(roast);
@@ -36,67 +35,6 @@ function Wheel({ notes, roast }: { notes: GreenLot["notes"]; roast: number }) {
     </div>
   );
 }
-type Rev = NonNullable<GreenLot["reviews"]>;
-const BREWS = ["Pour-over", "Espresso", "French press", "Drip", "AeroPress", "Cold brew", "Moka pot"];
-const EMPTY_REV: Rev = { avg: 0, count: 0, grader: null, reviews: [] };
-
-/** The tasting note shown in the Coffee Lab's details drawer and on coffee pages, and customer reviews. */
-function ReviewsEditor({ value, onChange }: { value: GreenLot["reviews"]; onChange: (v: Rev) => void }) {
-  const v = value ?? EMPTY_REV, g = v.grader ?? { who: "", note: "" };
-  const setGrader = (k: "who" | "role" | "score" | "note", x: string) => onChange({ ...v, grader: { ...g, [k]: x } });
-  const setRows = (rows: Rev["reviews"]) => onChange({ ...v, reviews: rows });
-  const setRow = (i: number, k: keyof Rev["reviews"][number], x: string | number) => setRows(v.reviews.map((r, j) => (j === i ? { ...r, [k]: x } : r)));
-  const listed = v.reviews.filter((r) => r.text.trim());
-  const avg = listed.length ? listed.reduce((a, r) => a + r.stars, 0) / listed.length : 0;
-  return (
-    <section>
-      <Head label="Tasting note and reviews" right={listed.length ? `${avg.toFixed(1)} ★ · ${listed.length} review${listed.length === 1 ? "" : "s"}` : "No customer reviews yet"} />
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 14 }}>
-        <F label="Tasting note" hint="Shown in the Coffee Lab's details drawer and the reviews panel. Leave empty for none.">
-          <textarea value={g.note} onChange={(e) => setGrader("note", e.target.value)} rows={4} maxLength={600} placeholder="Cocoa and toasted hazelnut up front, then…" style={{ ...input, resize: "vertical", lineHeight: 1.5 }} />
-        </F>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ flex: "1 1 150px" }}><F label="Signed"><input value={g.who} onChange={(e) => setGrader("who", e.target.value)} placeholder="Zak D." maxLength={40} style={input} /></F></div>
-          <div style={{ flex: "1 1 150px" }}><F label="Role (optional)"><input value={g.role ?? ""} onChange={(e) => setGrader("role", e.target.value)} placeholder="Head roaster" maxLength={40} style={input} /></F></div>
-          <div style={{ flex: "0 1 110px" }}><F label="Score (optional)"><input value={g.score ?? ""} onChange={(e) => setGrader("score", e.target.value)} placeholder="86.5" maxLength={12} style={monoInput} /></F></div>
-        </div>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 18 }}>
-        <span style={CO.over({ fontSize: 9.5, color: "var(--ink-muted)" })}>Customer reviews</span>
-        {v.reviews.length === 0 && <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: 12.5, lineHeight: 1.5, color: "var(--ink-subtle)" }}>None yet. Stars and a review count only show on the site once there&rsquo;s at least one.</p>}
-        {v.reviews.map((r, i) => (
-          <div key={i} style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, border: "1px solid var(--hairline)", borderRadius: "var(--r-md)" }}>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
-              <div style={{ flex: "1 1 130px" }}><F label="Name"><input value={r.who} onChange={(e) => setRow(i, "who", e.target.value)} placeholder="Jordan P." maxLength={40} style={input} /></F></div>
-              <div style={{ flex: "1 1 130px" }}><F label="Brew"><input value={r.brew} onChange={(e) => setRow(i, "brew", e.target.value)} list="gc-brews" placeholder="Pour-over" maxLength={30} style={input} /></F></div>
-              <div style={{ flex: "0 0 96px" }}><F label="Stars"><select value={r.stars} onChange={(e) => setRow(i, "stars", +e.target.value)} style={input}>{[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{n} ★</option>)}</select></F></div>
-              <button type="button" onClick={() => setRows(v.reviews.filter((_, j) => j !== i))} aria-label={`Remove review ${i + 1}`} style={{ height: 38, padding: "0 10px", border: "1px solid var(--hairline-strong)", borderRadius: "var(--r-sm)", background: "var(--surface)", color: "var(--ink-muted)", cursor: "pointer" }}><Icon name="x" size={14} stroke={2} /></button>
-            </div>
-            <textarea aria-label="Review" value={r.text} onChange={(e) => setRow(i, "text", e.target.value)} rows={2} maxLength={500} placeholder="What they said, in their words." style={{ ...input, resize: "vertical", lineHeight: 1.5 }} />
-          </div>
-        ))}
-        <datalist id="gc-brews">{BREWS.map((b) => <option key={b} value={b} />)}</datalist>
-        <div><Btn size="sm" variant="secondary" iconLeft={<Icon name="plus" size={14} stroke={2.2} />} onClick={() => setRows([...v.reviews, { who: "", brew: "", stars: 5, text: "" }])}>Add a review</Btn></div>
-        <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: 11.5, lineHeight: 1.5, color: "var(--ink-subtle)" }}>Only add reviews customers actually wrote. The average and count are worked out from this list.</p>
-      </div>
-    </section>
-  );
-}
-
-const Head = ({ label, right }: { label: string; right?: string }) => (
-  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, paddingBottom: 9, borderBottom: "1px solid var(--hairline-strong)" }}>
-    <span style={CO.over({ fontSize: 10, color: "var(--ink-muted)" })}>{label}</span>
-    {right && <span style={CO.data({ fontSize: 11.5, color: "var(--ink-subtle)" })}>{right}</span>}
-  </div>
-);
-const F = ({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) => (
-  <label style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-    <span style={CO.over({ fontSize: 9.5, color: "var(--ink-muted)" })}>{label}</span>
-    {children}
-    {hint && <span style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, color: "var(--ink-subtle)" }}>{hint}</span>}
-  </label>
-);
-
 function Editor({ row, isNew, busy, error, onChange, onClose, onSave, onDelete, onImage, imageState }: {
   row: GreenLot; isNew: boolean; busy: boolean; error: string | null; imageState: "idle" | "uploading" | "error";
   onChange: (r: GreenLot) => void; onClose: () => void; onSave: () => void; onDelete: () => void; onImage: (f: File) => void;

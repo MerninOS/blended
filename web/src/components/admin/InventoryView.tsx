@@ -7,19 +7,21 @@
 import { Fragment, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { SelItem } from "@/lib/domain/types";
+import type { CoffeeReviewsData, SelItem } from "@/lib/domain/types";
 import type { Linked, RoastLoss } from "@/lib/domain/green";
 import type { LedgerRow } from "@/lib/green-ledger";
 import { Btn, CO, Pill, Toast, type PillVariant } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
 import { StatStrip, Tabs } from "./parts";
-import { deductOrderAction, saveRecipeAction, syncNowAction } from "@/app/admin/actions";
+import { deductOrderAction, saveCoffeeReviewsAction, saveRecipeAction, syncNowAction } from "@/app/admin/actions";
+import { ReviewsEditor } from "./ReviewsEditor";
 
 export interface CoffeeRow {
   id: string; gid?: string; name: string; sub: string; roast: number;
   link: Linked | null;
   perLb: { id: string; name: string; g: number }[];
   sizes: { label: string; bags: number | null; shopify: number | null }[];
+  reviews: CoffeeReviewsData | null;
 }
 type Lot = { id: string; name: string; lb: number; listed: boolean };
 
@@ -85,6 +87,30 @@ function RecipeEditor({ row, lots, onClose, flash }: { row: CoffeeRow; lots: Lot
   );
 }
 
+/** One of Our coffees' tasting note and customer reviews, saved to its Shopify product. */
+function CoffeeReviewsPanel({ row, onClose, flash }: { row: CoffeeRow; onClose: () => void; flash: (m: string, t?: "success" | "danger") => void }) {
+  const router = useRouter();
+  const [value, setValue] = useState<CoffeeReviewsData | null>(row.reviews);
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    setBusy(true);
+    const r = await saveCoffeeReviewsAction(row.id, row.gid, value);
+    setBusy(false);
+    if (!r.ok) { flash(r.error || "Couldn't save.", "danger"); return; }
+    flash(r.reviews ? `Saved ${row.name}'s note and reviews.` : `Cleared ${row.name}'s note and reviews.`);
+    onClose(); router.refresh();
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14, padding: "14px 16px", border: "1px solid var(--hairline)", borderRadius: "var(--r-md)", background: "var(--surface)", maxWidth: 640 }}>
+      <ReviewsEditor value={value} onChange={setValue} />
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <Btn size="sm" variant="ghost" onClick={onClose}>Cancel</Btn>
+        <Btn size="sm" variant="primary" disabled={busy} onClick={save}>{busy ? "Saving…" : "Save note and reviews"}</Btn>
+      </div>
+    </div>
+  );
+}
+
 export function InventoryView({ rows, lots, ledger, settings, demo }: {
   rows: CoffeeRow[]; lots: Lot[]; ledger: LedgerRow[] | null; demo: boolean;
   settings: { syncStock: boolean; drawDownGreen: boolean; roastLoss: RoastLoss };
@@ -92,6 +118,7 @@ export function InventoryView({ rows, lots, ledger, settings, demo }: {
   const router = useRouter();
   const [tab, setTab] = useState<"coffees" | "ledger">("coffees");
   const [editing, setEditing] = useState<string | null>(null);
+  const [reviewing, setReviewing] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; tone: "success" | "danger" } | null>(null);
   const [busy, start] = useTransition();
   const flash = (msg: string, tone: "success" | "danger" = "success") => { setToast({ msg, tone }); setTimeout(() => setToast(null), 3200); };
@@ -149,9 +176,17 @@ export function InventoryView({ rows, lots, ledger, settings, demo }: {
                       </td>
                     ))}
                     <td style={{ ...cell, textAlign: "right" }}>
-                      <Btn size="sm" variant="outline" onClick={() => setEditing(editing === r.id ? null : r.id)}>{bad ? "Set recipe" : "Edit"}</Btn>
+                      <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                        <Btn size="sm" variant="outline" onClick={() => setEditing(editing === r.id ? null : r.id)}>{bad ? "Set recipe" : "Edit"}</Btn>
+                        <Btn size="sm" variant="outline" onClick={() => setReviewing(reviewing === r.id ? null : r.id)}>{r.reviews ? `Reviews${r.reviews.count ? ` (${r.reviews.count})` : ""}` : "Add note"}</Btn>
+                      </div>
                     </td>
                   </tr>
+                  {reviewing === r.id && (
+                    <tr><td colSpan={4 + r.sizes.length} style={{ ...cell, paddingTop: 0 }}>
+                      <CoffeeReviewsPanel row={r} onClose={() => setReviewing(null)} flash={flash} />
+                    </td></tr>
+                  )}
                   {editing === r.id && (
                     <tr><td colSpan={4 + r.sizes.length} style={{ ...cell, paddingTop: 0 }}>
                       <RecipeEditor row={r} lots={lots} onClose={() => setEditing(null)} flash={flash} />

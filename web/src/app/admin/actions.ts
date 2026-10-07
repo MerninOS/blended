@@ -1,7 +1,7 @@
 "use server";
 import { revalidatePath, revalidateTag, updateTag } from "next/cache";
 import { after } from "next/server";
-import type { GreenLot } from "@/lib/domain/types";
+import type { CoffeeReviewsData, GreenLot } from "@/lib/domain/types";
 import type { Stage } from "@/lib/domain/orders";
 import { requireAdmin } from "@/lib/admin-auth";
 import { setOrderStage } from "@/lib/orders";
@@ -9,7 +9,7 @@ import { deleteGreenLot, listGreenLotsAdmin, saveGreenLot } from "@/lib/green-ad
 import { finalizeUpload, stageUpload } from "@/lib/shopify/files";
 import { getSettings, registerWebhooks, saveSettings, type StoreSettings } from "@/lib/settings";
 import { cleanRoastLoss, recipeText } from "@/lib/domain/green";
-import { isRole } from "@/lib/domain/coffee";
+import { isRole, tidyReviews } from "@/lib/domain/coffee";
 import type { SelItem } from "@/lib/domain/types";
 import { deductOrder } from "@/lib/green-ledger";
 import { stopStockSync, syncQuietly, syncStockFromGreen } from "@/lib/green-sync";
@@ -27,18 +27,6 @@ export async function advanceOrder(orderId: string, stage: Stage, tracking?: { n
   try { await setOrderStage(orderId, stage, tracking); revalidatePath("/admin/orders"); return { ok: true }; } catch (e) { return fail(e); }
 }
 
-/** Reviews from the editor: count and average from the listed reviews; a lot opened without loading them is left alone. */
-function cleanReviews(r: GreenLot["reviews"]): GreenLot["reviews"] {
-  if (r === undefined) return undefined;
-  const s = (x: unknown, n: number) => String(x ?? "").trim().slice(0, n);
-  const reviews = (r?.reviews ?? []).map((x) => ({ who: s(x.who, 40) || "Customer", brew: s(x.brew, 30), stars: Math.max(1, Math.min(5, Math.round(Number(x.stars) || 5))), text: s(x.text, 500) })).filter((x) => x.text);
-  const g = r?.grader, note = s(g?.note, 600);
-  const grader = note ? { who: s(g?.who, 40), role: s(g?.role, 40) || undefined, score: s(g?.score, 12) || undefined, note } : null;
-  if (!grader && !reviews.length) return null;
-  const avg = reviews.length ? Math.round(reviews.reduce((a, x) => a + x.stars, 0) / reviews.length * 10) / 10 : 0;
-  return { avg, count: reviews.length, grader, reviews };
-}
-
 function cleanLot(l: GreenLot): GreenLot {
   const n = (v: unknown, d = 0) => { const x = Number(v); return isFinite(x) && x >= 0 ? x : d; };
   const notes: GreenLot["notes"] = {};
@@ -48,7 +36,7 @@ function cleanLot(l: GreenLot): GreenLot {
     process: String(l.process || "Washed").slice(0, 40), roast: Math.max(1, Math.min(5, Math.round(n(l.roast, 3)))), price: n(l.price),
     wholesale: l.wholesale == null ? null : n(l.wholesale), retail: l.retail == null ? null : n(l.retail),
     avail: Math.round(n(l.avail) * 10) / 10, onHandG: l.onHandG == null ? null : Math.round(n(l.onHandG)), minG: l.minG == null ? null : Math.round(n(l.minG)), notes,
-    kind: l.kind === "limited" || l.kind === "soon" ? l.kind : "anchor", role: isRole(l.role) ? l.role : null, reviews: cleanReviews(l.reviews), tag: l.tag ? String(l.tag).slice(0, 30) : null, listed: !!l.listed,
+    kind: l.kind === "limited" || l.kind === "soon" ? l.kind : "anchor", role: isRole(l.role) ? l.role : null, reviews: l.reviews === undefined ? undefined : tidyReviews(l.reviews), tag: l.tag ? String(l.tag).slice(0, 30) : null, listed: !!l.listed,
   };
 }
 
@@ -130,6 +118,29 @@ export async function saveRecipeAction(coffeeId: string, gid: string | undefined
     return { ok: true };
   } catch (e) { return fail(e); }
 }
+
+/** Save the tasting note and customer reviews on one of Our coffees (blended.reviews); empty removes them. */
+export async function saveCoffeeReviewsAction(coffeeId: string, gid: string | undefined, reviews: CoffeeReviewsData | null): Promise<Result & { reviews?: CoffeeReviewsData | null }> {
+  await requireAdmin();
+  try {
+    const clean = tidyReviews(reviews);
+    if (isDemo()) demoStore.setReviews(coffeeId, clean);
+    else {
+      if (!gid) throw new Error("This coffee isn't in Shopify.");
+      const r = clean
+        ? (await admin<{ metafieldsSet: { userErrors: { message: string }[] } }>(SET_RECIPE, { variables: { metafields: [
+            { ownerId: gid, namespace: "blended", key: "reviews", type: "json", value: JSON.stringify(clean) },
+          ] } })).metafieldsSet
+        : (await admin<{ metafieldsDelete: { userErrors: { message: string }[] } }>(DELETE_FIELDS, { variables: { metafields: [{ ownerId: gid, namespace: "blended", key: "reviews" }] } })).metafieldsDelete;
+      if (r.userErrors.length) throw new Error(r.userErrors.map((e) => e.message).join("; "));
+    }
+    revalidateTag(CACHE_TAGS.catalog, "max"); revalidatePath("/admin/inventory");
+    return { ok: true, reviews: clean };
+  } catch (e) { return fail(e); }
+}
+const DELETE_FIELDS = `
+  mutation ClearCoffeeFields($metafields: [MetafieldIdentifierInput!]!) { metafieldsDelete(metafields: $metafields) { userErrors { field message } } }
+`;
 
 /** Deduct an order's green by hand (an order the webhook missed). */
 export async function deductOrderAction(gid: string): Promise<Result> {

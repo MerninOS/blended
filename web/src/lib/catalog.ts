@@ -90,7 +90,10 @@ export async function getGreenLots(): Promise<GreenLot[]> {
 
 /** Our coffees as Shopify has them, before green is applied. */
 export async function fetchStockCoffees(): Promise<StockCoffee[]> {
-  if (isDemo()) { const rec = demoStore.recipes(); return DEMO_STOCK.map((c) => (rec[c.id] ? { ...c, recipe: rec[c.id] } : c)); }
+  if (isDemo()) {
+    const rec = demoStore.recipes(), rev = demoStore.reviews();
+    return DEMO_STOCK.map((c) => ({ ...c, ...(rec[c.id] ? { recipe: rec[c.id] } : {}), ...(c.id in rev ? { reviews: rev[c.id] } : {}) }));
+  }
   const r = await storefront<{ collection: { products: { nodes: SfProduct[] } } | null }>(STOCK, {
     variables: { handle: env.stockCollection }, tags: [CACHE_TAGS.catalog], revalidate: 300,
   });
