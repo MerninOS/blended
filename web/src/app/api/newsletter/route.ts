@@ -10,8 +10,12 @@ export async function POST(req: NextRequest) {
   if (blocked) return blocked;
   if (!env.klaviyoPublicKey || !env.klaviyoListId) return NextResponse.json({ error: "Signups aren't open yet." }, { status: 503 });
 
-  let email = "";
-  try { email = String((await req.json()).email ?? "").trim().toLowerCase(); } catch { /* fall through */ }
+  let email = "", source = "footer";
+  try {
+    const body = await req.json();
+    email = String(body.email ?? "").trim().toLowerCase();
+    if (body.source === "popup") source = "popup";
+  } catch { /* fall through */ }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 254)
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 422 });
 
@@ -22,7 +26,7 @@ export async function POST(req: NextRequest) {
       data: {
         type: "subscription",
         attributes: {
-          custom_source: "Blended storefront footer",
+          custom_source: `Blended storefront ${source}`,
           profile: { data: { type: "profile", attributes: { email, subscriptions: { email: { marketing: { consent: "SUBSCRIBED" } } } } } },
         },
         relationships: { list: { data: { type: "list", id: env.klaviyoListId } } },
