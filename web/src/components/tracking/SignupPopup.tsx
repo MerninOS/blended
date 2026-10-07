@@ -51,15 +51,15 @@ export function SignupPopup() {
         style={{ position: "relative", width: "min(440px, 100%)", background: "var(--surface)", border: "1px solid var(--hairline)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-modal)", padding: "28px 26px 24px", display: "flex", flexDirection: "column", gap: 14, animation: "sf-drop 220ms var(--ease)" }}>
         <button type="button" onClick={close} aria-label="Close"
           style={{ position: "absolute", top: 10, right: 10, width: 32, height: 32, display: "inline-flex", alignItems: "center", justifyContent: "center", background: "none", border: 0, borderRadius: "var(--r-md)", cursor: "pointer", color: "var(--ink-muted)", fontSize: 20, lineHeight: 1 }}>×</button>
-        <span style={{ ...over, fontSize: 10.5, color: "var(--brand)" }}>Roast day notes</span>
-        <h2 id="nl-pop-title" style={{ ...disp, fontSize: 24, lineHeight: 1.05, margin: 0, color: "var(--ink)" }}>First dibs on new lots</h2>
+        <span style={{ ...over, fontSize: 10.5, color: "var(--brand)" }}>Email list</span>
+        <h2 id="nl-pop-title" style={{ ...disp, fontSize: 24, lineHeight: 1.05, margin: 0, color: "var(--ink)" }}>New lots and roast days</h2>
         <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: 14, lineHeight: 1.55, color: "var(--ink-muted)" }}>
-          New green lots, roast days and the odd limited release. A few emails a month.
+          We write when new green lots arrive, when roast days are set and when a limited release goes up. A few emails a month.
         </p>
         <NewsletterForm source="popup" id="nl-pop-email" autoFocus onDone={() => setDone(true)} />
         {done
-          ? <Btn variant="outline" size="md" onClick={close} style={{ alignSelf: "flex-start" }}>Back to the shop</Btn>
-          : <p style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-subtle)" }}>Unsubscribe anytime.</p>}
+          ? <Btn variant="outline" size="md" onClick={close} style={{ alignSelf: "flex-start" }}>Close</Btn>
+          : <p style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-subtle)" }}>Unsubscribe from any email.</p>}
       </div>
     </div>
   );
