@@ -162,7 +162,7 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
       <header className={"lp-bar" + (solid || menu ? " solid" : "") + (solid ? " scrolled" : "")}>
         <div className="lp-wrap">
           <Link className="lp-logo" href="/" aria-label="Blended home">
-            <Image src="/brand/blended-mark.png" alt="" width={24} height={24} />BLENDED
+            BLENDED
           </Link>
           <nav className="lp-nav lp-over" aria-label="Main">
             <Link className="lp-link" href={SHOP}>Coffees</Link>

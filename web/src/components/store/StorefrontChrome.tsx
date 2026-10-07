@@ -59,8 +59,6 @@ export function StorefrontChrome() {
           <span className="sf-burger-lines" data-open={menu}><span></span><span></span><span></span></span>
         </button>
         <Link href="/" className="co-wordmark" aria-label="Blended home" style={{ fontFamily: "var(--font-logo)", fontWeight: 800, fontSize: 17, color: "var(--ink)", letterSpacing: "-0.01em", display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element -- 22px brand mark */}
-          <img src="/brand/blended-mark.png" alt="" width={22} height={22} style={{ width: 22, height: 22, flexShrink: 0 }} />
           <span style={{ fontWeight: 800 }}>BLENDED</span>
         </Link>
         <nav aria-label="Storefront" className="sf-tabs" style={{ display: "flex", gap: 20 }}>
