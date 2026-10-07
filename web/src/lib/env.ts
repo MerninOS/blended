@@ -28,8 +28,9 @@ export const env = {
   // Storefront analytics + consent (public values, sent to the browser)
   storefrontId: v("SHOPIFY_STOREFRONT_ID"),                // Headless channel → storefront ID (Shopify analytics)
   storefrontPublicToken: v("SHOPIFY_STOREFRONT_PUBLIC_TOKEN"), // Headless channel public token (Customer Privacy API)
-  klaviyoPublicKey: v("KLAVIYO_PUBLIC_KEY"),               // 6-character site ID
-  klaviyoListId: v("KLAVIYO_LIST_ID"),                     // newsletter signups
+  // Both are public IDs, so they default to the live account; env vars override.
+  klaviyoPublicKey: v("KLAVIYO_PUBLIC_KEY") || "RmWvvJ",   // 6-character site ID
+  klaviyoListId: v("KLAVIYO_LIST_ID") || "XZRviM",         // newsletter signups ("Email List")
   // Landing page "Merch" / "Brew gear" tiles link here (default: our own collection pages)
   landingMerchUrl: v("LANDING_MERCH_URL") || "/collections/merch",
   landingGearUrl: v("LANDING_GEAR_URL") || "/collections/gear",
