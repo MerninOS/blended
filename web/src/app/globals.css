@@ -392,7 +392,7 @@ html[data-product="coroasted-coffee-os"] body {
 .cp-tabs { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 14px }
 .cp-tabs::-webkit-scrollbar { display: none }
 @media (max-width: 1024px) {
-  .cp-layout { grid-template-columns: minmax(0, 1fr) }
+  .cp-layout { grid-template-columns: minmax(0, 1fr); row-gap: 56px }
   .cp-layout-cup { order: -1; position: sticky; top: var(--topbar-h); z-index: 20; max-height: 40vh; overflow: visible; margin: 0; padding: 8px 0 12px; background: var(--canvas, var(--surface)) }
   .cp-layout-cup::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 40px; pointer-events: none; background: linear-gradient(to bottom, var(--canvas, var(--surface)), transparent) }
   .cp-layout-cup .tw-card { padding: 8px 0 0 !important; border: none !important; border-radius: 0 !important }
