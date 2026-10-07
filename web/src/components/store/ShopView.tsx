@@ -9,8 +9,8 @@ import { bagModelSettled, loadBagModel } from "./box3d";
 import { useRouter } from "next/navigation";
 import type { SelItem, ShopSizeId } from "@/lib/domain/types";
 import {
-  G_PER_LB, MAX_BAGS, SHIP_FREE, SHOP_SIZES, bagPrice, minsFit, minsTotalG, money, rampColor, retailSel,
-  roastName, roastOf, shippingFor, weighted, type ShopSize,
+  G_PER_LB, MAX_BAGS, SHOP_SIZES, bagPrice, minsFit, minsTotalG, money, rampColor, retailSel,
+  roastName, roastOf, weighted, type ShopSize,
 } from "@/lib/domain/coffee";
 import { Btn, LineItem, RuleHead, Step, Stepper, disp, mono, over } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
@@ -52,9 +52,8 @@ export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
 
   const unit = priceFor(size);
   const goods = unit * qty;
-  const shipping = shippingFor(goods);
-  const total = goods + shipping;
-  const toFree = Math.max(0, SHIP_FREE - goods);
+  // Shipping isn't shown here: the cart drawer and Shopify's checkout add it.
+  const total = goods;
 
   const batchG = size.lb * qty * G_PER_LB;
   const minsOk = !sel.length || minsFit(sel, batchG, idx);
@@ -155,14 +154,13 @@ export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
         <section>
           <RuleHead label="Your order" right={<span style={{ ...mono, fontSize: 11.5, color: "var(--ink-subtle)", whiteSpace: "nowrap" }}>{qty} × {size.label}</span>} />
           <LineItem k={`${name} · ${roastName(effRoast)}`} sub={`${qty} × ${size.label} · whole bean`} v={goods} />
-          <LineItem k="Shipping" sub={shipping === 0 ? "Free over $50" : "Flat rate, 2–3 days"} v={shipping} />
           <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 0 0" }}>
-            <span style={{ flex: 1, ...over, fontSize: 10.5, color: "var(--ink-muted)" }}>Total</span>
+            <span style={{ flex: 1, ...over, fontSize: 10.5, color: "var(--ink-muted)" }}>Subtotal</span>
             <span style={{ ...mono, fontSize: 12, color: "var(--ink-subtle)" }}>{money(unit)}/bag</span>
             <span style={{ ...disp, fontSize: 30, color: "var(--ink)", lineHeight: 1 }}>{money(total)}</span>
           </div>
           <p style={{ margin: "10px 0 0", fontFamily: "var(--font-sans)", fontSize: 12, lineHeight: 1.55, color: "var(--ink-subtle)", maxWidth: "70ch" }}>
-            {toFree > 0 ? `Add ${money(toFree)} for free shipping. ` : ""}Whole bean only, roasted Tuesday and Thursday and shipped the same afternoon. Blends are cupped once before the first bag goes out, which can add a day.
+            Whole bean only, roasted Tuesday and Thursday and shipped the same afternoon. Blends are cupped once before the first bag goes out, which can add a day.
           </p>
         </section>
       </Step>
