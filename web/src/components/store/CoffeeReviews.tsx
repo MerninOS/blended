@@ -48,7 +48,7 @@ export function CoffeeReviews({ coffee, compact }: { coffee: { reviews?: CoffeeR
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <Stars n={r.stars} size={10} />
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, fontWeight: 600, color: "var(--ink)" }}>{r.who}</span>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ink-subtle)" }}>· {r.brew}</span>
+                    {r.brew && <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ink-subtle)" }}>· {r.brew}</span>}
                   </div>
                   <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: 12.5, lineHeight: 1.5, color: "var(--ink-muted)", textWrap: "pretty" }}>{r.text}</p>
                 </div>

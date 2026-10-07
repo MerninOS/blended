@@ -27,6 +27,18 @@ export async function advanceOrder(orderId: string, stage: Stage, tracking?: { n
   try { await setOrderStage(orderId, stage, tracking); revalidatePath("/admin/orders"); return { ok: true }; } catch (e) { return fail(e); }
 }
 
+/** Reviews from the editor: count and average from the listed reviews; a lot opened without loading them is left alone. */
+function cleanReviews(r: GreenLot["reviews"]): GreenLot["reviews"] {
+  if (r === undefined) return undefined;
+  const s = (x: unknown, n: number) => String(x ?? "").trim().slice(0, n);
+  const reviews = (r?.reviews ?? []).map((x) => ({ who: s(x.who, 40) || "Customer", brew: s(x.brew, 30), stars: Math.max(1, Math.min(5, Math.round(Number(x.stars) || 5))), text: s(x.text, 500) })).filter((x) => x.text);
+  const g = r?.grader, note = s(g?.note, 600);
+  const grader = note ? { who: s(g?.who, 40), role: s(g?.role, 40) || undefined, score: s(g?.score, 12) || undefined, note } : null;
+  if (!grader && !reviews.length) return null;
+  const avg = reviews.length ? Math.round(reviews.reduce((a, x) => a + x.stars, 0) / reviews.length * 10) / 10 : 0;
+  return { avg, count: reviews.length, grader, reviews };
+}
+
 function cleanLot(l: GreenLot): GreenLot {
   const n = (v: unknown, d = 0) => { const x = Number(v); return isFinite(x) && x >= 0 ? x : d; };
   const notes: GreenLot["notes"] = {};
@@ -36,7 +48,7 @@ function cleanLot(l: GreenLot): GreenLot {
     process: String(l.process || "Washed").slice(0, 40), roast: Math.max(1, Math.min(5, Math.round(n(l.roast, 3)))), price: n(l.price),
     wholesale: l.wholesale == null ? null : n(l.wholesale), retail: l.retail == null ? null : n(l.retail),
     avail: Math.round(n(l.avail) * 10) / 10, onHandG: l.onHandG == null ? null : Math.round(n(l.onHandG)), minG: l.minG == null ? null : Math.round(n(l.minG)), notes,
-    kind: l.kind === "limited" || l.kind === "soon" ? l.kind : "anchor", role: isRole(l.role) ? l.role : null, tag: l.tag ? String(l.tag).slice(0, 30) : null, listed: !!l.listed,
+    kind: l.kind === "limited" || l.kind === "soon" ? l.kind : "anchor", role: isRole(l.role) ? l.role : null, reviews: cleanReviews(l.reviews), tag: l.tag ? String(l.tag).slice(0, 30) : null, listed: !!l.listed,
   };
 }
 
