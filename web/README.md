@@ -11,7 +11,7 @@ fulfillment and inventory.
 | `/wholesale` | **Private label** for signed-in wholesale accounts: stocked coffee or custom blend, packaging, run size, card checkout |
 | `/admin/orders` | Orders board: to fulfil / roast list / all orders, order drawer with gram-level roast sheet, stage → fulfillment |
 | `/admin/green` | Green catalog: the lots customers can blend (photo, cupping scores, prices, stock, min grams, roast) |
-| `/admin/settings` | Shopify connection, setup checklist, checkout switches, webhooks, recent activity |
+| `/admin/settings` | Shopify connection, setup checklist, checkout switches, SMS exclusives, webhooks, recent activity |
 
 ## Run it
 
@@ -84,6 +84,23 @@ Admin edits are kept in memory and checkout says it's in demo. Admin is open loc
 - **Webhooks** (`/api/webhooks/shopify`, HMAC-verified): product and inventory changes refresh the catalog
   cache. `orders/create` / `orders/cancelled` move green stock (above). `orders/paid` adds a `qc-hold` tag
   to custom blends. Both are Settings toggles.
+
+## SMS exclusives
+
+Green lots with the **Exclusive** role (Admin → Green catalog → Role in a blend) form a locked
+**Exclusive** tab in the Coffee Lab. Put the drop name ("Drop 07") in the lot's badge. Turn the tab on
+with Settings → Coffee Lab → **SMS exclusives**; off, those lots are hidden from the Lab and checkout
+refuses them. They never appear in the landing page lineup, house blend or wholesale.
+
+- **Unlocking**: the visitor enters a US mobile number and ticks the consent box. `POST /api/sms/start`
+  subscribes the number to the Klaviyo SMS list (`KLAVIYO_SMS_LIST_ID`, default "SMS List") and sends a
+  `KLAVIYO_SMS_CODE_METRIC` event (default "Exclusive Code Requested") carrying `code`. A Klaviyo flow
+  triggered by that metric texts it: `Your Blended code is {{ event.code }}`. Turn Smart Sending and
+  quiet hours off on that flow. `POST /api/sms/verify` checks the code (10 minutes, 5 tries) and sets a
+  sealed, httpOnly member cookie for a year. "Not you?" clears it.
+- **Checkout** re-checks the cookie: a custom blend with an Exclusive lot is refused without it.
+- **Env**: `KLAVIYO_PRIVATE_KEY` (Events + Profiles write). Without it, local dev prints the code in the
+  server log and production refuses sign-ups.
 
 ## Analytics, SEO and marketing
 

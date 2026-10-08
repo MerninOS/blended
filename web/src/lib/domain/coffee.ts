@@ -238,6 +238,7 @@ export const ROLES: { k: BlendRole; l: string; d: string }[] = [
   { k: "lift", l: "Lift", d: "Floral and citrus. A little brightens the whole cup." },
   { k: "fruit", l: "Fruit", d: "Juicy, sweet fruit that adds depth without taking over." },
   { k: "funk", l: "Funk", d: "Coffees with intense, loud flavor. A small share goes a long way." },
+  { k: "exclusive", l: "Exclusive", d: "Micro-lots we release to our SMS list first. Limited pounds, gone when they're gone." },
 ];
 export const isRole = (v: unknown): v is BlendRole => ROLES.some((r) => r.k === v);
 /** The role worked out from process and origin, for lots without one set. */
@@ -249,6 +250,8 @@ export function autoRole(c: Pick<GreenLot, "process" | "origin">): BlendRole {
   return "base";
 }
 export const roleOf = (c: GreenLot): BlendRole => c.role ?? autoRole(c);
+/** SMS-members-only lot: locked in the Coffee Lab until the visitor verifies their number, refused at checkout otherwise. */
+export const isExclusive = (c: GreenLot | undefined) => c?.role === "exclusive";
 
 // ---------- reviews ----------
 /**

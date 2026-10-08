@@ -13,8 +13,9 @@ export interface StoreSettings {
   syncStock: boolean;          // keep Our coffees' Shopify stock = bags the green can make
   roastLoss: RoastLoss;        // % weight lost roasting, by roast level 1–5
   notifyOnShip: boolean;       // Shopify emails tracking when an order is marked shipped
+  smsExclusives: boolean;      // Coffee Lab shows the Exclusive tab (SMS members unlock it with a texted code)
 }
-export const DEFAULT_SETTINGS: StoreSettings = { retailCheckout: true, wholesaleCheckout: true, qcHoldNewBlends: true, drawDownGreen: true, syncStock: false, roastLoss: [...DEFAULT_ROAST_LOSS], notifyOnShip: true };
+export const DEFAULT_SETTINGS: StoreSettings = { retailCheckout: true, wholesaleCheckout: true, qcHoldNewBlends: true, drawDownGreen: true, syncStock: false, roastLoss: [...DEFAULT_ROAST_LOSS], notifyOnShip: true, smsExclusives: false };
 
 const SHOP = gql`
   query ShopSettings {
@@ -51,19 +52,20 @@ const SET = gql`
 `;
 type ShopRes = { shop: { id: string; name: string; myshopifyDomain: string; currencyCode: string; metafield: { value: string } | null }; };
 
-let demoSettings = { ...DEFAULT_SETTINGS };
+// demo mode: kept on globalThis (like demo-store) so pages and route handlers see the same switches
+const g = globalThis as unknown as { __blendedDemoSettings?: StoreSettings };
 /** Saved settings over the defaults, with a valid roast-loss table. */
 export const cleanSettings = (s: Partial<StoreSettings>): StoreSettings => ({ ...DEFAULT_SETTINGS, ...s, roastLoss: cleanRoastLoss(s.roastLoss) });
 
 export const getSettings = unstable_cache(async (): Promise<StoreSettings> => {
-  if (isDemo()) return demoSettings;
+  if (isDemo()) return g.__blendedDemoSettings ?? DEFAULT_SETTINGS;
   const r = await admin<ShopRes>(SHOP);
   try { return cleanSettings(JSON.parse(r.shop.metafield?.value || "{}")); } catch { return DEFAULT_SETTINGS; }
 }, ["blended-settings"], { tags: [CACHE_TAGS.settings], revalidate: 300 });
 
 export async function saveSettings(s: StoreSettings) {
   s = cleanSettings(s);
-  if (isDemo()) { demoSettings = s; return; }
+  if (isDemo()) { g.__blendedDemoSettings = s; return; }
   const r = await admin<ShopRes>(SHOP);
   const w = await admin<{ metafieldsSet: { userErrors: { message: string }[] } }>(SET, {
     variables: { metafields: [{ ownerId: r.shop.id, namespace: "blended", key: "settings", type: "json", value: JSON.stringify(s) }] },

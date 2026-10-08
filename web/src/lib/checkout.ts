@@ -4,7 +4,7 @@ import "server-only";
 import type { Catalog, GreenLot, SelItem } from "@/lib/domain/types";
 import type { RetailLine } from "@/lib/domain/requests";
 import {
-  G_PER_LB, MAX_BAGS, grindOf, stockBagPrice, MAX_COMPONENTS, bagPrice, indexLots, minPctFor, minsFit, minsTotalG,
+  G_PER_LB, MAX_BAGS, grindOf, stockBagPrice, MAX_COMPONENTS, bagPrice, indexLots, isExclusive, minPctFor, minsFit, minsTotalG,
   retailSel, roastName, roastOf, round2, shippingFor, shopSize, type LotIndex,
 } from "@/lib/domain/coffee";
 import { env } from "@/lib/env";
@@ -20,7 +20,8 @@ export const ITEM_PROP = "_item";           // hidden line property marking merc
 export interface BlendRecipe { v: number; name: string; roast: number; sizeId: string; sel: { id: string; name: string; lot: string; pct: number; roast: number }[] }
 
 /** Validate a blend against the catalog and batch size; returns the clean selection. */
-export function checkBlend(sel: SelItem[], batchG: number, idx: LotIndex): SelItem[] {
+/** `member`: the buyer has unlocked SMS-exclusive lots (verified number, and exclusives switched on). */
+export function checkBlend(sel: SelItem[], batchG: number, idx: LotIndex, { member = false } = {}): SelItem[] {
   if (!Array.isArray(sel) || sel.length < 1) throw new CheckoutError("Add at least one coffee to your blend.");
   if (sel.length > MAX_COMPONENTS) throw new CheckoutError(`A blend can hold up to ${MAX_COMPONENTS} coffees.`);
   const ids = new Set<string>();
@@ -28,6 +29,7 @@ export function checkBlend(sel: SelItem[], batchG: number, idx: LotIndex): SelIt
     const lot = idx.get(String(s.id));
     if (!lot) throw new CheckoutError("One of the coffees in this blend is no longer available.");
     if (lot.avail <= 0) throw new CheckoutError(`${lot.name} is out of stock.`);
+    if (isExclusive(lot) && !member) throw new CheckoutError(`${lot.name} is for SMS members. Join the list in the Coffee Lab to unlock it.`);
     if (ids.has(lot.id)) throw new CheckoutError("A coffee appears twice in the blend.");
     ids.add(lot.id);
     const pct = Math.round(Number(s.pct));
@@ -70,8 +72,9 @@ const money = (amount: number) => ({ amount: round2(amount).toFixed(2), currency
 type DraftLine = Record<string, unknown>;
 export interface PricedCart { lines: DraftLine[]; goods: number; shipping: number }
 
-/** `lots`: every non-archived green lot (our coffees can use lots the Lab doesn't offer); defaults to the listed ones. */
-export function priceRetailCart(lines: RetailLine[], cat: Catalog, opts: { demo?: boolean; merch?: MerchProduct[]; lots?: GreenLot[] } = {}): PricedCart {
+/** `lots`: every non-archived green lot (our coffees can use lots the Lab doesn't offer); defaults to the listed ones.
+ *  `member`: the buyer may put SMS-exclusive lots in a blend. */
+export function priceRetailCart(lines: RetailLine[], cat: Catalog, opts: { demo?: boolean; merch?: MerchProduct[]; lots?: GreenLot[]; member?: boolean } = {}): PricedCart {
   if (!Array.isArray(lines) || !lines.length) throw new CheckoutError("Your cart is empty.");
   if (lines.length > 30) throw new CheckoutError("Too many lines in the cart.");
   const idx = indexLots(cat.green), stockIdx = indexLots(opts.lots ?? cat.green);
@@ -101,7 +104,7 @@ export function priceRetailCart(lines: RetailLine[], cat: Catalog, opts: { demo?
       return { variantId: v.id, quantity: qty, customAttributes: [{ key: "Grind", value: grindOf(l.grind) }] };
     }
     const batchG = size.lb * qty * G_PER_LB;
-    const sel = checkBlend(l.sel, batchG, idx);
+    const sel = checkBlend(l.sel, batchG, idx, { member: opts.member });
     const name = cleanName(l.name, "House blend");
     const roast = clampRoast(l.roast, sel, idx);
     greenUsageG(sel, size.lb * qty, roast, loss, usage);

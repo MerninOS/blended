@@ -4,8 +4,9 @@ export type FlavorKey =
 
 export type Notes = Partial<Record<FlavorKey, number>>;
 
-/** The part a coffee plays in a blend; it groups coffees into tabs in the Coffee Lab. */
-export type BlendRole = "base" | "lift" | "fruit" | "funk";
+/** The part a coffee plays in a blend; it groups coffees into tabs in the Coffee Lab.
+ *  "exclusive" lots are only for SMS members (set in the admin, never worked out automatically). */
+export type BlendRole = "base" | "lift" | "fruit" | "funk" | "exclusive";
 
 /** A green coffee lot customers can put in a blend (Shopify product tagged `blended-green`, stock in grams). */
 export interface GreenLot {
