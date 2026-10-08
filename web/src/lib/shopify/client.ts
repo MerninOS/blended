@@ -1,4 +1,5 @@
 import "server-only";
+import { unstable_cache } from "next/cache";
 import { env } from "@/lib/env";
 
 /** Identity tag so scripts/validate-graphql.mjs can find and check every document. */
@@ -40,10 +41,8 @@ export function storefront<T>(query: string, o: FetchOpts = {}) {
 // Either a static token (legacy custom app) or Dev Dashboard app credentials
 // exchanged with the client-credentials grant (tokens are short lived).
 let cached: { token: string; exp: number } | null = null;
-async function adminToken(): Promise<string> {
-  if (env.adminToken) return env.adminToken;
+async function exchangeToken(): Promise<{ token: string; exp: number }> {
   if (!env.storeDomain || !env.adminClientId || !env.adminClientSecret) throw new ShopifyError("Admin API not configured");
-  if (cached && cached.exp > Date.now() + 60_000) return cached.token;
   const res = await fetch(`https://${env.storeDomain}/admin/oauth/access_token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -56,8 +55,20 @@ async function adminToken(): Promise<string> {
     throw new ShopifyError(`Admin token exchange failed (${res.status}${reason ? `: ${reason}` : ""})`, body);
   }
   const j = await res.json() as { access_token: string; expires_in?: number };
-  cached = { token: j.access_token, exp: Date.now() + (j.expires_in ?? 3600) * 1000 };
-  return cached.token;
+  return { token: j.access_token, exp: Date.now() + (j.expires_in ?? 3600) * 1000 };
+}
+// A no-store fetch during a background ISR regeneration makes Next abandon it
+// ("static to dynamic"), so cached pages like /lab would never refresh after a deploy.
+// Fetches inside unstable_cache don't count against the page, so the exchange goes
+// through it; 50 min is well inside the token's lifetime.
+const sharedToken = unstable_cache(exchangeToken, ["shopify-admin-token"], { revalidate: 3000 });
+async function adminToken(fresh = false): Promise<string> {
+  if (env.adminToken) return env.adminToken;
+  if (!fresh && cached && cached.exp > Date.now() + 60_000) return cached.token;
+  let t = fresh ? await exchangeToken() : await sharedToken();
+  if (t.exp <= Date.now() + 60_000) t = await exchangeToken();
+  cached = t;
+  return t.token;
 }
 
 export async function admin<T>(query: string, o: FetchOpts = {}): Promise<T> {
@@ -70,8 +81,7 @@ export async function admin<T>(query: string, o: FetchOpts = {}): Promise<T> {
     // Either way, get a fresh token and try once more.
     const stale = e instanceof ShopifyError && (e.status === 401 || /access denied/i.test(e.message));
     if (env.adminToken || !stale) throw e;
-    cached = null;
-    return post<T>(url, { "X-Shopify-Access-Token": await adminToken() }, query, { ...o, cache: "no-store", tags: undefined, revalidate: undefined });
+    return post<T>(url, { "X-Shopify-Access-Token": await adminToken(true) }, query, { ...o, cache: "no-store", tags: undefined, revalidate: undefined });
   }
 }
 
