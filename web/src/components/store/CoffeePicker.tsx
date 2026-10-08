@@ -2,13 +2,15 @@
 // Coffee Lab "Choose your coffees" (CoffeePicker.jsx): coffees grouped by the
 // role they play in a blend (tabs), as cards with a check to add or remove each,
 // and a bottom-sheet details drawer. Selection is the blend itself; reasonFor
-// says why a coffee can't be added.
+// says why a coffee can't be added. Exclusive lots stay locked behind the SMS
+// gate until the visitor verifies their number.
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { BlendRole, GreenLot, SelItem } from "@/lib/domain/types";
-import { AX, ROLES, retailOf, roleOf } from "@/lib/domain/coffee";
+import { AX, ROLES, isExclusive, retailOf, roleOf } from "@/lib/domain/coffee";
 import { disp, mono, Photo } from "@/components/ui/primitives";
 import { CoffeeReviews, Stars } from "./CoffeeReviews";
+import { SmsGate, lockIcon } from "./SmsGate";
 
 const top = (c: GreenLot, n = 3) => AX.map((a) => ({ k: a.k, l: a.l, v: c.notes[a.k] || 0 })).filter((x) => x.v > 0).sort((a, b) => b.v - a.v).slice(0, n);
 const ROAST_WORD = ["", "Light", "Light-medium", "Medium", "Medium-dark", "Dark"];
@@ -22,13 +24,13 @@ const feel = (c: GreenLot) => {
   f.push(c.roast >= 4 ? "Full-bodied" : c.roast <= 2 ? "Delicate" : "Balanced");
   return f.slice(0, 3);
 };
-function Tab({ label, count, on, onClick, id, panel }: { label: string; count: number; on: boolean; onClick: () => void; id: string; panel: string }) {
+function Tab({ label, count, on, onClick, id, panel, locked }: { label: string; count: number; on: boolean; onClick: () => void; id: string; panel: string; locked?: boolean }) {
   return (
     <button type="button" role="tab" id={id} aria-selected={on} aria-controls={panel} tabIndex={on ? 0 : -1} onClick={onClick}
       style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8, minHeight: 44, padding: "0 18px", borderRadius: "var(--r-md)", cursor: "pointer",
         border: "1.5px solid var(--ink)", background: on ? "var(--ink)" : "var(--surface)", color: on ? "#fff" : "var(--ink)", transition: "background var(--dur) var(--ease)",
         fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 12, textTransform: "uppercase", letterSpacing: ".08em" }}>
-      {label}
+      {locked && lockIcon(13)}{label}
       {count > 0 && <span aria-label={`${count} selected`} style={{ minWidth: 20, height: 20, padding: "0 6px", borderRadius: 100, display: "inline-flex", alignItems: "center", justifyContent: "center",
         background: "var(--brand)", color: "#fff", ...mono, fontSize: 11, lineHeight: 1, letterSpacing: 0 }}>{count}</span>}
     </button>
@@ -78,7 +80,7 @@ function Card({ c, on, block, onToggle, onDetails }: { c: GreenLot; on: boolean;
         </div>
         <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           {locked
-            ? <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-sans)", fontSize: 12, color: out ? "var(--ink-subtle)" : "var(--danger)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{block}</span>
+            ? <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-sans)", fontSize: 12, color: out ? "var(--ink-subtle)" : isExclusive(c) ? "var(--ink-muted)" : "var(--danger)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{block}</span>
             : <div style={{ flex: 1, minWidth: 0, display: "flex", gap: 6, overflow: "hidden" }}>{top(c, 2).map((n) => <span key={n.k} style={{ ...chip, fontSize: 11.5, padding: "6px 8px" }}>{n.l}</span>)}</div>}
           <button type="button" onClick={(e) => { e.stopPropagation(); onDetails(); }}
             style={{ flexShrink: 0, background: "none", border: "none", padding: "2px 0 3px", borderBottom: "1.5px solid var(--ink)", cursor: "pointer", ...mono, fontSize: 12, color: "var(--ink)" }}>Details</button>
@@ -148,6 +150,21 @@ export function CoffeePicker({ lots, sel, onAdd, onRemove, reasonFor }: {
   lots: GreenLot[]; sel: SelItem[]; onAdd: (id: string) => void; onRemove: (id: string) => void; reasonFor: (c: GreenLot) => string | null;
 }) {
   const [detail, setDetail] = useState<string | null>(null);
+  // SMS membership (the masked number, or null); undefined until /api/sms answers
+  const hasExclusive = lots.some(isExclusive);
+  const [member, setMember] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (!hasExclusive) return;
+    let live = true;
+    fetch("/api/sms", { cache: "no-store" }).then((r) => r.json()).then((d) => { if (live) setMember(d.member && d.phone ? String(d.phone) : null); }).catch(() => { if (live) setMember(null); });
+    return () => { live = false; };
+  }, [hasExclusive]);
+  const leave = () => {
+    fetch("/api/sms", { method: "DELETE" }).catch(() => {});
+    setMember(null);
+    sel.filter((s) => isExclusive(lots.find((g) => g.id === s.id))).forEach((s) => onRemove(s.id));
+  };
+  const block = (c: GreenLot) => (isExclusive(c) && !member && !sel.some((s) => s.id === c.id) ? (member === undefined ? "Checking membership…" : "Join the SMS list to add") : reasonFor(c));
   const roles = ROLES.filter((r) => lots.some((c) => roleOf(c) === r.k));
   const [tab, setTab] = useState<BlendRole | undefined>(roles[0]?.k);
   const dc = detail ? lots.find((c) => c.id === detail) : undefined;
@@ -171,18 +188,19 @@ export function CoffeePicker({ lots, sel, onAdd, onRemove, reasonFor }: {
       {roles.length > 1 && r && (
         <div style={{ borderBottom: "1px solid var(--hairline)" }}>
           <div className="cp-tabs" role="tablist" aria-label="Coffee roles" onKeyDown={tabKeys}>
-            {roles.map((x) => <Tab key={x.k} id={`cp-tab-${x.k}`} panel="cp-tabpanel" label={x.l} on={x.k === r.k} onClick={() => setTab(x.k)}
+            {roles.map((x) => <Tab key={x.k} id={`cp-tab-${x.k}`} panel="cp-tabpanel" label={x.l} on={x.k === r.k} onClick={() => setTab(x.k)} locked={x.k === "exclusive" && !member}
               count={sel.filter((s) => { const c = lots.find((g) => g.id === s.id); return c && roleOf(c) === x.k; }).length} />)}
           </div>
         </div>
       )}
       <div id="cp-tabpanel" role={roles.length > 1 ? "tabpanel" : undefined} aria-labelledby={roles.length > 1 && r ? `cp-tab-${r.k}` : undefined} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {r?.k === "exclusive" && member !== undefined && <SmsGate member={member} onJoin={setMember} onLeave={leave} />}
         {r && roles.length > 1 && <span style={{ fontFamily: "var(--font-sans)", fontSize: 13.5, lineHeight: 1.4, color: r.k === "funk" ? "var(--ink)" : "var(--ink-muted)", fontWeight: r.k === "funk" ? 500 : 400, maxWidth: "64ch", textWrap: "pretty" }}>{r.d}</span>}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,340px),1fr))", gap: 12 }}>
-          {list.map((c) => <Card key={c.id} c={c} on={isOn(c.id)} block={reasonFor(c)} onToggle={() => toggle(c.id)} onDetails={() => setDetail(c.id)} />)}
+          {list.map((c) => <Card key={c.id} c={c} on={isOn(c.id)} block={block(c)} onToggle={() => toggle(c.id)} onDetails={() => setDetail(c.id)} />)}
         </div>
       </div>
-      {dc && <Drawer c={dc} on={isOn(dc.id)} block={reasonFor(dc)} onToggle={() => toggle(dc.id)} onClose={() => setDetail(null)} />}
+      {dc && <Drawer c={dc} on={isOn(dc.id)} block={block(dc)} onToggle={() => toggle(dc.id)} onClose={() => setDetail(null)} />}
     </div>
   );
 }

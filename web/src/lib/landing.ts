@@ -4,7 +4,7 @@ import "server-only";
 // slots have files in public/landing (see scripts/landing-media.mjs). Copy,
 // photos and videos edited in Sanity (/studio) win over both.
 import type { GreenLot, SelItem } from "@/lib/domain/types";
-import { AX, indexLots, radarGeom, rampColor, roastName, roastOf, weighted, type LotIndex } from "@/lib/domain/coffee";
+import { AX, indexLots, isExclusive, radarGeom, rampColor, roastName, roastOf, weighted, type LotIndex } from "@/lib/domain/coffee";
 import { env } from "@/lib/env";
 import manifest from "@/lib/landing-media.json";
 import { DEFAULT_COPY, mergeCopy, type LandingCopy } from "@/lib/landing-copy";
@@ -84,6 +84,7 @@ type CmsMedia = { image?: CmsImage; poster?: CmsImage; video?: { url?: string };
 const cmsVideo = (m: CmsMedia | undefined) => m?.video?.url || m?.videoUrl || null;
 
 export function landingData(green: GreenLot[], coffeeCount: number, cms?: Record<string, unknown> | null): LandingData {
+  green = green.filter((l) => !isExclusive(l)); // SMS-members-only lots stay out of the lineup, house blend and intro cards
   const copy = mergeCopy(DEFAULT_COPY, cms);
   const m = (cms ?? {}) as Record<string, CmsMedia & { origins?: CmsMedia[]; steps?: CmsMedia[] }>;
   const lots = green.filter((l) => l.listed && l.avail > 0 && l.kind !== "soon");

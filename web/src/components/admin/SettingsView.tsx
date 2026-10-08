@@ -195,6 +195,10 @@ export function SettingsView({ conn, initial }: { conn: ConnectionInfo; initial:
         </div>
       </Section>
 
+      <Section title="Coffee Lab">
+        <ToggleRow title="SMS exclusives" desc="Shows the Exclusive tab in the Coffee Lab: green lots with the Exclusive role, locked until a visitor joins the SMS list and enters the code we text them (Klaviyo sends it). Off, those lots are hidden from the Lab and checkout refuses them." on={s.smsExclusives} onChange={(v) => set("smsExclusives", v)} />
+      </Section>
+
       <Section title="Inventory and fulfillment">
         <ToggleRow title="Deduct green from Shopify inventory for every coffee ordered" desc="Everything is roasted to order, so every order with coffee — a custom blend or one of Our coffees, from this site, the Online Store, POS or wholesale — takes its green (roast loss below included) out of the lots’ inventory, with the order as the reference. What it took is recorded on the order; cancelling before it ships puts that back." on={s.drawDownGreen} onChange={(v) => set("drawDownGreen", v)} />
         <ToggleRow title="Sync Our coffees’ stock to Shopify" desc="Tracks each Our coffees size in Shopify (no selling past zero) and keeps its count at the bags the green on hand can roast, so Shopify’s own checkout and POS sell out with the green too. Recomputed after every order and green change. Check recipes on the Inventory page before turning this on; turning it off makes those sizes untracked again." on={s.syncStock} onChange={(v) => set("syncStock", v)} />

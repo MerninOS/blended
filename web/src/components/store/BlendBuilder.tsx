@@ -5,7 +5,7 @@
 import { useEffect, type Dispatch, type PointerEvent as RPointerEvent, type SetStateAction } from "react";
 import type { Notes, SelItem } from "@/lib/domain/types";
 import {
-  AGTRON, AX, DROP_F, G_PER_LB, MAX_COMPONENTS, ROAST_DESC, enforceMins, gramsOf, minG, minPctFor, minsFit,
+  AGTRON, AX, DROP_F, G_PER_LB, MAX_COMPONENTS, ROAST_DESC, enforceMins, gramsOf, isExclusive, minG, minPctFor, minsFit,
   money, radarGeom, ramp5, rampColor, retailOf, roastName, roastOf, wholesaleOf,
 } from "@/lib/domain/coffee";
 import { Btn, Dot, Pill, RuleHead, Stepper, mono, over, disp, Photo } from "@/components/ui/primitives";
@@ -84,7 +84,7 @@ export function BlendRatios({ sel, setSel, roast, setRoast, blendName, setBlendN
     window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
   };
   const priceOf = (c: Parameters<typeof retailOf>[0]) => (retail ? retailOf(c) : wholesaleOf(c));
-  const rest = green.filter((c) => !sel.some((s) => s.id === c.id));
+  const rest = green.filter((c) => !isExclusive(c) && !sel.some((s) => s.id === c.id)); // exclusives are retail SMS members only
   const anchors = green.filter((c) => c.kind === "anchor" && c.avail > 0).slice(0, 2);
 
   const blocks: Record<Section, React.ReactNode> = {

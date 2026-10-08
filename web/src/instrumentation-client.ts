@@ -9,6 +9,8 @@ try {
       { path: "/api/wholesale/order", method: "POST" },
       { path: "/api/wholesale/artwork", method: "POST" },
       { path: "/api/newsletter", method: "POST" },
+      { path: "/api/sms/start", method: "POST" },
+      { path: "/api/sms/verify", method: "POST" },
     ],
   });
 } catch { /* never block the storefront on bot protection */ }

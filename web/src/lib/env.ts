@@ -31,6 +31,10 @@ export const env = {
   // Both are public IDs, so they default to the live account; env vars override.
   klaviyoPublicKey: v("KLAVIYO_PUBLIC_KEY") || "RmWvvJ",   // 6-character site ID
   klaviyoListId: v("KLAVIYO_LIST_ID") || "XZRviM",         // newsletter signups ("Email List")
+  klaviyoSmsListId: v("KLAVIYO_SMS_LIST_ID") || "V8E3fQ",  // Coffee Lab exclusives signups ("SMS List")
+  // Private key (Events: write, Profiles: write) — the SMS unlock code goes out as an event a Klaviyo flow texts
+  klaviyoPrivateKey: v("KLAVIYO_PRIVATE_KEY"),
+  klaviyoCodeMetric: v("KLAVIYO_SMS_CODE_METRIC") || "Exclusive Code Requested",
   // Landing page "Merch" / "Brew gear" tiles link here (default: our own collection pages)
   landingMerchUrl: v("LANDING_MERCH_URL") || "/collections/merch",
   landingGearUrl: v("LANDING_GEAR_URL") || "/collections/gear",

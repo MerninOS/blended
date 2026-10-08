@@ -6,6 +6,7 @@ import { env, isDemo } from "@/lib/env";
 import { getSettings } from "@/lib/settings";
 import { guard } from "@/lib/guard";
 import { getMerch } from "@/lib/merch";
+import { isMember } from "@/lib/sms";
 
 const DRAFT_COOKIE = "blended_draft";
 
@@ -17,8 +18,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<CheckoutRespo
 
   try {
     const hasItems = Array.isArray(body.lines) && body.lines.some((l) => l?.kind === "item");
-    const [catalog, lots, merch] = await Promise.all([getCatalog(), getInventoryLots(), hasItems ? getMerch() : Promise.resolve([])]);
-    const priced = priceRetailCart(body.lines, catalog, { demo: isDemo(), merch, lots });
+    const [catalog, lots, merch, member] = await Promise.all([getCatalog(), getInventoryLots(), hasItems ? getMerch() : Promise.resolve([]), isMember()]);
+    const priced = priceRetailCart(body.lines, catalog, { demo: isDemo(), merch, lots, member });
     if (isDemo()) {
       return NextResponse.json({ demo: true, error: "Demo mode — connect a Shopify store to take real orders." }, { status: 503 });
     }

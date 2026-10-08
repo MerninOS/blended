@@ -44,7 +44,7 @@ export const GREEN_FIELDS: [string, string, string][] = [
   ["retail_price", "Retail $/lb roasted", "number_decimal"],
   ["min_grams", "Min in a blend (g)", "number_integer"],
   ["kind", "Kind (anchor / limited / soon)", "single_line_text_field"],
-  ["role", "Blend role (base / lift / fruit / funk)", "single_line_text_field"],
+  ["role", "Blend role (base / lift / fruit / funk / exclusive)", "single_line_text_field"],
   ["badge", "Badge", "single_line_text_field"],
   ["tasting_notes", "Tasting notes (0–10 scores)", "json"],
   ["reviews", "Grader + customer reviews", "json"],
