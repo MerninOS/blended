@@ -15,7 +15,9 @@
 .sh-btn:focus-visible, .sh-chip:focus-visible, .sh-sw:focus-visible, .sh-tab:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px }
 
 .sh-crumbs { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; color: var(--ink-muted); font-size: 10.5px }
-.sh-crumbs li { white-space: nowrap }
+.sh-crumbs li { white-space: nowrap; min-width: 0; max-width: 100% }
+/* The current page can be long (a collection or product name): it shortens instead of widening the page. */
+.sh-crumbs li:last-child { overflow: hidden; text-overflow: ellipsis }
 .sh-crumbs li + li::before { content: "/"; margin-right: 8px; color: var(--ink-subtle) }
 .sh-crumbs [aria-current] { color: var(--ink) }
 
@@ -45,7 +47,9 @@
 /* tabs / toolbar */
 .sh-tools { position: sticky; top: var(--topbar-h, 64px); z-index: 20; background: var(--surface); border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline) }
 .sh-tools .sh-wrap { display: flex; align-items: center; gap: 24px; height: 56px }
-.sh-tabs { display: flex; gap: 28px; height: 100%; min-width: 0 }
+/* More categories than fit scroll sideways inside the bar, at any width, rather than pushing the page wider. */
+.sh-tabs { display: flex; gap: 28px; height: 100%; min-width: 0; overflow-x: auto; scrollbar-width: none }
+.sh-tabs::-webkit-scrollbar { display: none }
 .sh-root a.sh-tab { height: 100%; padding: 0; color: var(--ink-muted); white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; box-shadow: inset 0 -2px 0 transparent }
 .sh-root a.sh-tab:hover { color: var(--ink) }
 .sh-root a.sh-tab[aria-current="page"] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--brand) }
@@ -176,8 +180,7 @@
   .sh-lg { display: none }
   .sh-sm { display: inline }
   .sh-tools .sh-wrap { gap: 12px }
-  .sh-tabs { gap: 16px; overflow-x: auto; scrollbar-width: none; font-size: 10px; letter-spacing: .1em }
-  .sh-tabs::-webkit-scrollbar { display: none }
+  .sh-tabs { gap: 16px; font-size: 10px; letter-spacing: .1em }
   .sh-sort > span { display: none }
   /* phones: the sort collapses to an icon button (still a native select, so the OS picker opens) */
   .sh-sort select { -webkit-appearance: none; appearance: none; width: 36px; height: 34px; padding: 0; color: transparent; cursor: pointer;

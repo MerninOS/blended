@@ -412,3 +412,7 @@ html[data-product="coroasted-coffee-os"] body {
   .cp-layout-cup, .sh-tools { transition: top 220ms cubic-bezier(.2, .6, .2, 1) }
   html[data-head-hidden="true"] .cp-layout-cup, html[data-head-hidden="true"] .sh-tools { top: 0 !important }
 }
+
+/* Nothing on a page may scroll it sideways: anything wider than the screen is cut at its edge.
+   (clip, not hidden, so position: sticky keeps working.) */
+html, body { overflow-x: clip }
