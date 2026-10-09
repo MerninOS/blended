@@ -87,7 +87,7 @@ function Editor({ row, isNew, busy, error, onChange, onClose, onSave, onDelete, 
                 <input type="number" min={0} step={10} value={row.minG ?? MING_DEFAULT} onChange={(e) => set("minG", Math.max(0, Math.round(+e.target.value || 0)))} style={monoInput} /></F></div>
               <div style={{ flex: "1 1 150px" }}><F label="Badge">
                 <select value={row.tag ?? ""} onChange={(e) => set("tag", e.target.value || null)} style={input}>
-                  <option value="">None</option><option>Limited</option><option>New</option><option>Back soon</option>
+                  <option value="">None</option><option>Exclusive</option><option>Limited</option><option>New</option><option>Back soon</option>
                 </select></F></div>
             </div>
             <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 14 }}>
