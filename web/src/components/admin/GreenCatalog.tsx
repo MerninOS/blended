@@ -35,6 +35,41 @@ function Wheel({ notes, roast }: { notes: GreenLot["notes"]; roast: number }) {
     </div>
   );
 }
+/** Paste several lots as JSON (an array of green-lot fields) and add them in one go. Photos are added afterwards, per lot. */
+function ImportLots({ onClose, onDone }: { onClose: () => void; onDone: (msg: string) => void }) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [log, setLog] = useState<string[]>([]);
+  const run = async () => {
+    let items: Partial<GreenLot>[];
+    try { const v = JSON.parse(text); items = Array.isArray(v) ? v : [v]; } catch { setLog(["That isn't valid JSON."]); return; }
+    setBusy(true); const out: string[] = []; let ok = 0;
+    for (const it of items) {
+      const lot: GreenLot = { ...blank(), ...it, id: "", gid: undefined, notes: { ...(it.notes ?? {}) } };
+      const r = await saveLotAction(lot);
+      if (r.ok) ok++;
+      out.push(r.ok ? `Added ${lot.name}` : `${lot.name || "A lot"}: ${r.error}`); setLog([...out]);
+    }
+    setBusy(false);
+    if (ok === items.length) onDone(`${ok} coffee${ok === 1 ? "" : "s"} added`);
+  };
+  return (
+    <>
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(36,24,18,.38)", zIndex: 400 }} />
+      <div role="dialog" aria-modal="true" aria-label="Import lots" style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "min(640px,94vw)", maxHeight: "90vh", overflow: "auto", zIndex: 401, background: "var(--surface)", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-modal)", padding: 22, display: "flex", flexDirection: "column", gap: 14 }}>
+        <h2 style={CO.display({ fontSize: 20, margin: 0, color: "var(--ink)" })}>Import lots</h2>
+        <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: 13, lineHeight: 1.5, color: "var(--ink-muted)" }}>Paste a JSON list of lots (name, origin, lot, process, roast, price, avail in lb, kind, tag, role, notes, reviews…). Each is added as a new coffee; open it afterwards to add its photo.</p>
+        <textarea aria-label="Lots JSON" value={text} onChange={(e) => setText(e.target.value)} rows={12} spellCheck={false} placeholder='[{ "name": "…", "origin": "Colombia · Huila", "process": "Natural", "price": 17.3, "avail": 11, "notes": { "berry": 7 } }]' style={{ ...monoInput, fontSize: 12, resize: "vertical" }} />
+        {log.length > 0 && <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>{log.map((l, i) => <span key={i} style={{ fontFamily: "var(--font-sans)", fontSize: 12.5, color: l.startsWith("Added") ? "var(--ink)" : "var(--danger)" }}>{l}</span>)}</div>}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+          <Btn size="sm" variant="ghost" onClick={onClose}>Close</Btn>
+          <Btn size="sm" variant="primary" disabled={busy || !text.trim()} onClick={run}>{busy ? "Adding…" : "Add coffees"}</Btn>
+        </div>
+      </div>
+    </>
+  );
+}
+
 function Editor({ row, isNew, busy, error, onChange, onClose, onSave, onDelete, onImage, imageState }: {
   row: GreenLot; isNew: boolean; busy: boolean; error: string | null; imageState: "idle" | "uploading" | "error";
   onChange: (r: GreenLot) => void; onClose: () => void; onSave: () => void; onDelete: () => void; onImage: (f: File) => void;
@@ -193,6 +228,7 @@ export function GreenCatalogView({ rows, demo }: { rows: GreenLot[]; demo: boole
   const [imageState, setImageState] = useState<"idle" | "uploading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
   const [q, setQ] = useState("");
   const [busy, start] = useTransition();
 
@@ -255,6 +291,7 @@ export function GreenCatalogView({ rows, demo }: { rows: GreenLot[]; demo: boole
         <div style={{ maxWidth: 320, flex: 1, display: "flex", minWidth: 200 }}><SearchInput placeholder="Coffee, origin, or lot" value={q} onChange={setQ} /></div>
         <div style={{ flex: 1 }} />
         <Btn size="sm" variant="outline" icon={<Icon name="download" size={14} />} onClick={exportCsv}>Export</Btn>
+        <Btn size="sm" variant="outline" icon={<Icon name="plus" size={14} />} onClick={() => setImporting(true)}>Import</Btn>
         <Btn size="sm" variant="primary" icon={<Icon name="plus" size={14} />} onClick={() => openEditor(null)}>Add coffee</Btn>
       </div>
 
@@ -317,6 +354,7 @@ export function GreenCatalogView({ rows, demo }: { rows: GreenLot[]; demo: boole
       </div>
 
       {draft && <Editor row={draft} isNew={isNew} busy={busy} error={error} imageState={imageState} onChange={setDraft} onClose={() => setDraft(null)} onSave={save} onDelete={del} onImage={uploadImage} />}
+      {importing && <ImportLots onClose={() => { setImporting(false); router.refresh(); }} onDone={(m) => { setImporting(false); done(m); }} />}
       {toast && <Toast>{toast}</Toast>}
     </div>
   );
