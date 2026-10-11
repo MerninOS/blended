@@ -1,5 +1,5 @@
 "use client";
-// Landing page (Blended Landing v2): ticker, transparent-to-solid header over a
+// Landing page (Blended Landing v2): ticker, the site header laid over a
 // video hero, the Coffee Lab pitch, the farms, cherry-to-cup, the house blend,
 // merch & gear, the green lineup, and a closing CTA. "Build your blend" deals a
 // deck of sample blend cards before opening the Coffee Lab.
@@ -12,22 +12,9 @@ import { headlineRuns, plainHeadline, type Button } from "@/lib/landing-copy";
 import type { ShopPolicy } from "@/lib/shop";
 import { CookiePrefsLink } from "@/components/store/FooterClient";
 import { CartDrawer } from "@/components/store/CartDrawer";
-import { cartStore, useCart } from "@/components/store/cart-store";
-import { Icon } from "@/components/ui/Icon";
+import { SiteHeader } from "@/components/store/SiteHeader";
 import { LabIntro } from "./LabIntro";
 import { loadBagModel } from "@/components/store/box3d";
-
-function LandingCart() {
-  const { items } = useCart();
-  const n = items.reduce((a, x) => a + x.qty, 0);
-  return (
-    <button type="button" className="lp-cart lp-over" onClick={() => cartStore.setOpen(true)} aria-label={`Cart, ${n} item${n === 1 ? "" : "s"}`}>
-      <Icon name="pkg" size={15} stroke={2} />
-      <span className="lp-cart-label">Cart</span>
-      <span className="lp-cart-n" data-n={n}>{n}</span>
-    </button>
-  );
-}
 
 const LAB = "/lab", BUILD = "/lab#build", SHOP = "/coffees";
 
@@ -74,28 +61,12 @@ function LabMedia({ video, image }: { video: string | null; image: Pic }) {
   return <Photo pic={image} alt="A Blended bag with its blend card" sizes="(max-width:900px) 100vw, 50vw" />;
 }
 
-export function Landing({ data, policies }: { data: LandingData; policies: ShopPolicy[] }) {
+export function Landing({ data, policies, exclusives }: { data: LandingData; policies: ShopPolicy[]; exclusives?: boolean }) {
   const router = useRouter();
   const c = data.copy;
-  const [solid, setSolid] = useState(false);
   const [intro, setIntro] = useState(false);
-  const [menu, setMenu] = useState(false);
   const busy = useRef(false);
 
-  useEffect(() => {
-    if (!menu) return;
-    const k = (e: KeyboardEvent) => { if (e.key === "Escape") setMenu(false); };
-    // The menu only exists below the desktop breakpoint; widening the window closes it.
-    const wide = matchMedia("(min-width: 1101px)"), w = () => { if (wide.matches) setMenu(false); };
-    addEventListener("keydown", k); wide.addEventListener("change", w);
-    return () => { removeEventListener("keydown", k); wide.removeEventListener("change", w); };
-  }, [menu]);
-
-  useEffect(() => {
-    const f = () => setSolid(scrollY > innerHeight - 120);
-    f(); addEventListener("scroll", f, { passive: true });
-    return () => removeEventListener("scroll", f);
-  }, []);
   // Coming back from the lab with the back button: don't leave the intro up.
   useEffect(() => {
     const f = (e: PageTransitionEvent) => { if (e.persisted) { busy.current = false; setIntro(false); } };
@@ -135,14 +106,6 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
     data.merchUrl && { id: "merch", t: c.merch.title, d: c.merch.text, cta: c.merch.cta, href: data.merchUrl, img: data.media.merch },
     data.gearUrl && { id: "gear", t: c.gear.title, d: c.gear.text, cta: c.gear.cta, href: data.gearUrl, img: data.media.gear },
   ].filter(Boolean) as { id: string; t: string; d: string; cta: string; href: string; img: Pic | null }[];
-  const menuItems: { t: string; d: string; href: string; lab?: boolean }[] = [
-    { t: "Build a blend", d: "Mix up to four coffees, set the roast", href: LAB, lab: true },
-    { t: "Our coffees", d: "Single origins and house blends", href: SHOP },
-    ...(data.merchUrl ? [{ t: "Merch", d: "Caps, tees and mugs from the roastery", href: data.merchUrl }] : []),
-    ...(data.gearUrl ? [{ t: "Brew gear", d: "The gear we use on our own bar", href: data.gearUrl }] : []),
-    { t: "Farmers", d: "Where our green coffee comes from", href: "#farmers" },
-    { t: "Wholesale", d: "Cafés and private label · 5 lb minimum", href: "/wholesale" },
-  ];
   const disp = (fontSize: string): CSSProperties => ({ fontSize });
 
   return (
@@ -159,37 +122,7 @@ export function Landing({ data, policies }: { data: LandingData; policies: ShopP
         </div>
       )}
 
-      <header className={"lp-bar" + (solid || menu ? " solid" : "") + (solid ? " scrolled" : "")}>
-        <div className="lp-wrap">
-          <Link className="lp-logo" href="/" aria-label="Blended home">
-            BLENDED
-          </Link>
-          <nav className="lp-nav lp-over" aria-label="Main">
-            <Link className="lp-link" href={SHOP}>Coffees</Link>
-            <a className="lp-link" href="#farmers">Farmers</a>
-            {data.merchUrl && <a className="lp-link" href={data.merchUrl}>Merch</a>}
-            {data.gearUrl && <a className="lp-link" href={data.gearUrl}>Gear</a>}
-            <Link className="lp-link" href="/wholesale">Wholesale</Link>
-          </nav>
-          <div className="lp-actions">
-            <a className="lp-btn sm lp-cta" href={LAB} onClick={toLab} onPointerEnter={warm} onTouchStart={warm} onFocus={warm}>Build a blend</a>
-            <LandingCart />
-            <button type="button" className="lp-burger" aria-label={menu ? "Close menu" : "Open menu"} aria-expanded={menu} aria-controls="lp-menu" onClick={() => setMenu((m) => !m)}>
-              <span className="sf-burger-lines" data-open={menu}><span></span><span></span><span></span></span>
-            </button>
-          </div>
-        </div>
-        {menu && <>
-          <nav id="lp-menu" className="lp-menu" aria-label="Menu">
-            {menuItems.map((m) => (
-              <a key={m.t} className="lp-menu-item" href={m.href} onClick={(e) => { setMenu(false); if (m.lab) toLab(e); }} onTouchStart={m.lab ? warm : undefined} onPointerEnter={m.lab ? warm : undefined}>
-                <span>{m.t}</span><span className="lp-menu-note">{m.d}</span>
-              </a>
-            ))}
-          </nav>
-        </>}
-      </header>
-      {menu && <div className="lp-menu-scrim" onClick={() => setMenu(false)} />}
+      <SiteHeader active={null} overlay exclusives={exclusives} onLab={toLab} />
 
       <main>
         <section className="lp-hero" aria-label={plainHeadline(c.hero.headline)}>

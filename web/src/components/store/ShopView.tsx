@@ -86,7 +86,7 @@ export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
     setJustAdded(true); setTimeout(() => setJustAdded(false), 1600);
     setTimeout(() => { setSel([]); setRoast(null); setBlendName(""); setQty(1); }, 320);
   };
-  // Deep links: #build (or ?mode=blend) scrolls to the first step, ?blend=lotA:70,lotB:30 starts from a
+  // Deep links: #build (or ?mode=blend) scrolls to the first step (#exclusive too, on the exclusives tab), ?blend=lotA:70,lotB:30 starts from a
   // recipe (the landing page's house blend, a coffee page), ?cart=open opens the cart. Old #coffees links
   // (the roster used to live here) go to /coffees.
   useEffect(() => {
@@ -94,7 +94,7 @@ export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
     if (h === "coffees" || q.get("mode") === "shop") { router.replace("/coffees"); return; }
     const preset = (q.get("blend") || "").split(",").map((x) => x.split(":")).filter(([id, p]) => idx.has(id) && Number(p) > 0).map(([id, p]) => ({ id, pct: Math.round(Number(p)) }));
     const usePreset = preset.length > 0 && preset.length <= 4 && preset.reduce((a, s) => a + s.pct, 0) === 100;
-    if (usePreset || h === "build" || q.get("mode") === "blend") setTimeout(() => { if (usePreset) setSel(preset); scrollToStart(); }, 350);
+    if (usePreset || h === "build" || h === "exclusive" || q.get("mode") === "blend") setTimeout(() => { if (usePreset) setSel(preset); scrollToStart(); }, 350);
     if (q.get("cart") === "open") cartStore.setOpen(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- one-time read of the URL on mount
 

@@ -406,9 +406,9 @@ html[data-product="coroasted-coffee-os"] body {
 
 /* The storefront header hides while scrolling down on phones and tablets (StorefrontChrome);
    whatever is pinned under it follows it up. */
-.sf-head { transition: transform 220ms cubic-bezier(.2, .6, .2, 1) }
+.bh-head { transition: transform 220ms cubic-bezier(.2, .6, .2, 1) }
 @media (max-width: 1024px) {
-  .sf-head[data-hidden="true"] { transform: translateY(-100%) }
+  .bh-head[data-hidden="true"] { transform: translateY(-100%) }
   .cp-layout-cup, .sh-tools { transition: top 220ms cubic-bezier(.2, .6, .2, 1) }
   html[data-head-hidden="true"] .cp-layout-cup, html[data-head-hidden="true"] .sh-tools { top: 0 !important }
 }
@@ -416,3 +416,57 @@ html[data-product="coroasted-coffee-os"] body {
 /* Nothing on a page may scroll it sideways: anything wider than the screen is cut at its edge.
    (clip, not hidden, so position: sticky keeps working.) */
 html, body { overflow-x: clip }
+
+/* ---- Storefront header (SiteHeader; design shop/site-header.js): frosted logo pill + frosted
+   action pill (CTA, cart, menu); the menu is a panel at every width. ---- */
+:root:has(.bh-head) { --topbar-h: 60px }
+@media (max-width: 520px) { :root:has(.bh-head) { --topbar-h: 56px } }
+.bh-head { --bh-h: var(--topbar-h); display: block; position: sticky; top: 0; z-index: 60; height: var(--bh-h); pointer-events: none }
+.bh-head[data-overlay] { margin-bottom: calc(-1 * var(--bh-h)) }
+.bh-in { max-width: 1400px; margin: 0 auto; height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 clamp(12px, 3vw, 40px) }
+.bh-pill { pointer-events: auto; display: flex; align-items: center; height: 42px; border-radius: 999px; background: rgba(248, 247, 245, .62); -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5); box-shadow: inset 0 0 0 1px rgba(36, 24, 18, .10), 0 1px 2px rgba(36, 24, 18, .06) }
+.bh-logo { gap: 7px; padding: 0 16px; color: var(--ink) !important; text-decoration: none; font-family: var(--font-logo); font-weight: 800; font-size: 15px; letter-spacing: -.01em; line-height: 1 }
+.bh-act { gap: 0; padding: 3px }
+.bh-cta { display: inline-flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 999px; background: var(--ink); color: #fff !important; text-decoration: none; font-family: var(--font-sans); font-weight: 600; font-size: 13px; white-space: nowrap; transition: background var(--dur) var(--ease) }
+.bh-cta:hover { background: var(--brand) }
+.bh-ic { position: relative; appearance: none; border: 0; background: none; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink); transition: background var(--dur) var(--ease) }
+.bh-ic:hover { background: rgba(36, 24, 18, .07) }
+.bh-ic:focus-visible, .bh-cta:focus-visible, .bh-logo:focus-visible, .bh-menu a:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px }
+.bh-n { position: absolute; top: 1px; right: 0; min-width: 15px; height: 15px; padding: 0 4px; border-radius: 999px; background: var(--brand); color: #fff; font-family: var(--font-mono); font-size: 9px; font-weight: 600; letter-spacing: 0; line-height: 15px; text-align: center; font-variant-numeric: tabular-nums }
+.bh-n[data-n="0"] { display: none }
+.bh-lines { position: relative; width: 17px; height: 12px; display: block }
+.bh-lines i { position: absolute; left: 0; right: 0; height: 2px; border-radius: 1px; background: currentColor; transition: transform 200ms var(--ease), top 200ms var(--ease) }
+.bh-lines i:nth-child(1) { top: 1px } .bh-lines i:nth-child(2) { top: 9px }
+.bh-head[data-open="true"] .bh-lines i { top: 5px }
+.bh-head[data-open="true"] .bh-lines i:nth-child(1) { transform: rotate(45deg) }
+.bh-head[data-open="true"] .bh-lines i:nth-child(2) { transform: rotate(-45deg) }
+.bh-scrim { position: fixed; inset: 0; background: rgba(36, 24, 18, .32); opacity: 0; pointer-events: none; transition: opacity 200ms var(--ease); z-index: -1 }
+.bh-head[data-open="true"] .bh-scrim { opacity: 1; pointer-events: auto }
+.bh-menu { position: absolute; top: calc(var(--bh-h) - 4px); right: max(clamp(12px, 3vw, 40px), calc((100vw - 1400px) / 2 + clamp(12px, 3vw, 40px))); width: min(440px, calc(100vw - 24px)); max-height: calc(100vh - var(--bh-h) - 12px); overflow: auto; overscroll-behavior: contain; background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-modal); padding: 20px; display: flex; flex-direction: column; gap: 16px; pointer-events: none; opacity: 0; transform: translateY(-6px); transition: opacity 180ms var(--ease), transform 180ms var(--ease), visibility 0s 180ms; visibility: hidden }
+.bh-head[data-open="true"] .bh-menu { pointer-events: auto; opacity: 1; transform: none; visibility: visible; transition: opacity 180ms var(--ease), transform 180ms var(--ease) }
+.bh-over { font-family: var(--font-mono); font-weight: 600; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-muted) }
+.bh-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px }
+.bh-card { display: flex; flex-direction: column; border-radius: var(--r-md); overflow: hidden; color: var(--ink) !important; text-decoration: none; box-shadow: inset 0 0 0 1px var(--hairline); transition: box-shadow var(--dur) var(--ease) }
+.bh-card:hover { box-shadow: inset 0 0 0 1.5px var(--ink) }
+.bh-card[aria-current="page"] { box-shadow: inset 0 0 0 2px var(--brand) }
+.bh-thumb { aspect-ratio: 4 / 3; background: var(--surface-sunken); position: relative; overflow: hidden }
+.bh-card b { display: block; padding: 10px 12px 2px; font-family: var(--font-display); font-variation-settings: var(--display-settings); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: -.01em; line-height: 1.1 }
+.bh-card span { display: block; padding: 0 12px 12px; font-family: var(--font-sans); font-size: 12.5px; line-height: 1.35; color: var(--ink-muted) }
+.bh-promo { display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: var(--r-md); background: var(--ink); color: #fff }
+.bh-promo .bh-over { color: rgba(255, 255, 255, .75); display: flex; align-items: center; gap: 6px }
+.bh-promo h3 { margin: 0; font-family: var(--font-display); font-variation-settings: var(--display-settings); font-weight: 700; font-size: 20px; line-height: 1.05; text-transform: uppercase; letter-spacing: -.02em; color: #fff }
+.bh-promo p { margin: 0; font-family: var(--font-sans); font-size: 13.5px; line-height: 1.45; color: rgba(255, 255, 255, .82); text-wrap: pretty }
+.bh-promo a { align-self: flex-start; display: inline-flex; align-items: center; height: 40px; padding: 0 18px; border-radius: 999px; background: #fff; color: var(--ink) !important; text-decoration: none; font-family: var(--font-sans); font-weight: 600; font-size: 13.5px }
+.bh-promo a:hover { background: var(--brand); color: #fff !important }
+.bh-rows { display: flex; flex-direction: column; border-top: 1px solid var(--hairline) }
+.bh-rows a { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; border-bottom: 1px solid var(--hairline); color: var(--ink) !important; text-decoration: none; font-family: var(--font-sans); font-weight: 600; font-size: 17px }
+.bh-rows a:hover, .bh-rows a[aria-current="page"] { color: var(--brand) !important }
+@media (max-width: 520px) {
+  .bh-pill { height: 40px }
+  .bh-logo { padding: 0 14px; font-size: 14px }
+  .bh-cta { height: 34px; padding: 0 13px; font-size: 12.5px }
+  .bh-ic { width: 34px; height: 34px }
+  .bh-menu { left: 12px; right: 12px; width: auto; padding: 16px }
+}
+@media (max-width: 360px) { .bh-cta { display: none } }
+@media (prefers-reduced-motion: reduce) { .bh-head, .bh-menu, .bh-scrim, .bh-lines i { transition: none } }

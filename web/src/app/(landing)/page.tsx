@@ -3,6 +3,7 @@ import { getGreenLots, getStockCoffees } from "@/lib/catalog";
 import { landingData } from "@/lib/landing";
 import { DEFAULT_COPY, mergeCopy } from "@/lib/landing-copy";
 import { getLandingCms, getSiteSettings } from "@/lib/sanity";
+import { getSettings } from "@/lib/settings";
 import { getShopInfo } from "@/lib/shop";
 import { SHARE_IMAGE, siteJsonLd } from "@/lib/seo";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -20,13 +21,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LandingPage() {
-  const [green, stock, shop, cms] = await Promise.all([
-    getGreenLots().catch(() => []), getStockCoffees().catch(() => []), getShopInfo(), getLandingCms(),
+  const [green, stock, shop, cms, settings] = await Promise.all([
+    getGreenLots().catch(() => []), getStockCoffees().catch(() => []), getShopInfo(), getLandingCms(), getSettings(),
   ]);
   return (
     <>
       <JsonLd data={siteJsonLd()} />
-      <Landing data={landingData(green, stock.length, cms)} policies={shop.policies} />
+      <Landing data={landingData(green, stock.length, cms)} policies={shop.policies} exclusives={settings.smsExclusives} />
     </>
   );
 }

@@ -167,6 +167,21 @@ export function CoffeePicker({ lots, sel, onAdd, onRemove, reasonFor }: {
   const block = (c: GreenLot) => (isExclusive(c) && !member && !sel.some((s) => s.id === c.id) ? (member === undefined ? "Checking membership…" : "Join the SMS list to add") : reasonFor(c));
   const roles = ROLES.filter((r) => lots.some((c) => roleOf(c) === r.k));
   const [tab, setTab] = useState<BlendRole | undefined>(roles[0]?.k);
+  // /lab#exclusive (the header menu's "Exclusive releases" promo) opens on the exclusives tab, also when
+  // the link is followed from the Lab itself.
+  const hasExclusiveTab = roles.some((x) => x.k === "exclusive");
+  useEffect(() => {
+    if (!hasExclusiveTab) return;
+    const f = (scroll: boolean) => {
+      if (location.hash !== "#exclusive") return;
+      setTab("exclusive");
+      if (scroll) document.getElementById("build")?.scrollIntoView({ behavior: "smooth" });
+    };
+    const t = setTimeout(() => f(false));
+    const h = () => f(true);
+    addEventListener("hashchange", h);
+    return () => { clearTimeout(t); removeEventListener("hashchange", h); };
+  }, [hasExclusiveTab]);
   const dc = detail ? lots.find((c) => c.id === detail) : undefined;
   const isOn = (id: string) => sel.some((s) => s.id === id);
   const toggle = (id: string) => (isOn(id) ? onRemove(id) : onAdd(id));
