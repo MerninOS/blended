@@ -33,8 +33,8 @@ export function BoxHero({ cta }: { cta: { label: string; onClick: () => void } }
 
   return (
     <section className="bx-hero" aria-label="Coffee Lab" style={{ position: "relative", background: "var(--bag-stage)" }}>
-      <div className="bx-stage" style={{ position: "relative", height: "calc(100svh - var(--topbar-h))", minHeight: 360, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-        <div ref={titleRef} style={{ textAlign: "center", padding: "clamp(16px,4vh,44px) 24px 0", flexShrink: 0, position: "relative", zIndex: 2 }}>
+      <div className="bx-stage" style={{ position: "relative", height: "100svh", minHeight: 360, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div ref={titleRef} style={{ textAlign: "center", padding: "calc(var(--topbar-h) + clamp(16px,4vh,44px)) 24px 0", flexShrink: 0, position: "relative", zIndex: 2 }}>
           <h1 style={{ ...disp, fontSize: "clamp(32px,4.4vw,64px)", lineHeight: 1, margin: 0, color: "var(--ink)" }}>COFFEE LAB</h1>
           <p style={{ ...over, fontSize: 10.5, color: "var(--ink-muted)", margin: "12px 0 0" }}>Create your coffee blend · Roasted to order</p>
         </div>
