@@ -171,7 +171,7 @@ export function Landing({ data, policies, exclusives }: { data: LandingData; pol
                     <span className="lp-over" style={{ color: "rgba(255,255,255,.75)", fontSize: 10.5 }}>{o.where}</span>
                     <h3 className="lp-disp" style={disp("clamp(36px,3.6vw,56px)")}>{o.name}</h3>
                     <p>{o.text}</p>
-                    <Link className="lp-over" href={SHOP} style={{ color: "#fff", fontSize: 10.5, display: "inline-flex", gap: 8, alignItems: "center", marginTop: 4 }}>{c.farms.linkLabel} <Arrow /></Link>
+                    <Link className="lp-over" href={`/farms#${o.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`} style={{ color: "#fff", fontSize: 10.5, display: "inline-flex", gap: 8, alignItems: "center", marginTop: 4 }}>{c.farms.linkLabel} <Arrow /></Link>
                   </div>
                 </div>
               ))}

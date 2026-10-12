@@ -5,5 +5,7 @@ export const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
 export const apiVersion = "2025-02-19";
 /** The one landing page document (a singleton with a fixed id). */
 export const LANDING_ID = "landingPage";
+/** The one farms page document (words and photos around the farms on /farms). */
+export const FARMS_PAGE_ID = "farmsPage";
 /** The one site settings document (titles, description, share image). */
 export const SITE_ID = "siteSettings";

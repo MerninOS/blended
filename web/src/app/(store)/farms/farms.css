@@ -1,0 +1,85 @@
+/* The farms page (Our Farms.html) */
+.fm-root { background: var(--surface); color: var(--ink); font-family: var(--font-sans) }
+.fm-root a { color: inherit; text-decoration: none }
+.fm-root a:hover { color: var(--brand) }
+.fm-over { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase }
+.fm-disp { font-family: var(--font-display); font-variation-settings: var(--display-settings); font-weight: 800; letter-spacing: -.035em; text-transform: uppercase; line-height: .86; margin: 0; overflow-wrap: anywhere }
+.fm-wrap { max-width: 1360px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 48px) }
+.fm-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0 }
+.fm-tag { margin-left: 4px; padding: 3px 6px; border-radius: var(--r-sm); background: var(--brand); color: #fff; font-size: 9px; letter-spacing: .1em }
+.fm-btn { display: inline-flex; align-items: center; justify-content: center; gap: 12px; height: 52px; padding: 0 24px; font-size: 12px; background: var(--ink); color: var(--on-ink); border: 0; border-radius: var(--r-md); font-family: var(--font-mono); font-weight: 600; letter-spacing: .12em; text-transform: uppercase; cursor: pointer; white-space: nowrap; transition: background var(--dur) var(--ease), color var(--dur) var(--ease) }
+.fm-root a.fm-btn { color: var(--on-ink) }
+.fm-root a.fm-btn:hover { background: var(--brand); color: var(--on-ink) }
+.fm-root a.fm-btn.alt { background: var(--surface-sunken); color: var(--ink) }
+.fm-root a.fm-btn.alt:hover { background: var(--ink); color: var(--on-ink) }
+.fm-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px }
+.fm-fill { position: absolute; inset: 0; width: 100%; height: 100% }
+.fm-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--ink-subtle); padding: 16px; text-align: center }
+.fm-empty img { opacity: .45; mix-blend-mode: multiply }
+
+.fm-hero { position: relative; min-height: min(86vh, 820px); background: var(--roast-5); color: #fff; overflow: hidden; display: flex; align-items: flex-end }
+.fm-shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(20, 12, 8, .55) 0%, rgba(20, 12, 8, .1) 35%, rgba(20, 12, 8, .82) 100%) }
+.fm-hero-copy { position: relative; width: 100%; padding: 140px 0 clamp(40px, 7vh, 80px) }
+.fm-lede { font-size: clamp(16px, 1.4vw, 19px); line-height: 1.5; margin: 24px 0 0; max-width: 48ch; color: rgba(255, 255, 255, .88); text-wrap: pretty }
+.fm-index { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid rgba(255, 255, 255, .3); margin-top: clamp(32px, 5vw, 56px) }
+.fm-root .fm-index a { display: flex; flex-direction: column; gap: 6px; padding: 16px 16px 0 0; color: #fff; min-width: 0 }
+.fm-root .fm-index a + a { padding-left: 16px; border-left: 1px solid rgba(255, 255, 255, .3) }
+.fm-root .fm-index a:hover { color: var(--brand) }
+.fm-index .n { font-family: var(--font-display); font-weight: 800; font-size: clamp(20px, 2vw, 28px); letter-spacing: -.02em; text-transform: uppercase; overflow-wrap: anywhere }
+.fm-index .m { font-family: var(--font-mono); font-size: 11px; color: rgba(255, 255, 255, .72) }
+
+.fm-sec { padding: clamp(64px, 8vw, 120px) 0 }
+.fm-country { border-top: 1px solid var(--ink); scroll-margin-top: 72px }
+.fm-chead { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding: clamp(40px, 5vw, 64px) 0 clamp(28px, 4vw, 44px) }
+.fm-clede { margin: 0; font-size: 16px; line-height: 1.55; color: var(--ink-muted); max-width: 44ch; text-wrap: pretty }
+.fm-farm { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 80px); align-items: start; padding-bottom: clamp(56px, 7vw, 100px); scroll-margin-top: 72px }
+.fm-farm + .fm-farm { border-top: 1px solid var(--hairline); padding-top: clamp(56px, 7vw, 100px) }
+.fm-farm.flip .fm-media { order: 2 }
+.fm-media { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 12px }
+.fm-ph { position: relative; background: var(--surface-sunken); border-radius: var(--r-sm); overflow: hidden }
+.fm-ph.big { grid-row: 1 / 3; aspect-ratio: 4 / 5 }
+/* Beside the tall photo, the two small ones share its height. */
+.fm-ph.sq { min-height: 0 }
+.fm-copy { display: flex; flex-direction: column; gap: 22px; position: sticky; top: 96px; min-width: 0 }
+.fm-copy p { margin: 0; font-size: 16px; line-height: 1.6; color: var(--ink-muted); max-width: 52ch; text-wrap: pretty }
+.fm-spec { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--hairline); margin: 0 }
+.fm-spec > div { display: flex; flex-direction: column; gap: 6px; padding: 14px 12px 14px 0; border-bottom: 1px solid var(--hairline); min-width: 0 }
+.fm-spec > div:nth-child(even) { padding-left: 16px; border-left: 1px solid var(--hairline) }
+.fm-spec dt { font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-subtle) }
+.fm-spec dd { margin: 0; font-family: var(--font-mono); font-variation-settings: var(--data-settings); font-size: 14px; color: var(--ink) }
+.fm-root .fm-spec dd a { border-bottom: 1px solid var(--hairline-strong) }
+.fm-notes { font-family: var(--font-mono); font-size: 13px; font-weight: 600; letter-spacing: .02em; display: flex; flex-wrap: wrap; gap: 6px 14px }
+.fm-notes span + span::before { content: "|"; margin-right: 14px; color: var(--ink-subtle) }
+.fm-acts { display: flex; flex-wrap: wrap; gap: 10px }
+
+.fm-dark { background: var(--ink); color: var(--on-ink); scroll-margin-top: 72px }
+.fm-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: clamp(28px, 4vw, 48px) }
+.fm-procs { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: clamp(16px, 2vw, 28px) }
+.fm-proc { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 96px; min-width: 0 }
+.fm-proc .fm-ph { aspect-ratio: 4 / 3; background: #1a110c }
+.fm-proc .fm-empty { color: rgba(255, 255, 255, .5) }
+.fm-proc .fm-empty img { mix-blend-mode: normal; filter: grayscale(1) brightness(1.6); opacity: .25 }
+.fm-proc p { margin: 0; font-size: 15px; line-height: 1.55; color: rgba(255, 255, 255, .78); text-wrap: pretty }
+.fm-proc ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; border-top: 1px solid rgba(255, 255, 255, .2) }
+.fm-proc li { display: flex; gap: 14px; padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, .2); font-size: 14px; color: rgba(255, 255, 255, .86) }
+.fm-proc li b { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--brand); min-width: 22px; padding-top: 2px }
+.fm-close { padding: clamp(72px, 10vw, 150px) 0; text-align: center }
+
+@media (max-width: 1100px) {
+  .fm-procs { grid-template-columns: repeat(min(var(--cols, 3), 2), minmax(0, 1fr)) }
+}
+@media (max-width: 900px) {
+  .fm-farm { grid-template-columns: minmax(0, 1fr) }
+  .fm-farm.flip .fm-media { order: 0 }
+  .fm-copy { position: static }
+  .fm-procs { grid-template-columns: minmax(0, 1fr) }
+  .fm-index { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+  .fm-root .fm-index a:nth-child(odd) { padding-left: 0; border-left: 0 }
+  .fm-root .fm-index a:nth-child(n+3) { border-top: 1px solid rgba(255, 255, 255, .3); margin-top: 16px }
+}
+@media (max-width: 520px) {
+  .fm-media { grid-template-columns: minmax(0, 1fr) }
+  .fm-ph.big { grid-row: auto }
+  .fm-media .fm-ph.sq { display: none }
+  .fm-btn { height: 48px; padding: 0 18px; font-size: 11px }
+}
