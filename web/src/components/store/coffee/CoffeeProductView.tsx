@@ -13,6 +13,7 @@ import { useCart } from "@/components/store/cart-store";
 import { CoffeeReviews } from "@/components/store/CoffeeReviews";
 import { MerchImage } from "@/components/store/merch/MerchCard";
 import { trackProductView } from "@/components/tracking/analytics";
+import { BackInStock } from "@/components/store/BackInStock";
 import { CoffeeCard, RoastMeter, addCoffee, defaultSize, imagesOf, inStock, kindLabel, priceOf, sizesOf, tastingOf } from "./shelf";
 
 const BREW = {
@@ -116,6 +117,7 @@ export function CoffeeProductView({ c, related, blendHref }: { c: StockCoffee; r
                 <div className="sh-ship"><i style={{ width: `${Math.min(100, (sub / SHIP_FREE) * 100)}%` }} /></div>
               </div>
             </form>
+            {soldOut && <BackInStock variantId={c.variants[size.id]?.id} name={c.name} />}
 
             <ul className="pd-perks">
               <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M12 2c1 3 4 4.5 4 8.5a4 4 0 0 1-8 0C8 8 9.5 6.5 9.5 4.5 11 5.5 12 4 12 2z" /><path d="M5 21h14" /></svg>Roasted within 48 hours of your order</li>

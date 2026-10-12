@@ -9,6 +9,7 @@ import { SHIP_FREE } from "@/lib/domain/coffee";
 import { COLLECTION_PATH, catLabel, isColorOption, priceLabel, shipsIn, type MerchProduct } from "@/lib/merch-types";
 import { CartDrawer } from "@/components/store/CartDrawer";
 import { useCart } from "@/components/store/cart-store";
+import { BackInStock } from "@/components/store/BackInStock";
 import { trackProductView } from "@/components/tracking/analytics";
 import { MerchCard, MerchImage, addMerch } from "./MerchCard";
 
@@ -127,6 +128,7 @@ export function ProductView({ p, related }: { p: MerchProduct; related: MerchPro
                 <div className="sh-ship"><i style={{ width: `${Math.min(100, (sub / SHIP_FREE) * 100)}%` }} /></div>
               </div>
             </form>
+            {unavailable && <BackInStock variantId={variant?.id} name={p.name} />}
 
             <ul className="pd-perks">
               <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7" /><circle cx="7" cy="17.5" r="1.5" /><circle cx="17" cy="17.5" r="1.5" /></svg>{shipsIn(p.cat)}</li>

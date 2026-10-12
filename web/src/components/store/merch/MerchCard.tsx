@@ -18,10 +18,9 @@ export function addMerch(p: MerchProduct, v: MerchVariant, qty: number, open: bo
     kind: "item", key: v.id, variantId: v.id, handle: p.handle, image: v.image ?? p.images[0]?.url ?? null,
     name: p.name, sizeLabel: label, qty, unit: v.price,
   }, false, open);
-  const items = cartStore.get().items;
   trackAddToCart({ kind: "item", category: catLabel(p.cat), name: p.name, price: v.price, quantity: qty, variantName: label,
     productGid: p.gid ?? undefined, variantGid: v.id.startsWith("gid://") ? v.id : undefined, image: v.image ?? p.images[0]?.url ?? null,
-    url: `${location.origin}/products/${p.handle}` }, items.reduce((a, x) => a + x.unit * x.qty, 0), items.map((x) => x.name));
+    url: `${location.origin}/products/${p.handle}` }, cartStore.get().items);
 }
 
 export function useToast() {
