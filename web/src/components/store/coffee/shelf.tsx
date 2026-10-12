@@ -36,11 +36,10 @@ export const imagesOf = (c: StockCoffee) => (c.images?.length ? c.images : c.ima
 
 export function addCoffee(c: StockCoffee, size: ShopSize, grind: string, qty: number, open: boolean) {
   const unit = priceOf(c, size);
-  cartStore.add({ kind: "stock", key: `${c.id}-${size.id}-${grind}`, skuId: c.id, sizeId: size.id, sizeLabel: size.label, name: c.name, qty, unit, roast: c.roast, grind }, false, open);
-  const items = cartStore.get().items;
+  cartStore.add({ kind: "stock", key: `${c.id}-${size.id}-${grind}`, skuId: c.id, sizeId: size.id, sizeLabel: size.label, name: c.name, qty, unit, roast: c.roast, grind, image: c.image }, false, open);
   trackAddToCart({ kind: "stock", name: c.name, price: unit, quantity: qty, variantName: `${size.label} · ${grind}`, productGid: c.gid,
     variantGid: c.variants[size.id]?.id || undefined, image: c.image, url: `${location.origin}/coffees/${c.id}` },
-  items.reduce((a, x) => a + x.unit * x.qty, 0), items.map((x) => x.name));
+  cartStore.get().items);
 }
 
 /** Five bars filled to the roast level, then its name. */

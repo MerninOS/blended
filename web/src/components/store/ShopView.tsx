@@ -19,7 +19,7 @@ import { BlendRatios, TastingWheel } from "./BlendBuilder";
 import { BoxHero } from "./BoxHero";
 import { BlendCard, BoxViewer, bcCardData } from "./BlendCard";
 import { CartDrawer } from "./CartDrawer";
-import { cartStore } from "./cart-store";
+import { cartStore, decodeCart } from "./cart-store";
 import { trackAddToCart } from "@/components/tracking/analytics";
 
 /** The blend the Lab opens with: one in-stock base coffee (a year-round anchor when there is one)
@@ -90,14 +90,13 @@ export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
     if (blocked) return;
     cartStore.add({ kind: "blend", key: null, sizeId: size.id, sizeLabel: size.label, name, qty, unit, roast: effRoast, roastOverride: roast, sel,
       parts: sel.map((x) => ({ id: x.id, pct: x.pct, name: idx.get(x.id)?.name ?? x.id })) }, true);
-    const items = cartStore.get().items;
-    trackAddToCart({ kind: "blend", name, price: unit, quantity: qty, variantName: size.label, image: null },
-      items.reduce((a, x) => a + x.unit * x.qty, 0), items.map((x) => x.name));
+    trackAddToCart({ kind: "blend", name, price: unit, quantity: qty, variantName: size.label, image: null }, cartStore.get().items);
     setJustAdded(true); setTimeout(() => setJustAdded(false), 1600);
     setTimeout(() => { setSel([]); setRoast(null); setBlendName(""); setQty(1); }, 320);
   };
   // Deep links: #build (or ?mode=blend) scrolls to the first step (#exclusive too, on the exclusives tab), ?blend=lotA:70,lotB:30 starts from a
-  // recipe (the landing page's house blend, a coffee page), ?cart=open opens the cart. Old #coffees links
+  // recipe (the landing page's house blend, a coffee page), ?cart=open opens the cart, ?restore=… (from a
+  // cart or checkout reminder email) refills the cart and opens it. Old #coffees links
   // (the roster used to live here) go to /coffees.
   useEffect(() => {
     const q = new URLSearchParams(location.search), h = location.hash.slice(1);
@@ -106,6 +105,13 @@ export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
     const usePreset = preset.length > 0 && preset.length <= 4 && preset.reduce((a, s) => a + s.pct, 0) === 100;
     if (usePreset || h === "build" || h === "exclusive" || q.get("mode") === "blend") setTimeout(() => { if (usePreset) setSel(preset); scrollToStart(); }, 350);
     if (q.get("cart") === "open") cartStore.setOpen(true);
+    const restore = q.get("restore");
+    if (restore) {
+      const lines = decodeCart(restore);
+      if (lines.length) cartStore.restore(lines);
+      q.delete("restore");
+      history.replaceState(null, "", location.pathname + (q.size ? `?${q}` : "") + location.hash);
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- one-time read of the URL on mount
 
   return (<>

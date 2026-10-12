@@ -68,7 +68,7 @@ export function CartDrawer({ onNewBlend }: { onNewBlend?: () => void }) {
       const res = await fetch("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lines }) });
       const j = await res.json() as CheckoutResponse;
       if (j.url) {
-        trackCheckoutStarted(items.reduce((a, x) => a + x.unit * x.qty, 0), items.map((x) => x.name), "retail");
+        trackCheckoutStarted({ channel: "retail", checkoutUrl: j.url, cart: items });
         window.location.assign(j.url); return;
       }
       setErr(j.error || "Checkout failed. Please try again.");

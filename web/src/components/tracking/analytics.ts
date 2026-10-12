@@ -7,6 +7,7 @@ import { AnalyticsEventName, ShopifySalesChannel, getClientBrowserParameters, se
 import type { ShopifyAnalyticsProduct } from "@shopify/hydrogen-react";
 import { track as vercelTrack } from "@vercel/analytics";
 import type { TrackingConfig } from "@/lib/shop";
+import { encodeCart, type CartLine } from "@/components/store/cart-store";
 import type { Consent } from "./consent";
 
 let cfg: TrackingConfig | null = null;
@@ -91,23 +92,46 @@ export function trackProductView(i: TrackedItem) {
   });
 }
 
-export function trackAddToCart(i: TrackedItem, cartValue: number, cartNames: string[]) {
+/** Cart lines as Klaviyo's Items, so flow emails can show what was left behind. Blends have
+ *  no Shopify product: their recipe rides along as Blend. */
+function klaviyoItems(lines: CartLine[]) {
+  return lines.map((l) => ({
+    ProductID: l.variantId ?? l.skuId ?? l.name, ProductName: l.name, Quantity: l.qty, ItemPrice: l.unit, RowTotal: l.unit * l.qty,
+    ProductURL: location.origin + (l.kind === "item" && l.handle ? `/products/${l.handle}` : l.kind === "stock" && l.skuId ? `/coffees/${l.skuId}` : "/lab"),
+    ImageURL: l.image ?? undefined, Variant: [l.sizeLabel, l.grind].filter(Boolean).join(" · "), Kind: l.kind,
+    Blend: l.parts?.map((p) => `${p.pct}% ${p.name}`).join(" · "),
+  }));
+}
+/** A link that refills this cart on any device; very large carts fall back to opening the saved cart. */
+function cartUrl(lines: CartLine[]) {
+  const url = `${location.origin}/lab?restore=${encodeCart(lines)}`;
+  return url.length <= 1800 ? url : `${location.origin}/lab?cart=open`;
+}
+const cartValue = (lines: CartLine[]) => Math.round(lines.reduce((a, x) => a + x.unit * x.qty, 0) * 100) / 100;
+
+/** `cart` is the whole cart after the add. */
+export function trackAddToCart(i: TrackedItem, cart: CartLine[]) {
   whenKnown(() => {
     const p = toShopify(i);
     shopify(AnalyticsEventName.ADD_TO_CART, { cartId: cartGid(), products: p ? [p] : [], totalValue: i.price * (i.quantity ?? 1) });
     klaviyo("track", "Added to Cart", {
-      $value: cartValue, AddedItemProductName: i.name, AddedItemProductID: i.productGid ?? i.name, AddedItemSKU: i.sku,
-      AddedItemPrice: i.price, AddedItemQuantity: i.quantity ?? 1, AddedItemImageURL: i.image ?? undefined, ItemNames: cartNames,
-      CheckoutURL: location.origin + "/lab?cart=open",
+      $value: cartValue(cart), AddedItemProductName: i.name, AddedItemProductID: i.productGid ?? i.name, AddedItemSKU: i.sku,
+      AddedItemPrice: i.price, AddedItemQuantity: i.quantity ?? 1, AddedItemImageURL: i.image ?? undefined, ItemNames: cart.map((x) => x.name),
+      Items: klaviyoItems(cart), CheckoutURL: cartUrl(cart),
     });
     vercelTrack("add_to_cart", { kind: i.kind, value: Math.round(i.price * (i.quantity ?? 1)) });
   });
 }
 
-export function trackCheckoutStarted(value: number, names: string[], channel: "retail" | "wholesale") {
+/** Retail: `cart` is sent so the email can list it, and `checkoutUrl` is Shopify's own checkout link
+ *  (the draft order's invoice), which works on any device. */
+export function trackCheckoutStarted(o: { channel: "retail"; checkoutUrl: string; cart: CartLine[] } | { channel: "wholesale"; checkoutUrl: string; value: number; names: string[] }) {
   whenKnown(() => {
-    klaviyo("track", "Started Checkout", { $value: value, ItemNames: names, CheckoutURL: location.origin + (channel === "retail" ? "/lab?cart=open" : "/wholesale") });
-    vercelTrack("begin_checkout", { channel, value: Math.round(value) });
+    const value = o.channel === "retail" ? cartValue(o.cart) : o.value;
+    klaviyo("track", "Started Checkout", o.channel === "retail"
+      ? { $value: value, ItemNames: o.cart.map((x) => x.name), Items: klaviyoItems(o.cart), CheckoutURL: o.checkoutUrl, CartURL: cartUrl(o.cart), Channel: "retail" }
+      : { $value: value, ItemNames: o.names, CheckoutURL: o.checkoutUrl, Channel: "wholesale" });
+    vercelTrack("begin_checkout", { channel: o.channel, value: Math.round(value) });
   });
 }
 
