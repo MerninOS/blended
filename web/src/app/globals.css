@@ -446,9 +446,11 @@ html, body { overflow-x: clip }
 .bh-head[data-open="true"] .bh-menu { pointer-events: auto; opacity: 1; transform: none; visibility: visible; transition: opacity 180ms var(--ease), transform 180ms var(--ease) }
 .bh-over { font-family: var(--font-mono); font-weight: 600; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-muted) }
 .bh-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px }
-.bh-card { display: flex; flex-direction: column; border-radius: var(--r-md); overflow: hidden; color: var(--ink) !important; text-decoration: none; box-shadow: inset 0 0 0 1px var(--hairline); transition: box-shadow var(--dur) var(--ease) }
-.bh-card:hover { box-shadow: inset 0 0 0 1.5px var(--ink) }
-.bh-card[aria-current="page"] { box-shadow: inset 0 0 0 2px var(--brand) }
+.bh-card { position: relative; isolation: isolate; display: flex; flex-direction: column; border-radius: var(--r-md); overflow: hidden; color: var(--ink) !important; text-decoration: none }
+/* the ring sits above the photo so it runs around the whole card, not just the text */
+.bh-card::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: inherit; box-shadow: inset 0 0 0 1px var(--hairline); transition: box-shadow var(--dur) var(--ease) }
+.bh-card:hover::after { box-shadow: inset 0 0 0 1.5px var(--ink) }
+.bh-card[aria-current="page"]::after { box-shadow: inset 0 0 0 2px var(--brand) }
 .bh-thumb { aspect-ratio: 4 / 3; background: var(--surface-sunken); position: relative; overflow: hidden }
 .bh-card b { display: block; padding: 10px 12px 2px; font-family: var(--font-display); font-variation-settings: var(--display-settings); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: -.01em; line-height: 1.1 }
 .bh-card span { display: block; padding: 0 12px 12px; font-family: var(--font-sans); font-size: 12.5px; line-height: 1.35; color: var(--ink-muted) }
