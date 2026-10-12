@@ -7,10 +7,10 @@ import type { IntroBlend } from "@/lib/landing";
 import { LabIntro } from "@/components/landing/LabIntro";
 import { bagModelSettled, loadBagModel } from "./box3d";
 import { useRouter } from "next/navigation";
-import type { SelItem, ShopSizeId } from "@/lib/domain/types";
+import type { GreenLot, SelItem, ShopSizeId } from "@/lib/domain/types";
 import {
-  G_PER_LB, MAX_BAGS, SHOP_SIZES, bagPrice, minsFit, minsTotalG, money, rampColor, retailSel,
-  roastName, roastOf, weighted, type ShopSize,
+  G_PER_LB, MAX_BAGS, SHOP_SIZES, bagPrice, isExclusive, minsFit, minsTotalG, money, rampColor, retailSel,
+  roastName, roastOf, roleOf, shopSize, weighted, type LotIndex, type ShopSize,
 } from "@/lib/domain/coffee";
 import { Btn, LineItem, RuleHead, Step, Stepper, disp, mono, over } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
@@ -22,13 +22,23 @@ import { CartDrawer } from "./CartDrawer";
 import { cartStore } from "./cart-store";
 import { trackAddToCart } from "@/components/tracking/analytics";
 
+/** The blend the Lab opens with: one in-stock base coffee (a year-round anchor when there is one)
+ *  that fits a single bag of the default size, so the cup and price have something to show. */
+const startingBlend = (green: GreenLot[], idx: LotIndex, sizeId: ShopSizeId): SelItem[] => {
+  const batchG = shopSize(sizeId).lb * G_PER_LB;
+  const ok = (c: GreenLot) => roleOf(c) === "base" && !isExclusive(c) && c.kind !== "soon" && c.avail > 0
+    && minsFit([{ id: c.id, pct: 100 }], batchG, idx);
+  const base = green.find((c) => ok(c) && c.kind === "anchor") ?? green.find(ok);
+  return base ? [{ id: base.id, pct: 100 }] : [];
+};
+
 /** `intro`: sample blends for the loading screen shown while the 3D bag model loads. */
 export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
-  const { idx } = useCatalog();
+  const { green, idx } = useCatalog();
   const router = useRouter();
   const [loading, setLoading] = useState(() => typeof window === "undefined" || !bagModelSettled());
   const modelReady = useMemo(() => (typeof window === "undefined" ? undefined : loadBagModel()), []);
-  const [sel, setSel] = useState<SelItem[]>([]);
+  const [sel, setSel] = useState<SelItem[]>(() => startingBlend(green, idx, "1lb"));
   const [roast, setRoast] = useState<number | null>(null);
   const [blendName, setBlendName] = useState("");
   const [sizeId, setSizeId] = useState<ShopSizeId>("1lb");
