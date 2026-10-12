@@ -67,7 +67,7 @@ function introCard(name: string, sel: SelItem[], idx: LotIndex): IntroBlend {
 }
 
 /** A Sanity image as a CDN URL with its crop applied, and its hotspot as an object-position. */
-function cmsPic(img: CmsImage | null | undefined): Pic | null {
+export function cmsPic(img: CmsImage | null | undefined): Pic | null {
   if (!img?.url) return null;
   const q = new URLSearchParams({ auto: "format", fit: "max" });
   const c = img.crop, W = img.w, H = img.h;

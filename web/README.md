@@ -8,6 +8,7 @@ fulfillment and inventory.
 | --- | --- |
 | `/` | **Landing** (Blended Landing v2): video hero, the Coffee Lab, the farms, cherry to cup, house blend, lineup. "Build your blend" deals a deck of sample blend cards, then opens the lab |
 | `/lab` | **Retail / Coffee Lab**: 3D bag hero, "Our coffees" or "Build your own blend", cart drawer, Shopify checkout. `#build`, `#coffees`, `?blend=lotA:70,lotB:30` deep links |
+| `/farms` | **Our Farms**: the producers behind the green lots in stock, grouped by country, with their processes. Edited in Sanity (/studio → Farms, Farms page) |
 | `/wholesale` | **Private label** for signed-in wholesale accounts: stocked coffee or custom blend, packaging, run size, card checkout |
 | `/admin/orders` | Orders board: to fulfil / roast list / all orders, order drawer with gram-level roast sheet, stage → fulfillment |
 | `/admin/green` | Green catalog: the lots customers can blend (photo, cupping scores, prices, stock, min grams, roast) |
@@ -118,6 +119,20 @@ refuses them. They never appear in the landing page lineup, house blend or whole
   share images; `sitemap.xml`, `robots.txt` (previews are noindex), `/policies/[handle]` from
   Shopify's policies (Settings → Policies).
 - **Abuse protection**: Vercel BotID on checkout, wholesale and signup endpoints, plus a per-IP limit.
+
+## Farms page (/farms)
+
+Each farm is a **Farm** document in Sanity (/studio → Farms): name, producer, country, region, altitude,
+varietal, process, harvest, story, up to three photos, and the **green lot handles** it grows (as on
+Admin → Green catalog). The page groups farms by country, shows each linked lot's tasting notes and roast,
+and links it to its Our coffees page (a single origin roasted from just that lot) and the Coffee Lab.
+Lots that are hidden or out of stock are skipped. Country intros, the processes section, the hero photo
+and the closing words are on the **Farms page** document; empty fields fall back to `src/lib/farms-copy.ts`.
+
+Until any Farm is published, the page shows the first farms in `src/lib/farms-seed.json` (the producers
+behind the green in stock in October 2026). `npm run seed:sanity` lists them; `npm run seed:sanity -- --write`
+copies them into Sanity as published documents (needs `SANITY_WRITE_TOKEN`, an Editor token). Existing
+farms are never overwritten.
 
 ## Landing media
 
