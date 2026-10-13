@@ -1,5 +1,5 @@
 {
-  "_comment": "The first farms, from the green lots in stock in October 2026. The farms page shows these until Farm documents are published in Sanity, and `npm run seed:sanity` copies them there. Empty fields are hidden on the page.",
+  "_comment": "The first farms, from the green lots in stock in October 2026. The farms page shows these until Farm documents are published in Sanity, and `npm run seed:sanity` copies them there. Empty fields are hidden on the page. Marlon Bolaños and Sebastián Ramírez details are from roaster listings of their lots (blackwhiteroasters.com, thewaytocoffee.com, eightouncecoffee.ca), October 2026.",
   "farms": [
     {
       "_id": "farm-marlon-bolanos",
@@ -8,27 +8,33 @@
       "producer": "",
       "country": "Colombia",
       "region": "Acevedo, Huila",
-      "altitude": "",
+      "altitude": "1,670–1,700 m",
       "varietal": "Geisha, Pink Bourbon",
       "process": "Natural, Honey",
       "harvest": "",
-      "story": "Marlon Bolaños grows the three lots we hold from Acevedo, in southern Huila: a natural Geisha, a honey-processed Pink Bourbon and a natural decaf. All three are SMS exclusives in the Coffee Lab.",
-      "lots": ["marlons-geisha-natural", "marlons-pink-bourbon-honey", "marlon-bolanos-natural-decaf"],
+      "story": "Marlon Bolaños farms in Acevedo, southern Huila, with brothers Hemerson and Pedro as Three Coffee Farmers. The brothers run the crops and day-to-day farm work, and Marlon handles processing, cupping and sales after training as a barista and cupper at SENA. We hold three of their lots: a natural Geisha, a honey Pink Bourbon and a natural decaf, all SMS exclusives in the Coffee Lab.",
+      "lots": [
+        "marlons-geisha-natural",
+        "marlons-pink-bourbon-honey",
+        "marlon-bolanos-natural-decaf"
+      ],
       "order": 10
     },
     {
       "_id": "farm-sebas-quindio",
-      "name": "Sebas",
-      "slug": "sebas",
-      "producer": "",
+      "name": "Finca El Placer",
+      "slug": "finca-el-placer",
+      "producer": "Sebastián Ramírez",
       "country": "Colombia",
       "region": "Quindío",
-      "altitude": "",
-      "varietal": "",
+      "altitude": "1,744 m",
+      "varietal": "Caturra",
       "process": "Co-ferment",
       "harvest": "",
-      "story": "Sebas co-ferments cherry with blackberry in Quindío, in Colombia's coffee axis. The fruit carries straight through to the cup.",
-      "lots": ["sebas-blackberry-co-ferment"],
+      "story": "Sebastián Ramírez runs Finca El Placer in Quindío, in Colombia's coffee axis, and is known for experimental co-ferments. For this lot, ripe Caturra cherries ferment with blackberries under CO2, then go through a thermal shock before drying. The result is intensely sweet and jammy.",
+      "lots": [
+        "sebas-blackberry-co-ferment"
+      ],
       "order": 20
     },
     {
@@ -43,7 +49,9 @@
       "process": "Co-ferment",
       "harvest": "",
       "story": "A Colombian co-ferment fermented with strawberry. It is our brightest, fruitiest lot and we roast it light to keep it that way.",
-      "lots": ["strawberry-jam-co-ferment-green"],
+      "lots": [
+        "strawberry-jam-co-ferment-green"
+      ],
       "order": 30
     },
     {
@@ -58,7 +66,9 @@
       "process": "Natural",
       "harvest": "",
       "story": "A natural-process Brazil that gives our blends their body and a nutty, chocolate base.",
-      "lots": ["brazil-dayglow-green"],
+      "lots": [
+        "brazil-dayglow-green"
+      ],
       "order": 40
     },
     {
@@ -73,7 +83,9 @@
       "process": "Washed",
       "harvest": "",
       "story": "A washed coffee from the Guji highlands of southern Ethiopia: floral and tea-like, with citrus up front.",
-      "lots": ["ethiopia-guji-green"],
+      "lots": [
+        "ethiopia-guji-green"
+      ],
       "order": 50
     },
     {
@@ -88,7 +100,9 @@
       "process": "Natural",
       "harvest": "",
       "story": "A natural-process coffee from Veracruz, on Mexico's Gulf coast. Easygoing and sweet, it works in almost any blend.",
-      "lots": ["mexico-veracruz"],
+      "lots": [
+        "mexico-veracruz"
+      ],
       "order": 60
     }
   ]
