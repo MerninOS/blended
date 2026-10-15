@@ -152,3 +152,13 @@ export function landingData(green: GreenLot[], coffeeCount: number, cms?: Record
     },
   };
 }
+
+/**
+ * Coming soon backdrop: public/landing/coming-soon.(jpg|png|webp|mp4) when dropped in,
+ * else the landing hero video and its poster under the page's dark shade.
+ */
+export function comingSoonMedia(): { image: string; video: string | null } {
+  const own = media["coming-soon"];
+  if (own?.image || own?.video) return { image: own.image ?? media.hero?.image ?? HOSTED.heroPoster, video: own.video ?? null };
+  return { image: media.hero?.image ?? HOSTED.heroPoster, video: media.hero?.video ?? HOSTED.heroVideo };
+}
