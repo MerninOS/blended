@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     email = String(body.email ?? "").trim().toLowerCase();
-    if (body.source === "popup") source = "popup";
+    if (body.source === "popup" || body.source === "coming-soon") source = body.source;
   } catch { /* fall through */ }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 254)
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 422 });

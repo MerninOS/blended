@@ -19,6 +19,8 @@ export const env = {
   appUrl: origin(v("APP_URL") || v("NEXT_PUBLIC_SITE_URL") || v("VERCEL_PROJECT_PRODUCTION_URL") || "localhost:3000"),
   sessionSecret: v("SESSION_SECRET"),
   adminPassword: v("ADMIN_PASSWORD"),
+  // Coming soon: while set, every page shows /coming-soon until the visitor enters this password.
+  sitePassword: v("SITE_PASSWORD"),
   stockCollection: v("SHOPIFY_STOCK_COLLECTION") || "our-coffees",
   merchCollection: v("SHOPIFY_MERCH_COLLECTION") || "merch",       // /collections/merch
   gearCollection: v("SHOPIFY_GEAR_COLLECTION") || "gear",          // /collections/gear

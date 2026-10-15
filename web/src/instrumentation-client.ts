@@ -11,6 +11,8 @@ try {
       { path: "/api/newsletter", method: "POST" },
       { path: "/api/sms/start", method: "POST" },
       { path: "/api/sms/verify", method: "POST" },
+      { path: "/api/coming-soon/sms", method: "POST" },
+      { path: "/api/coming-soon/unlock", method: "POST" },
     ],
   });
 } catch { /* never block the storefront on bot protection */ }

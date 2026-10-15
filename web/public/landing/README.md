@@ -13,3 +13,4 @@ Videos: .mp4 or .webm. Empty slots fall back to catalog photos.
 | `step-01` … `step-04` | Cherry to cup: harvest, drying beds, roaster, brewing (4:5) |
 | `band` | Wide house-blend photo: roastery or a finished bag |
 | `merch`, `gear` | Square tiles linking to the merch / gear collections |
+| `coming-soon` (image, optional .mp4) | Coming soon page backdrop, dark and cropped. Without it the page uses the hero video |

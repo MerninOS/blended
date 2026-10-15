@@ -44,6 +44,14 @@ Admin edits are kept in memory and checkout says it's in demo. Admin is open loc
 4. Tag wholesale customers `wholesale`.
 5. Deploy (e.g. Vercel, project root `web/`) with the same env vars, plus `SESSION_SECRET` and `ADMIN_PASSWORD`.
 
+## Coming soon mode
+
+Set `SITE_PASSWORD` (with `SESSION_SECRET`) and every page answers with the coming soon page at its
+own URL: email signups go to the Klaviyo email list (`KLAVIYO_LIST_ID`), numbers to the SMS list
+(`KLAVIYO_SMS_LIST_ID`). "Enter with password" leaves a 30-day cookie that shows the real site; an
+admin session works too. APIs, `/admin`, `/studio` and `/policies/*` stay reachable. Drop
+`public/landing/coming-soon.jpg` (or .mp4) for its backdrop. Unset `SITE_PASSWORD` and redeploy to launch.
+
 ## How it maps onto Shopify
 
 - **Green catalog**: each lot is a product tagged `blended-green` (type "Green coffee") with one
