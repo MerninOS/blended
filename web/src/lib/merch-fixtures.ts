@@ -8,8 +8,8 @@ type Raw = {
 };
 
 const RAW: Raw[] = [
-  { slug: "logo-cap", name: "Blended logo cap", cat: "merch", type: "Headwear", price: 32, flag: "New",
-    blurb: "Unstructured six-panel cap with the Blended mark embroidered on the front. Brass buckle strap.",
+  { slug: "logo-cap", name: "One Two logo cap", cat: "merch", type: "Headwear", price: 32, flag: "New",
+    blurb: "Unstructured six-panel cap with the One Two mark embroidered on the front. Brass buckle strap.",
     colors: [{ n: "Paper", h: "#EFEDE6" }, { n: "Ink", h: "#1A1A18" }, { n: "Vermilion", h: "#D93D18" }], sizes: null,
     details: ["100% washed cotton twill", "Embroidered front mark", "Adjustable brass buckle", "One size fits most"], care: "Spot clean with cold water. Air dry." },
   { slug: "label-tee", name: "Label tee", cat: "merch", type: "Apparel", price: 36,
@@ -17,7 +17,7 @@ const RAW: Raw[] = [
     colors: [{ n: "Paper", h: "#EFEDE6" }, { n: "Ink", h: "#1A1A18" }], sizes: ["S", "M", "L", "XL", "XXL"], soldOut: ["XXL"],
     details: ["6.5 oz ring-spun cotton", "Relaxed, boxy fit", "Water-based print", "Garment dyed"], care: "Machine wash cold, inside out. Tumble dry low." },
   { slug: "roastery-hoodie", name: "Roastery hoodie", cat: "merch", type: "Apparel", price: 78,
-    blurb: "Brushed-back fleece hoodie with a tonal BLENDED print down the sleeve.",
+    blurb: "Brushed-back fleece hoodie with a tonal ONE TWO print down the sleeve.",
     colors: [{ n: "Espresso", h: "#3A2118" }, { n: "Ink", h: "#1A1A18" }], sizes: ["S", "M", "L", "XL"],
     details: ["14 oz cotton-poly fleece", "Double-lined hood", "Ribbed cuffs and hem"], care: "Machine wash cold. Hang dry." },
   { slug: "diner-mug", name: "Diner mug", cat: "merch", type: "Drinkware", price: 24,

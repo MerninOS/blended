@@ -58,7 +58,7 @@ function HeroVideo({ src, poster }: { src: string | null; poster: Pic }) {
 function LabMedia({ video, image }: { video: string | null; image: Pic }) {
   const [ok, setOk] = useState(true);
   if (video && ok) return <video className="lp-fill" src={video} poster={image.src} autoPlay muted loop playsInline preload="auto" onError={() => setOk(false)} style={{ objectFit: "cover", objectPosition: image.pos }} />;
-  return <Photo pic={image} alt="A Blended bag with its blend card" sizes="(max-width:900px) 100vw, 50vw" />;
+  return <Photo pic={image} alt="A One Two Coffee bag with its blend card" sizes="(max-width:900px) 100vw, 50vw" />;
 }
 
 export function Landing({ data, policies, exclusives }: { data: LandingData; policies: ShopPolicy[]; exclusives?: boolean }) {
@@ -268,7 +268,7 @@ export function Landing({ data, policies, exclusives }: { data: LandingData; pol
 
       <footer className="lp-foot">
         <div className="lp-wrap lp-over" style={{ fontSize: 10.5 }}>
-          <span style={{ color: "var(--ink)" }}>Blended</span><span>{c.smallPrint.footer}</span><span>{c.smallPrint.shipping}</span>
+          <span style={{ color: "var(--ink)" }}>One Two Coffee</span><span>{c.smallPrint.footer}</span><span>{c.smallPrint.shipping}</span>
           <span style={{ marginLeft: "auto", display: "flex", gap: "12px 24px", flexWrap: "wrap" }}>
             <Link href={SHOP}>Our coffees</Link>
             <Link href="/wholesale">Wholesale</Link>

@@ -43,9 +43,8 @@ export function Sidebar({ counts, shopName, demo }: { counts: { orders: number }
     <aside className="co-sidebar" style={{ width: collapsed ? "var(--nav-w-collapsed)" : "var(--nav-w)", flexShrink: 0, background: "var(--surface)", borderRight: "1px solid var(--hairline)", display: "flex", flexDirection: "column", minHeight: "100vh", position: "sticky", top: 0, alignSelf: "flex-start", transition: "width var(--dur) var(--ease)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 9, height: "var(--topbar-h)", padding: collapsed ? "0" : "0 16px", justifyContent: collapsed ? "center" : "flex-start", borderBottom: "1px solid var(--hairline)" }}>
         <span className="co-wordmark" style={CO.display({ fontSize: 18, color: "var(--ink)", lineHeight: 1, display: "flex", alignItems: "center", gap: 8 })}>
-          {/* eslint-disable-next-line @next/next/no-img-element -- 20px brand mark */}
-          {!collapsed && <img src="/brand/blended-mark.png" alt="" width={20} height={20} style={{ width: 20, height: 20, flexShrink: 0 }} />}
-          {collapsed ? "B" : "BLENDED"}
+          <span className="ot-logo" style={{ height: collapsed ? 30 : 26, flexShrink: 0 }} aria-hidden="true" />
+          {!collapsed && "ONE TWO COFFEE"}
         </span>
       </div>
       <nav aria-label="Admin" className="co-navbody" style={{ flex: 1, overflowY: "auto", padding: collapsed ? "12px 8px" : "14px 12px", display: "flex", flexDirection: "column", gap: collapsed ? 4 : 2 }}>

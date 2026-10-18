@@ -8,8 +8,7 @@ export function LoginForm({ configured }: { configured: boolean }) {
   return (
     <form action={action} style={{ width: "min(380px,100%)", background: "var(--surface)", border: "1px solid var(--hairline)", borderRadius: "var(--r-md)", padding: 24, display: "flex", flexDirection: "column", gap: 16, boxShadow: "var(--shadow-pop)" }}>
       <span className="co-wordmark" style={CO.display({ fontSize: 20, color: "var(--ink)", display: "flex", alignItems: "center", gap: 8 })}>
-        {/* eslint-disable-next-line @next/next/no-img-element -- brand mark */}
-        <img src="/brand/blended-mark.png" alt="" width={22} height={22} />BLENDED
+        <span className="ot-logo" style={{ height: 30, flexShrink: 0 }} aria-hidden="true" />ONE TWO COFFEE
       </span>
       <span style={CO.over({ fontSize: 10.5, color: "var(--ink-muted)" })}>Admin · Orders and green catalog</span>
       {configured ? <>

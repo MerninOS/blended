@@ -88,7 +88,7 @@ export function ComingSoon({ image, video, gated }: { image: string; video: stri
       <div className="cs-shade" />
       <header className="bh-head" data-overlay="">
         <div className="bh-in">
-          <span className="bh-pill bh-logo">BLENDED</span>
+          <span className="bh-pill bh-logo"><span className="ot-logo" role="img" aria-label="One Two Coffee" /></span>
           {gated && <button type="button" className="bh-pill cs-pw-open" onClick={openPassword} aria-controls="cs-pw" aria-expanded={step === "password"}><Lock /> <span className="cs-pw-long">Enter with</span> password</button>}
         </div>
       </header>

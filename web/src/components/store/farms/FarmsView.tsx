@@ -23,7 +23,7 @@ function Photo({ pic, sizes, label, priority }: { pic: Pic | null; sizes: string
   if (pic) return <Image src={pic.src} alt={pic.alt ?? ""} fill sizes={sizes} priority={priority} className="fm-fill" style={{ objectFit: "cover", objectPosition: pic.pos }} />;
   return (
     <div className="fm-empty" aria-hidden="true">
-      <Image src="/brand/blended-mark.png" alt="" width={36} height={36} />
+      <Image src="/brand/one-two-mark.png" alt="" width={36} height={36} />
       {label && <span className="fm-over" style={{ fontSize: 9.5 }}>{label}</span>}
     </div>
   );

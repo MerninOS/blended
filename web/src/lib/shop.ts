@@ -26,7 +26,7 @@ const SHOP = gql`
 type P = ShopPolicy | null;
 type ShopRes = { shop: { id: string; name: string; primaryDomain: { host: string }; privacyPolicy: P; termsOfService: P; refundPolicy: P; shippingPolicy: P; contactInformation: P } };
 
-const EMPTY: ShopInfo = { id: null, name: "Blended", checkoutDomain: null, policies: [] };
+const EMPTY: ShopInfo = { id: null, name: "One Two Coffee", checkoutDomain: null, policies: [] };
 
 export const getShopInfo = unstable_cache(async (): Promise<ShopInfo> => {
   if (!hasStorefront()) return EMPTY;

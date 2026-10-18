@@ -14,7 +14,7 @@ export default async function SettingsPage() {
   const [conn, settings] = await Promise.all([getConnection(), getSettings().catch(() => DEFAULT_SETTINGS)]);
   return (
     <>
-      <TopBar title="Settings" subtitle="How Blended talks to the Shopify store." breadcrumbs="Settings / Shopify" />
+      <TopBar title="Settings" subtitle="How One Two Coffee talks to the Shopify store." breadcrumbs="Settings / Shopify" />
       <SettingsView conn={conn} initial={settings} />
     </>
   );

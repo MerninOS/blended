@@ -4,7 +4,7 @@
 // lib/bag-label.ts paints the same label onto the 3D bag.
 import { useSyncExternalStore } from "react";
 import { radarGeom, roastName } from "@/lib/domain/coffee";
-import { LABEL_COLORS, LABEL_H, LABEL_INK, LABEL_OFF, LABEL_PAPER, LABEL_RED, LABEL_SOFT, LABEL_W, fit, resetMeasure, textWidth, type LabelData } from "@/lib/bag-label";
+import { LABEL_COLORS, LABEL_H, LABEL_INK, LABEL_LOGO, LOGO_H, LOGO_W, LOGO_X, LOGO_Y, LABEL_OFF, LABEL_PAPER, LABEL_RED, LABEL_SOFT, LABEL_W, fit, resetMeasure, textWidth, type LabelData } from "@/lib/bag-label";
 
 const W = LABEL_W, H = LABEL_H, COLORS = LABEL_COLORS, INK = LABEL_INK, SOFT = LABEL_SOFT, RED = LABEL_RED, PAPER = LABEL_PAPER, OFF = LABEL_OFF;
 
@@ -69,7 +69,8 @@ function LabelSvg({ d }: { d: LabelData }) {
         <path d={g.p1} fill="rgba(196,60,124,.32)" stroke="#C43C7C" strokeWidth="3.4" strokeLinejoin="round" />
         {g.axes.map((a, i) => a.v > .05 && <circle key={i} cx={a.dx.toFixed(1)} cy={a.dy.toFixed(1)} r="4.6" fill="#C43C7C" />)}
       </g>
-      <LgText t={d.site || ""} x={52} y={365} size={20.5} ls={.04} maxW={470} min={11} fill={SOFT} />
+      <image href={LABEL_LOGO} x={LOGO_X} y={LOGO_Y} width={LOGO_W.toFixed(1)} height={LOGO_H} />
+      <LgText t={d.site || ""} x={LOGO_X + LOGO_W + 14} y={365} size={20.5} ls={.04} maxW={522 - (LOGO_X + LOGO_W + 14)} min={11} fill={SOFT} />
       <LgText t={d.words.join(" / ")} x={52} y={405} size={18.5} wt={500} ls={.2} maxW={470} min={10} upper />
       {[1, 2, 3, 4, 5].map((k) => <rect key={k} x={barR - (6 - k) * seg - (5 - k) * gap} y={367 - rs * .36 - 4.3} width={seg} height="8.6" rx="1.6" fill={k <= d.roast ? RED : OFF} />)}
       <LgText t={roastTxt} x={913} y={367} size={rs} wt={500} ls={.2} anchor="end" />

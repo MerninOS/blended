@@ -1,11 +1,13 @@
 "use client";
-// The storefront header (design: shop/site-header.js): a frosted BLENDED pill on the left and a
+// The storefront header (design: shop/site-header.js): the One Two logo on the left and a
 // frosted action pill on the right (Build a blend, cart, menu). The menu is a hamburger at every
 // width and opens a panel of shop cards, the SMS-exclusives promo and a few links.
 // `overlay` lays it over the page's first section (the landing video, the Lab's bag stage, the farms hero).
 // Phones and tablets: it slides away while scrolling down and returns on the way up; on the Lab it
 // stays away the whole time the cup is pinned at the top. <html data-head-hidden> lets things
 // pinned under it (the Lab's cup, the shop toolbar) follow it up.
+// The logo has no pill, so it takes the tone of what sits under it: white over photos, video and
+// dark sections, ink over light ones.
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
@@ -42,6 +44,8 @@ export function SiteHeader({ active, overlay, exclusives, onLab }: {
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
   const burger = useRef<HTMLButtonElement>(null);
+  const head = useRef<HTMLElement>(null), logo = useRef<HTMLAnchorElement>(null);
+  const [tone, setTone] = useState<"dark" | "light">(overlay ? "dark" : "light");
 
   useEffect(() => {
     if (!open) return;
@@ -66,6 +70,26 @@ export function SiteHeader({ active, overlay, exclusives, onLab }: {
     addEventListener("scroll", f, { passive: true }); addEventListener("resize", f);
     return () => { removeEventListener("scroll", f); removeEventListener("resize", f); delete document.documentElement.dataset.headHidden; };
   }, [active]);
+  useEffect(() => {
+    const f = () => {
+      const el = logo.current; if (!el) return;
+      const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+      for (const hit of document.elementsFromPoint(x, y)) {
+        if (head.current?.contains(hit)) continue;
+        for (let e: Element | null = hit; e && e !== document.documentElement; e = e.parentElement) {
+          if (/^(VIDEO|IMG|CANVAS)$/.test(e.tagName)) return setTone("dark");
+          const cs = getComputedStyle(e);
+          if (cs.backgroundImage.includes("url(")) return setTone("dark");
+          const m = cs.backgroundColor.match(/[\d.]+/g);
+          if (m && (m[3] === undefined || +m[3] > .5)) return setTone(.2126 * +m[0] + .7152 * +m[1] + .0722 * +m[2] < 140 ? "dark" : "light");
+        }
+      }
+    };
+    let raf = 0; const on = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; f(); }); };
+    f(); const t = [setTimeout(f, 300), setTimeout(f, 1200)];
+    addEventListener("scroll", on, { passive: true }); addEventListener("resize", on);
+    return () => { removeEventListener("scroll", on); removeEventListener("resize", on); cancelAnimationFrame(raf); t.forEach(clearTimeout); };
+  }, [active]);
   const off = hidden && !open;
   useEffect(() => { document.documentElement.dataset.headHidden = String(off); }, [off]);
 
@@ -74,9 +98,9 @@ export function SiteHeader({ active, overlay, exclusives, onLab }: {
   const cur = (k: HeaderSection) => (k === active ? "page" as const : undefined);
 
   return (
-    <header className="bh-head" data-overlay={overlay || undefined} data-hidden={off} data-open={open}>
+    <header ref={head} className="bh-head" data-overlay={overlay || undefined} data-hidden={off} data-open={open} data-tone={tone}>
       <div className="bh-in">
-        <Link href="/" className="bh-pill bh-logo" aria-label="Blended home">BLENDED</Link>
+        <Link ref={logo} href="/" className="bh-pill bh-logo" aria-label="One Two Coffee home"><span className="ot-logo" /></Link>
         <div className="bh-pill bh-act">
           {active === "lab"
             ? <a className="bh-cta" href="#build">Start a blend</a>

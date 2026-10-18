@@ -8,7 +8,11 @@ import { AX, radarGeom, roastName, type LotIndex } from "@/lib/domain/coffee";
 export const LABEL_W = 975, LABEL_H = 450;
 export const LABEL_COLORS = ["#EE8A1E", "#C43C7C", "#D93D18", "#8E2F52"];
 export const LABEL_INK = "#1A1A18", LABEL_SOFT = "#77726B", LABEL_RED = "#DC3D1A", LABEL_PAPER = "#F2EEE7", LABEL_OFF = "#D6D1CB";
-export const LABEL_SITE = "blendedcoffeelab.com";
+export const LABEL_SITE = "onetwocoffeelab.com";
+/** The One Two logo, bottom left beside the site (ink on transparent, 1137 × 1069). */
+export const LABEL_LOGO = "/brand/one-two-logo-ink.png";
+export const LOGO_X = 52, LOGO_H = 54, LOGO_W = LOGO_H * 1137 / 1069, LOGO_Y = 322;
+const SITE_X = LOGO_X + LOGO_W + 14;
 
 export interface LabelData {
   name: string; site: string; roastedOn?: string;
@@ -48,8 +52,8 @@ export const textWidth = (t: string, size: number, wt: number, ls = 0) => {
 export const fit = (t: string, size: number, wt: number, ls: number, maxW: number, min: number) =>
   Math.max(min, Math.min(size, size * maxW / Math.max(1, textWidth(t, size, wt, ls))));
 
-/** Draws the label onto a canvas; k scales the output (2 → 1950 × 900). */
-export function drawLabel(g: CanvasRenderingContext2D, d: LabelData, k = 1) {
+/** Draws the label onto a canvas; k scales the output (2 → 1950 × 900). `logo` is the loaded LABEL_LOGO. */
+export function drawLabel(g: CanvasRenderingContext2D, d: LabelData, k = 1, logo?: CanvasImageSource | null) {
   const font = labelFont(), spaced = typeof (g as { letterSpacing?: unknown }).letterSpacing === "string";
   const T = (t: string, x: number, y: number, { size, wt = 400, ls = 0, maxW, min, fill = LABEL_INK, anchor = "start", upper }:
     { size: number; wt?: number; ls?: number; maxW?: number; min?: number; fill?: string; anchor?: "start" | "end"; upper?: boolean }) => {
@@ -94,7 +98,8 @@ export function drawLabel(g: CanvasRenderingContext2D, d: LabelData, k = 1) {
   g.fillStyle = "rgba(196,60,124,.32)"; g.fill(path); g.strokeStyle = "#C43C7C"; g.lineWidth = 3.4; g.lineJoin = "round"; g.stroke(path);
   g.fillStyle = "#C43C7C"; geo.axes.forEach((a) => { if (a.v > .05) { g.beginPath(); g.arc(a.dx, a.dy, 4.6, 0, 7); g.fill(); } });
   g.restore();
-  T(d.site || "", 52, 365, { size: 20.5, ls: .04, maxW: 470, min: 11, fill: LABEL_SOFT });
+  if (logo) g.drawImage(logo, LOGO_X, LOGO_Y, LOGO_W, LOGO_H);
+  T(d.site || "", SITE_X, 365, { size: 20.5, ls: .04, maxW: 522 - SITE_X, min: 11, fill: LABEL_SOFT });
   T(d.words.join(" / "), 52, 405, { size: 18.5, wt: 500, ls: .2, maxW: 470, min: 10, upper: true });
   for (let q = 1; q <= 5; q++) rr(barR - (6 - q) * seg - (5 - q) * gap, 367 - rs * .36 - 4.3, seg, 8.6, 1.6, q <= d.roast ? LABEL_RED : LABEL_OFF);
   T(roastTxt, 913, 367, { size: rs, wt: 500, ls: .2, anchor: "end" });

@@ -1,12 +1,14 @@
 "use client";
-// Coffee Lab hero: the turnable BLENDED bag on the tan stage, fitted between
-// the title and the call to action (BoxHero.jsx).
+// Coffee Lab hero: the turnable One Two Coffee bag on the tan stage, fitted between
+// the title and the call to action (BoxHero.jsx). Its front reads `mark`: ORIGIN while the
+// blend being built has one coffee, BLENDED once it has more.
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { disp, over } from "@/components/ui/primitives";
-import { BOX_D, BOX_H, BOX_W, mountBox } from "./box3d";
+import { BOX_D, BOX_H, BOX_W, mountBox, type BoxHandle } from "./box3d";
 
-export function BoxHero({ cta }: { cta: { label: string; onClick: () => void } }) {
+export function BoxHero({ cta, mark }: { cta: { label: string; onClick: () => void }; mark: string }) {
+  const handle = useRef<BoxHandle | null>(null), firstMark = useRef(mark);
   const canvasHost = useRef<HTMLDivElement>(null), titleRef = useRef<HTMLDivElement>(null), cueRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
 
@@ -14,7 +16,7 @@ export function BoxHero({ cta }: { cta: { label: string; onClick: () => void } }
     const host = canvasHost.current; if (!host) return;
     let cleanup: (() => void) | null = null, cancelled = false;
     void mountBox(host, {
-      cam: [0, .5, 8], look: [0, 0, 0], baseRot: -.45,
+      cam: [0, .5, 8], look: [0, 0, 0], baseRot: -.45, mark: firstMark.current,
       onReady: () => setReady(true),
       // fit the bag into the gap between the title and the button
       layout: ({ three, camera, rig }) => {
@@ -27,9 +29,10 @@ export function BoxHero({ cta }: { cta: { label: string; onClick: () => void } }
         rig.scale.setScalar(sc);
         rig.position.y = (vh / 2 - (top + bot) / 2) * wpp - sc * BOX_H / 2;
       },
-    }).then((h) => { if (cancelled) h.dispose(); else cleanup = h.dispose; });
-    return () => { cancelled = true; cleanup?.(); };
+    }).then((h) => { if (cancelled) h.dispose(); else { cleanup = h.dispose; handle.current = h; h.setMark(firstMark.current); } });
+    return () => { cancelled = true; handle.current = null; cleanup?.(); };
   }, []);
+  useEffect(() => { firstMark.current = mark; handle.current?.setMark(mark); }, [mark]);
 
   return (
     <section className="bx-hero" aria-label="Coffee Lab" style={{ position: "relative", background: "var(--bag-stage)" }}>

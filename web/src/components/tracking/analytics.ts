@@ -77,7 +77,7 @@ export interface TrackedItem {
 }
 const toShopify = (i: TrackedItem): ShopifyAnalyticsProduct | null => i.productGid ? {
   productGid: i.productGid, variantGid: i.variantGid, name: i.name, variantName: i.variantName,
-  brand: "Blended", category: i.category ?? "Coffee", price: i.price.toFixed(2), sku: i.sku, quantity: i.quantity ?? 1,
+  brand: "One Two Coffee", category: i.category ?? "Coffee", price: i.price.toFixed(2), sku: i.sku, quantity: i.quantity ?? 1,
 } : null;
 
 export function trackProductView(i: TrackedItem) {
@@ -86,9 +86,9 @@ export function trackProductView(i: TrackedItem) {
     if (p) shopify(AnalyticsEventName.PRODUCT_VIEW, { pageType: "product", resourceId: i.productGid, products: [p], totalValue: i.price });
     klaviyo("track", "Viewed Product", {
       ProductName: i.name, ProductID: i.productGid ?? i.name, SKU: i.sku, Categories: [i.category ?? "Coffee"], ImageURL: i.image ?? undefined,
-      URL: i.url ?? location.href, Brand: "Blended", Price: i.price,
+      URL: i.url ?? location.href, Brand: "One Two Coffee", Price: i.price,
     });
-    klaviyo("trackViewedItem", { Title: i.name, ItemId: i.productGid ?? i.name, Categories: [i.category ?? "Coffee"], ImageUrl: i.image ?? undefined, Url: i.url ?? location.href, Metadata: { Brand: "Blended", Price: i.price } });
+    klaviyo("trackViewedItem", { Title: i.name, ItemId: i.productGid ?? i.name, Categories: [i.category ?? "Coffee"], ImageUrl: i.image ?? undefined, Url: i.url ?? location.href, Metadata: { Brand: "One Two Coffee", Price: i.price } });
   });
 }
 

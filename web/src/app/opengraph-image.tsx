@@ -3,7 +3,7 @@ import { SANITY_TAG, cmsImageUrl, getSiteSettings } from "@/lib/sanity";
 
 // Default share preview (product pages use the coffee's photo instead): the share image
 // from Sanity's "Site settings", cut to 1200 × 630, or this drawn card when there isn't one.
-export const alt = "Blended · build your own coffee blend";
+export const alt = "One Two Coffee · build your own coffee blend";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const revalidate = 60;
@@ -21,7 +21,7 @@ export default async function OpengraphImage() {
   return new ImageResponse(
     (
       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 72, background: "#F6F1EA", color: "#241812", fontFamily: "sans-serif" }}>
-        <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: 2 }}>BLENDED</div>
+        <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: 2 }}>ONE TWO COFFEE</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div style={{ fontSize: 88, fontWeight: 800, lineHeight: 1, textTransform: "uppercase", letterSpacing: -2 }}>Build your own blend</div>
           <div style={{ fontSize: 34, color: "#6B5A4E" }}>Single-origin green lots · your ratios · roasted to order</div>

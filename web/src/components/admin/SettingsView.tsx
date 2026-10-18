@@ -136,7 +136,7 @@ export function SettingsView({ conn, initial }: { conn: ConnectionInfo; initial:
       </Section>
 
       <Section title="Store setup"
-        note="Creates what Blended needs in Shopify: the blended.* product fields and the Our coffees collection. Green lots are products tagged blended-green whose stock is tracked in Shopify inventory, in grams. Safe to run again. Add sample coffees also drafts a coffee for each of your green lots, plus two house blends, using the lots’ origin, process, roast, cupping scores and prices."
+        note="Creates what One Two Coffee needs in Shopify: the blended.* product fields and the Our coffees collection. Green lots are products tagged blended-green whose stock is tracked in Shopify inventory, in grams. Safe to run again. Add sample coffees also drafts a coffee for each of your green lots, plus two house blends, using the lots’ origin, process, roast, cupping scores and prices."
         right={<Pill variant={conn.setupDone && !conn.legacyGreen ? "matcha" : "cream"} dot>{conn.legacyGreen ? "Needs update" : conn.setupDone ? "Done" : conn.setupDone === false ? "Not set up" : "Unknown"}</Pill>}>
         {conn.legacyGreen > 0 && (
           <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: 13, lineHeight: 1.55, color: "var(--ink)" }}>
@@ -183,7 +183,7 @@ export function SettingsView({ conn, initial }: { conn: ConnectionInfo; initial:
       <Section title="Catalog mapping" note="Shopify is the source of truth. Green lots and Our coffees are both Shopify products; green stock is Shopify inventory.">
         <div style={{ border: "1px solid var(--hairline)", borderRadius: "var(--r-md)", overflow: "hidden" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.6fr", gap: 16, padding: "9px 16px", background: "var(--surface-sunken)", borderBottom: "1px solid var(--hairline)" }}>
-            <span style={over()}>Blended</span><span style={over()}>Shopify</span><span style={over()}>Note</span>
+            <span style={over()}>One Two Coffee</span><span style={over()}>Shopify</span><span style={over()}>Note</span>
           </div>
           {MAP.map((m, i) => (
             <div key={m.from} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.6fr", gap: 16, alignItems: "center", padding: "11px 16px", borderTop: i ? "1px solid var(--hairline)" : "none" }}>
