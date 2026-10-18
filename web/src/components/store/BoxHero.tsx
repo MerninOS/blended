@@ -1,5 +1,5 @@
 "use client";
-// Coffee Lab hero: the turnable BLENDED bag on the tan stage, fitted between
+// Coffee Lab hero: the turnable One Two Coffee bag on the tan stage, fitted between
 // the title and the call to action (BoxHero.jsx).
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";

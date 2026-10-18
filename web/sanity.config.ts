@@ -14,7 +14,7 @@ const SINGLETONS = new Set<string>([landingPage.name, farmsPage.name, siteSettin
 
 export default defineConfig({
   name: "blended",
-  title: "Blended",
+  title: "One Two Coffee",
   basePath: "/studio",
   projectId,
   dataset,

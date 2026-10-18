@@ -2,9 +2,9 @@
 // across the store. The "Site settings" document in Sanity (/studio) overrides
 // any of these; an empty field keeps the default here.
 export const DEFAULT_SITE = {
-  siteName: "Blended",
-  title: "Blended · Coffee Lab",
-  titleSuffix: "· Blended",
+  siteName: "One Two Coffee",
+  title: "One Two Coffee · Coffee Lab",
+  titleSuffix: "· One Two Coffee",
   description: "Build your own coffee blend from single-origin green lots, or pick one of ours. Whole bean, roasted to order.",
 };
 export type SiteSettings = typeof DEFAULT_SITE;

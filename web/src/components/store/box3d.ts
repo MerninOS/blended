@@ -1,6 +1,6 @@
 "use client";
-// The BLENDED coffee bag, drawn in the browser with three.js (BoxHero.jsx):
-// a matte white flat-bottom pouch with a vertical BLENDED label panel and the
+// The One Two Coffee bag, drawn in the browser with three.js (BoxHero.jsx):
+// a matte white flat-bottom pouch with a vertical ONE TWO label panel and the
 // bag label (lib/bag-label.ts) slipped on at a slight tilt over the lower
 // panel, so the checkout preview shows the customer's own label on the bag.
 // Loaded lazily so three stays out of the main bundle.
@@ -9,6 +9,8 @@ import { LABEL_H, LABEL_SITE, LABEL_W, drawLabel, resetMeasure, type LabelData }
 
 type Three = typeof THREE_NS;
 export const BOX_PAPER = "#F0EDE5", BOX_INK = "#1A1A18", BOX_RED = "#D93D18";
+/** The wordmark set vertically on the bag's label panel and front sticker. */
+const BAG_MARK = "ONE TWO";
 export const BOX_W = 1.2, BOX_H = 1.9, BOX_D = .56;
 
 /** What the card on the front of the bag shows: the bag label. */
@@ -37,7 +39,7 @@ function assets() {
     const logo = cssFont("--nf-energy", '"Archivo", sans-serif');
     const mono = cssFont("--nf-martian", "monospace");
     try { await Promise.all([document.fonts.load(`800 100px ${logo}`), document.fonts.load(`500 30px ${mono}`), document.fonts.load(`600 13px ${mono}`)]); } catch { /* fall back */ }
-    return { logo, mono, mark: await loadImg("/brand/blended-mark.png") };
+    return { logo, mono, mark: await loadImg("/brand/one-two-mark.png") };
   })();
   return fontsReady;
 }
@@ -57,7 +59,7 @@ function bagDeform(geo: THREE_NS.BufferGeometry) {
   geo.computeVertexNormals(); return geo;
 }
 
-/** Matte white film: crimped top seal and fold crease; the front adds the degassing valve and the BLENDED label panel. */
+/** Matte white film: crimped top seal and fold crease; the front adds the degassing valve and the ONE TWO label panel. */
 function drawFilm(g: CanvasRenderingContext2D, w: number, h: number, kind: "front" | "back" | "side", logo: string) {
   g.clearRect(0, 0, w, h);
   g.fillStyle = kind === "side" ? "#DEDDDA" : "#E7E6E3"; g.fillRect(0, 0, w, h);
@@ -79,11 +81,11 @@ function drawFilm(g: CanvasRenderingContext2D, w: number, h: number, kind: "fron
     g.fillStyle = "rgba(0,0,0,.05)"; g.fillRect(lx + 2, ly + 3, lw, lh);
     g.fillStyle = "#EFEEEB"; g.fillRect(lx, ly, lw, lh);
     g.strokeStyle = "rgba(26,26,24,.07)"; g.lineWidth = 2; g.strokeRect(lx, ly, lw, lh);
-    // BLENDED, set vertically reading bottom → top
+    // ONE TWO, set vertically reading bottom → top
     g.save(); g.translate(w * .5, ly + lh * .52); g.rotate(-Math.PI / 2);
     if ("letterSpacing" in g) (g as unknown as { letterSpacing: string }).letterSpacing = "0px";
-    g.font = `800 300px ${logo}`; const fs = 300 * (lh * .9) / g.measureText("BLENDED").width;
-    text(g, "BLENDED", 0, 0, `800 ${fs}px ${logo}`, BOX_INK); g.restore();
+    g.font = `800 300px ${logo}`; const fs = 300 * (lh * .9) / g.measureText(BAG_MARK).width;
+    text(g, BAG_MARK, 0, 0, `800 ${fs}px ${logo}`, BOX_INK); g.restore();
   }
   const eg = g.createLinearGradient(0, 0, w, 0), ew = Math.min(.08, 30 / w);
   eg.addColorStop(0, "rgba(250,250,248,.7)"); eg.addColorStop(ew, "rgba(250,250,248,0)"); eg.addColorStop(1 - ew, "rgba(250,250,248,0)"); eg.addColorStop(1, "rgba(250,250,248,.7)");
@@ -164,14 +166,14 @@ function frontSurface(model: THREE_NS.Object3D, bb: THREE_NS.Box3) {
   };
 }
 
-/** The vertical BLENDED sticker on the model's front panel. */
+/** The vertical ONE TWO sticker on the model's front panel. */
 function stickerCanvas(aspect: number, logo: string) {
   const w = 512, h = Math.round(w * aspect), c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d")!;
   g.fillStyle = "#DED9D1"; g.fillRect(0, 0, w, h);
   g.save(); g.translate(w / 2, h * .52); g.rotate(-Math.PI / 2);
   const f = (px: number) => `800 ${px}px ${logo}`; g.font = f(300);
-  g.font = f(300 * (h * .9) / g.measureText("BLENDED").width);
-  g.fillStyle = BOX_INK; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("BLENDED", 0, 0); g.restore();
+  g.font = f(300 * (h * .9) / g.measureText(BAG_MARK).width);
+  g.fillStyle = BOX_INK; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(BAG_MARK, 0, 0); g.restore();
   return c;
 }
 
@@ -259,7 +261,7 @@ export async function mountBox(host: HTMLElement, opts: {
     bag.position.x -= c.x; bag.position.z -= c.z; bag.position.y -= bb.min.y; bag.updateMatrixWorld(true);
     bb = new THREE.Box3().setFromObject(bag); sz = bb.getSize(new THREE.Vector3());
     const front = frontSurface(bag, bb);
-    // vertical BLENDED sticker beneath the card
+    // vertical ONE TWO sticker beneath the card
     const sw = sz.x * .5, sh = BOX_H * .64, scy = BOX_H * .45;
     const sgeo = own(new THREE.PlaneGeometry(sw, sh, 16, 32)), sp = sgeo.attributes.position;
     for (let i = 0; i < sp.count; i++) { const x = sp.getX(i), y = sp.getY(i) + scy; sp.setXYZ(i, x, y, front(x, y) + .004); }

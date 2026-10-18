@@ -37,7 +37,7 @@ export function MerchImage({ src, alt, sizes, priority, label }: { src: string |
   if (src) return <Image src={src} alt={alt} fill sizes={sizes} priority={priority} />;
   return (
     <div className="sh-ph" aria-hidden="true">
-      <Image src="/brand/blended-mark.png" alt="" width={40} height={40} />
+      <Image src="/brand/one-two-mark.png" alt="" width={40} height={40} />
       {label && <span className="sh-over" style={{ fontSize: 9.5 }}>{label}</span>}
     </div>
   );

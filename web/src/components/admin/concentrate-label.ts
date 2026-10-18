@@ -1,6 +1,6 @@
 // Cold brew concentrate label (coffeeos/BottleHero.jsx ccDrawLabel): the
 // bottle's wrap-around paper label laid flat, 8 × 3.5 in, drawn on a canvas at
-// 300 dpi (2400 × 1050). Nutrition-style panel on the left, BLENDED, flavor
+// 300 dpi (2400 × 1050). Nutrition-style panel on the left, ONE TWO, flavor
 // mark and name in the middle, directions on the right.
 
 export const CC_W = 2400, CC_H = 1050;
@@ -95,8 +95,8 @@ export function drawConcentrateLabel(g: G, w: number, h: number, c: CcLabel) {
 
   // centre: wordmark, product line, flavor mark, name, notes, add-ins
   g.font = L(200); track(g, -4);
-  const fs = 200 * 660 / g.measureText("BLENDED").width;
-  text(g, "BLENDED", cx, 160, L(fs), INK, "center", -4);
+  const fs = 200 * 660 / g.measureText("ONE TWO").width;
+  text(g, "ONE TWO", cx, 160, L(fs), INK, "center", -4);
   const sub = `${c.prefix ? c.prefix + " " : ""}Coffee concentrate`.toUpperCase();
   text(g, sub, cx, 272, M(500, fit(g, sub, (p) => M(500, p), 40, 660, 7)), RED, "center", 7);
   shape(g, c.shape, cx, 472, 330);

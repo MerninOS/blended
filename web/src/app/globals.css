@@ -425,7 +425,13 @@ html, body { overflow-x: clip }
 .bh-head[data-overlay] { margin-bottom: calc(-1 * var(--bh-h)) }
 .bh-in { max-width: 1400px; margin: 0 auto; height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 clamp(12px, 3vw, 40px) }
 .bh-pill { pointer-events: auto; display: flex; align-items: center; height: 42px; border-radius: 999px; background: rgba(248, 247, 245, .62); -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5); box-shadow: inset 0 0 0 1px rgba(36, 24, 18, .10), 0 1px 2px rgba(36, 24, 18, .06) }
-.bh-logo { gap: 7px; padding: 0 16px; color: var(--ink) !important; text-decoration: none; font-family: var(--font-logo); font-weight: 800; font-size: 15px; letter-spacing: -.01em; line-height: 1 }
+.bh-logo { padding: 0 2px; color: #fff !important; text-decoration: none; transition: color .2s }
+/* The One Two logo sits bare, no pill: white over photos and dark sections, ink over light ones (SiteHeader samples what's underneath). */
+.bh-pill.bh-logo { background: none; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none }
+.bh-head[data-tone="light"] .bh-logo { color: var(--ink) !important }
+.bh-logo .ot-logo { height: 36px }
+/* The One Two Coffee Bar logo, painted in currentColor through the logo's alpha. */
+.ot-logo { display: block; aspect-ratio: 1137 / 1069; background: currentColor; -webkit-mask: url(/brand/one-two-logo.png) center / contain no-repeat; mask: url(/brand/one-two-logo.png) center / contain no-repeat }
 .bh-act { gap: 0; padding: 3px }
 .bh-cta { display: inline-flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 999px; background: var(--ink); color: #fff !important; text-decoration: none; font-family: var(--font-sans); font-weight: 600; font-size: 13px; white-space: nowrap; transition: background var(--dur) var(--ease) }
 .bh-cta:hover { background: var(--brand) }
@@ -465,7 +471,7 @@ html, body { overflow-x: clip }
 .bh-rows a:hover, .bh-rows a[aria-current="page"] { color: var(--brand) !important }
 @media (max-width: 520px) {
   .bh-pill { height: 40px }
-  .bh-logo { padding: 0 14px; font-size: 14px }
+  .bh-logo .ot-logo { height: 34px }
   .bh-cta { height: 34px; padding: 0 13px; font-size: 12.5px }
   .bh-ic { width: 34px; height: 34px }
   .bh-menu { left: 12px; right: 12px; width: auto; padding: 16px }

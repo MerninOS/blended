@@ -82,7 +82,7 @@ export function SmsGate({ member, onJoin, onLeave }: { member: string | null; on
         </form>
         <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 12, lineHeight: 1.45, color: "rgba(255,255,255,.75)", maxWidth: "72ch" }}>
           <input type="checkbox" checked={ok} onChange={(e) => setOk(e.target.checked)} style={{ width: 18, height: 18, marginTop: 1, flexShrink: 0, accentColor: "#fff" }} />
-          <span>I agree to receive recurring automated marketing texts from Blended at this number. Consent isn&rsquo;t a condition of purchase. Msg &amp; data rates may apply. Reply STOP to cancel, HELP for help.</span>
+          <span>I agree to receive recurring automated marketing texts from One Two Coffee at this number. Consent isn&rsquo;t a condition of purchase. Msg &amp; data rates may apply. Reply STOP to cancel, HELP for help.</span>
         </label>
       </> : <>
         <form onSubmit={(e) => { e.preventDefault(); if (code.length === 6 && !busy) verify(); }} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>

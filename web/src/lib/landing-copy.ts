@@ -13,7 +13,7 @@ export interface Origin { name: string; where: string; text: string }
 
 export const DEFAULT_COPY = {
   seo: {
-    title: "Blended · Build your blend",
+    title: "One Two Coffee · Build your blend",
     description: "Coffee from farmers we know by name. Pick up to four, set the ratios, and we roast it to order in your own bag.",
   },
   hero: {

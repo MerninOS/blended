@@ -12,7 +12,7 @@ export function StoreFooter({ policies, newsletter }: { policies: ShopPolicy[]; 
     <footer style={{ borderTop: "1px solid var(--hairline)", background: "var(--surface-sunken)", marginTop: 24 }}>
       <div className="sf-footer" style={{ maxWidth: "var(--content-max)", margin: "0 auto", padding: "36px 24px 28px", display: "grid", gridTemplateColumns: "minmax(0,1.4fr) repeat(2, minmax(0,1fr))", gap: 32 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
-          <span style={{ ...disp, fontSize: 18, color: "var(--ink)" }}>Blended</span>
+          <span style={{ ...disp, fontSize: 18, color: "var(--ink)" }}>One Two Coffee</span>
           <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: 13, lineHeight: 1.55, color: "var(--ink-muted)", maxWidth: "44ch" }}>
             {newsletter ? "New green lots, roast days and the odd limited release. A few emails a month." : "Whole bean, roasted to order Tuesday and Thursday."}
           </p>
@@ -33,7 +33,7 @@ export function StoreFooter({ policies, newsletter }: { policies: ShopPolicy[]; 
         </nav>
       </div>
       <div style={{ maxWidth: "var(--content-max)", margin: "0 auto", padding: "0 24px 24px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-subtle)" }}>
-        © {new Date().getFullYear()} Blended · Checkout secured by Shopify
+        © {new Date().getFullYear()} One Two Coffee · Checkout secured by Shopify
       </div>
     </footer>
   );

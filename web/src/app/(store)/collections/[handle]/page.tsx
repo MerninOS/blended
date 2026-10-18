@@ -14,8 +14,8 @@ const FILTER: Record<string, CollectionFilter> = { "merch-and-gear": "all", merc
 export const generateStaticParams = () => Object.keys(FILTER).map((handle) => ({ handle }));
 
 const DESCRIPTION: Record<CollectionFilter, string> = {
-  all: "Shop Blended merch and home brew gear: caps, tees, mugs, hand grinders, gooseneck kettles, drippers and scales. Free shipping on orders over $50.",
-  merch: "Blended caps, tees, hoodies and mugs from the roastery, printed and embroidered in small runs. Free shipping on orders over $50.",
+  all: "Shop One Two Coffee merch and home brew gear: caps, tees, mugs, hand grinders, gooseneck kettles, drippers and scales. Free shipping on orders over $50.",
+  merch: "One Two Coffee caps, tees, hoodies and mugs from the roastery, printed and embroidered in small runs. Free shipping on orders over $50.",
   gear: "The grinders, kettles, drippers and scales we use on our own bar, picked for brewing at home. Free shipping on orders over $50.",
 };
 

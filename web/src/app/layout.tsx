@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { default: s.title, template: `%s ${s.titleSuffix}`.trim() },
     description: s.description,
     applicationName: s.siteName,
-    icons: { icon: "/brand/icon.svg", apple: "/brand/blended-mark.png" },
+    icons: { icon: "/brand/one-two-icon.png", apple: "/brand/one-two-icon.png" },
     openGraph: { type: "website", siteName: s.siteName, title: s.title, description: s.description, locale: "en_US" },
     twitter: { card: "summary_large_image", title: s.title, description: s.description },
   };

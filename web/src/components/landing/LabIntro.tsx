@@ -3,7 +3,6 @@
 // top one zooms away, then we go on. It also covers the 3D bag model loading:
 // with `ready`, it holds on the last card until that settles (never longer
 // than CAP_MS), so the lab opens with the model in place. Click to skip.
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { IntroBlend } from "@/lib/landing";
 import "./lab-intro.css";
@@ -18,10 +17,10 @@ function IntroCard({ b }: { b: IntroBlend }) {
     <div className="ic-card">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
         <div>
-          <div style={{ fontFamily: "var(--font-logo)", fontWeight: 800, fontSize: "clamp(24px,3vw,36px)", letterSpacing: "-.02em", lineHeight: 1, textTransform: "uppercase", color: "#1A1A18" }}>Blended</div>
+          <div style={{ fontFamily: "var(--font-logo)", fontWeight: 800, fontSize: "clamp(24px,3vw,36px)", letterSpacing: "-.02em", lineHeight: 1, textTransform: "uppercase", color: "#1A1A18" }}>One Two Coffee</div>
           <div style={{ ...track, fontSize: 11, marginTop: 8, color: "#D93D18" }}>{b.name}</div>
         </div>
-        <Image src="/brand/blended-mark.png" alt="" width={56} height={56} style={{ width: "clamp(40px,4.6vw,56px)", height: "auto", mixBlendMode: "multiply" }} />
+        <span className="ot-logo" aria-hidden="true" style={{ width: "clamp(40px,4.6vw,56px)", flexShrink: 0, color: "#1A1A18" }} />
       </div>
       <div className="ic-body" style={{ display: "grid", gridTemplateColumns: "minmax(0,3fr) minmax(0,2fr)", gap: "clamp(16px,3vw,32px)", alignItems: "center" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>

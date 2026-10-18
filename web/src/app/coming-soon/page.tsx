@@ -11,7 +11,7 @@ import "./coming-soon.css";
 // While SITE_PASSWORD is set, proxy.ts answers every page with this one (see lib/site-gate.ts).
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: { absolute: "Blended · Soon" },
+  title: { absolute: "One Two Coffee · Soon" },
   description: "We've been working on something. Leave your email and you'll hear first.",
 };
 
