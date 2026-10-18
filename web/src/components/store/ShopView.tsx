@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { IntroBlend } from "@/lib/landing";
 import { LabIntro } from "@/components/landing/LabIntro";
-import { bagModelSettled, loadBagModel } from "./box3d";
+import { bagModelSettled, loadBagModel, markFor } from "./box3d";
 import { useRouter } from "next/navigation";
 import type { GreenLot, SelItem, ShopSizeId } from "@/lib/domain/types";
 import {
@@ -119,7 +119,7 @@ export function ShopView({ intro = [] }: { intro?: IntroBlend[] }) {
         covers the page until the bag model is ready. Arriving from the landing page's intro, it
         already is, so this never shows. */}
     {loading && intro.length > 0 && <LabIntro blends={intro} minMs={1400} ready={modelReady} onDone={() => setLoading(false)} />}
-    <BoxHero cta={{ label: "Build your coffee blend", onClick: scrollToStart }} />
+    <BoxHero cta={{ label: "Build your coffee blend", onClick: scrollToStart }} mark={markFor(sel.length)} />
     <div className="pv-page" style={{ maxWidth: "var(--content-max)", margin: "0 auto", padding: "24px 24px 96px", display: "flex", flexDirection: "column", gap: 40 }}>
       <div ref={startRef} id="build" style={{ display: "flex", flexDirection: "column", gap: 40, scrollMarginTop: "calc(var(--topbar-h) + 16px)" }}>
         {/* Steps 1–2 beside the cup, which follows along as coffees and ratios change. */}

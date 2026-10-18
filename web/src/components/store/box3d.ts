@@ -15,7 +15,8 @@ export const BOX_W = 1.2, BOX_H = 1.9, BOX_D = .56;
 export type BagCard = LabelData;
 
 /** The word set vertically on the bag's front: BLENDED for a blend of coffees, ORIGIN for a single one. */
-export const bagMark = (d: BagCard) => (d.parts.length === 1 ? "ORIGIN" : "BLENDED");
+export const markFor = (coffees: number) => (coffees === 1 ? "ORIGIN" : "BLENDED");
+const bagMark = (d: BagCard) => markFor(d.parts.length);
 
 export const BAG_CARD_DEFAULT: BagCard = {
   name: "Custom blend", site: LABEL_SITE, roast: 3, size: "1 lb", grind: "Whole bean",
@@ -184,7 +185,11 @@ export interface BoxScene {
   rig: THREE_NS.Group;
   host: HTMLElement;
 }
-export interface BoxHandle { dispose: () => void; setCard: (card: BagCard) => void }
+export interface BoxHandle {
+  dispose: () => void; setCard: (card: BagCard) => void;
+  /** Pin the front's mark (BLENDED / ORIGIN) instead of taking it from the card. */
+  setMark: (mark: string) => void;
+}
 
 /**
  * Mount a turnable bag into `host`. Drag to turn (with inertia); when left
@@ -193,7 +198,7 @@ export interface BoxHandle { dispose: () => void; setCard: (card: BagCard) => vo
  */
 export async function mountBox(host: HTMLElement, opts: {
   cam: [number, number, number]; look: [number, number, number]; baseRot: number;
-  card?: BagCard; layout?: (s: BoxScene) => void; onReady?: () => void;
+  card?: BagCard; mark?: string; layout?: (s: BoxScene) => void; onReady?: () => void;
 }): Promise<BoxHandle> {
   const THREE = await import("three");
   let dead = false, raf = 0, visible = true;
@@ -233,7 +238,7 @@ export async function mountBox(host: HTMLElement, opts: {
   // the bag: the Meshy model when it's there (paper finish, sticker and card wrapped onto its
   // front), else the drawn pouch
   const [{ logo }, model] = await Promise.all([assets(), loadBagModel()]);
-  if (dead) return { dispose: () => {}, setCard: () => {} };
+  if (dead) return { dispose: () => {}, setCard: () => {}, setMark: () => {} };
   const cardMat = own(new THREE.MeshPhysicalMaterial({ color: BOX_PAPER, roughness: .75, clearcoat: 0 }));
   const catcher = new THREE.Mesh(own(new THREE.PlaneGeometry(10, 10)), own(new THREE.ShadowMaterial({ opacity: .28 })));
   catcher.rotation.x = -Math.PI / 2; catcher.position.y = .001; catcher.receiveShadow = true;
@@ -250,7 +255,7 @@ export async function mountBox(host: HTMLElement, opts: {
   };
   let cg: THREE_NS.BufferGeometry;
   // the front's mark follows the card: BLENDED or ORIGIN, repainted when that changes
-  let mark = bagMark(opts.card ?? BAG_CARD_DEFAULT), markMat: THREE_NS.MeshPhysicalMaterial, paintMark: (m: string) => HTMLCanvasElement;
+  let pinned = opts.mark != null, mark = opts.mark ?? bagMark(opts.card ?? BAG_CARD_DEFAULT), markMat: THREE_NS.MeshPhysicalMaterial, paintMark: (m: string) => HTMLCanvasElement;
   if (model) {
     const bag = model.clone(true);
     const paper = own(new THREE.MeshPhysicalMaterial({ color: 0xC9C1B5, roughness: .9, metalness: 0, sheen: .25, sheenRoughness: .8, sheenColor: new THREE.Color(0xffffff), side: THREE.DoubleSide }));
@@ -291,9 +296,10 @@ export async function mountBox(host: HTMLElement, opts: {
   rig.add(cardFront, cardBack);
 
   let cardTex: THREE_NS.CanvasTexture | null = null, cardSeq = 0;
+  const setMark = (m: string) => { if (dead || m === mark) return; mark = m; markMat.map?.dispose(); markMat.map = tex(paintMark(m)); markMat.needsUpdate = true; };
   const setCard = (d: BagCard) => {
-    const seq = ++cardSeq, m = bagMark(d);
-    if (m !== mark) { mark = m; markMat.map?.dispose(); markMat.map = tex(paintMark(m)); markMat.needsUpdate = true; }
+    const seq = ++cardSeq;
+    if (!pinned) setMark(bagMark(d));
     return paintCard(d).then((c) => {
       if (dead || seq !== cardSeq) return;
       const t = new THREE.CanvasTexture(c); t.anisotropy = 8; t.colorSpace = THREE.SRGBColorSpace;
@@ -332,6 +338,7 @@ export async function mountBox(host: HTMLElement, opts: {
 
   return {
     setCard: (d) => { void setCard(d); },
+    setMark: (m) => { pinned = true; setMark(m); },
     dispose: () => {
       dead = true; cancelAnimationFrame(raf); ro.disconnect(); io.disconnect();
       el.removeEventListener("pointerdown", down); el.removeEventListener("pointermove", move);
