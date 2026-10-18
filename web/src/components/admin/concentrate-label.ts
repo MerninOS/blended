@@ -5,7 +5,7 @@
 
 export const CC_W = 2400, CC_H = 1050;
 const PAPER = "#EFEBE3", INK = "#1A1A18", RED = "#D93D18", ORANGE = "#EE8A1E", MAGENTA = "#C43C7C";
-const SITE = "BLENDEDCOFFEELAB.COM";
+const SITE = "ONETWOCOFFEELAB.COM";
 
 export type CcShape = "circles" | "sq-o" | "sq-m" | "stack";
 export interface CcBase { id: string; name: string; prefix: string; caf: number }

@@ -5,7 +5,7 @@
 // panel, so the checkout preview shows the customer's own label on the bag.
 // Loaded lazily so three stays out of the main bundle.
 import type * as THREE_NS from "three";
-import { LABEL_H, LABEL_SITE, LABEL_W, drawLabel, resetMeasure, type LabelData } from "@/lib/bag-label";
+import { LABEL_H, LABEL_LOGO, LABEL_SITE, LABEL_W, drawLabel, resetMeasure, type LabelData } from "@/lib/bag-label";
 
 type Three = typeof THREE_NS;
 export const BOX_PAPER = "#F0EDE5", BOX_INK = "#1A1A18", BOX_RED = "#D93D18";
@@ -41,7 +41,7 @@ function assets() {
     const logo = cssFont("--nf-energy", '"Archivo", sans-serif');
     const mono = cssFont("--nf-martian", "monospace");
     try { await Promise.all([document.fonts.load(`800 100px ${logo}`), document.fonts.load(`500 30px ${mono}`), document.fonts.load(`600 13px ${mono}`)]); } catch { /* fall back */ }
-    return { logo, mono, mark: await loadImg("/brand/one-two-mark.png") };
+    return { logo, mono, mark: await loadImg(LABEL_LOGO) };
   })();
   return fontsReady;
 }
@@ -100,9 +100,9 @@ function filmCanvas(w: number, h: number, kind: "front" | "back" | "side", logo:
 
 /** The label on the bag, drawn at 2× (1950 × 900). */
 async function paintCard(d: BagCard) {
-  await assets(); resetMeasure();
+  const { mark } = await assets(); resetMeasure();
   const c = document.createElement("canvas"); c.width = LABEL_W * 2; c.height = LABEL_H * 2;
-  drawLabel(c.getContext("2d")!, d, 2);
+  drawLabel(c.getContext("2d")!, d, 2, mark);
   return c;
 }
 
