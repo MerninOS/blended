@@ -430,6 +430,7 @@ html, body { overflow-x: clip }
 .bh-pill.bh-logo { background: none; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none }
 .bh-head[data-tone="light"] .bh-logo { color: var(--ink) !important }
 .bh-logo .ot-logo { height: 36px }
+@media (min-width: 1025px) { .bh-pill.bh-logo { padding-left: 20px } }
 /* The One Two Coffee Bar logo, painted in currentColor through the logo's alpha. */
 .ot-logo { display: block; aspect-ratio: 1137 / 1069; background: currentColor; -webkit-mask: url(/brand/one-two-logo.png) center / contain no-repeat; mask: url(/brand/one-two-logo.png) center / contain no-repeat }
 .bh-act { gap: 0; padding: 3px }
