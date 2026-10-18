@@ -1,6 +1,6 @@
 "use client";
 // The One Two Coffee bag, drawn in the browser with three.js (BoxHero.jsx):
-// a matte white flat-bottom pouch with a vertical ONE TWO label panel and the
+// a matte white flat-bottom pouch with a vertical BLENDED (or ORIGIN, for one coffee) label panel and the
 // bag label (lib/bag-label.ts) slipped on at a slight tilt over the lower
 // panel, so the checkout preview shows the customer's own label on the bag.
 // Loaded lazily so three stays out of the main bundle.
@@ -9,12 +9,13 @@ import { LABEL_H, LABEL_SITE, LABEL_W, drawLabel, resetMeasure, type LabelData }
 
 type Three = typeof THREE_NS;
 export const BOX_PAPER = "#F0EDE5", BOX_INK = "#1A1A18", BOX_RED = "#D93D18";
-/** The wordmark set vertically on the bag's label panel and front sticker. */
-const BAG_MARK = "ONE TWO";
 export const BOX_W = 1.2, BOX_H = 1.9, BOX_D = .56;
 
 /** What the card on the front of the bag shows: the bag label. */
 export type BagCard = LabelData;
+
+/** The word set vertically on the bag's front: BLENDED for a blend of coffees, ORIGIN for a single one. */
+export const bagMark = (d: BagCard) => (d.parts.length === 1 ? "ORIGIN" : "BLENDED");
 
 export const BAG_CARD_DEFAULT: BagCard = {
   name: "Custom blend", site: LABEL_SITE, roast: 3, size: "1 lb", grind: "Whole bean",
@@ -59,8 +60,8 @@ function bagDeform(geo: THREE_NS.BufferGeometry) {
   geo.computeVertexNormals(); return geo;
 }
 
-/** Matte white film: crimped top seal and fold crease; the front adds the degassing valve and the ONE TWO label panel. */
-function drawFilm(g: CanvasRenderingContext2D, w: number, h: number, kind: "front" | "back" | "side", logo: string) {
+/** Matte white film: crimped top seal and fold crease; the front adds the degassing valve and the label panel with `mark`. */
+function drawFilm(g: CanvasRenderingContext2D, w: number, h: number, kind: "front" | "back" | "side", logo: string, mark: string) {
   g.clearRect(0, 0, w, h);
   g.fillStyle = kind === "side" ? "#DEDDDA" : "#E7E6E3"; g.fillRect(0, 0, w, h);
   // soft film mottling
@@ -81,19 +82,19 @@ function drawFilm(g: CanvasRenderingContext2D, w: number, h: number, kind: "fron
     g.fillStyle = "rgba(0,0,0,.05)"; g.fillRect(lx + 2, ly + 3, lw, lh);
     g.fillStyle = "#EFEEEB"; g.fillRect(lx, ly, lw, lh);
     g.strokeStyle = "rgba(26,26,24,.07)"; g.lineWidth = 2; g.strokeRect(lx, ly, lw, lh);
-    // ONE TWO, set vertically reading bottom → top
+    // the mark, set vertically reading bottom → top
     g.save(); g.translate(w * .5, ly + lh * .52); g.rotate(-Math.PI / 2);
     if ("letterSpacing" in g) (g as unknown as { letterSpacing: string }).letterSpacing = "0px";
-    g.font = `800 300px ${logo}`; const fs = 300 * (lh * .9) / g.measureText(BAG_MARK).width;
-    text(g, BAG_MARK, 0, 0, `800 ${fs}px ${logo}`, BOX_INK); g.restore();
+    g.font = `800 300px ${logo}`; const fs = 300 * (lh * .9) / g.measureText(mark).width;
+    text(g, mark, 0, 0, `800 ${fs}px ${logo}`, BOX_INK); g.restore();
   }
   const eg = g.createLinearGradient(0, 0, w, 0), ew = Math.min(.08, 30 / w);
   eg.addColorStop(0, "rgba(250,250,248,.7)"); eg.addColorStop(ew, "rgba(250,250,248,0)"); eg.addColorStop(1 - ew, "rgba(250,250,248,0)"); eg.addColorStop(1, "rgba(250,250,248,.7)");
   g.fillStyle = eg; g.fillRect(0, 0, w, h);
 }
-function filmCanvas(w: number, h: number, kind: "front" | "back" | "side", logo: string) {
+function filmCanvas(w: number, h: number, kind: "front" | "back" | "side", logo: string, mark: string) {
   const c = document.createElement("canvas"); c.width = w; c.height = h;
-  drawFilm(c.getContext("2d")!, w, h, kind, logo); return c;
+  drawFilm(c.getContext("2d")!, w, h, kind, logo, mark); return c;
 }
 
 /** The label on the bag, drawn at 2× (1950 × 900). */
@@ -166,14 +167,14 @@ function frontSurface(model: THREE_NS.Object3D, bb: THREE_NS.Box3) {
   };
 }
 
-/** The vertical ONE TWO sticker on the model's front panel. */
-function stickerCanvas(aspect: number, logo: string) {
+/** The vertical sticker with `mark` on the model's front panel. */
+function stickerCanvas(aspect: number, logo: string, mark: string) {
   const w = 512, h = Math.round(w * aspect), c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d")!;
   g.fillStyle = "#DED9D1"; g.fillRect(0, 0, w, h);
   g.save(); g.translate(w / 2, h * .52); g.rotate(-Math.PI / 2);
   const f = (px: number) => `800 ${px}px ${logo}`; g.font = f(300);
-  g.font = f(300 * (h * .9) / g.measureText(BAG_MARK).width);
-  g.fillStyle = BOX_INK; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(BAG_MARK, 0, 0); g.restore();
+  g.font = f(300 * (h * .9) / g.measureText(mark).width);
+  g.fillStyle = BOX_INK; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(mark, 0, 0); g.restore();
   return c;
 }
 
@@ -248,6 +249,8 @@ export async function mountBox(host: HTMLElement, opts: {
     cg.computeVertexNormals(); return cg;
   };
   let cg: THREE_NS.BufferGeometry;
+  // the front's mark follows the card: BLENDED or ORIGIN, repainted when that changes
+  let mark = bagMark(opts.card ?? BAG_CARD_DEFAULT), markMat: THREE_NS.MeshPhysicalMaterial, paintMark: (m: string) => HTMLCanvasElement;
   if (model) {
     const bag = model.clone(true);
     const paper = own(new THREE.MeshPhysicalMaterial({ color: 0xC9C1B5, roughness: .9, metalness: 0, sheen: .25, sheenRoughness: .8, sheenColor: new THREE.Color(0xffffff), side: THREE.DoubleSide }));
@@ -261,20 +264,24 @@ export async function mountBox(host: HTMLElement, opts: {
     bag.position.x -= c.x; bag.position.z -= c.z; bag.position.y -= bb.min.y; bag.updateMatrixWorld(true);
     bb = new THREE.Box3().setFromObject(bag); sz = bb.getSize(new THREE.Vector3());
     const front = frontSurface(bag, bb);
-    // vertical ONE TWO sticker beneath the card
+    // vertical BLENDED / ORIGIN sticker beneath the card
     const sw = sz.x * .5, sh = BOX_H * .64, scy = BOX_H * .45;
     const sgeo = own(new THREE.PlaneGeometry(sw, sh, 16, 32)), sp = sgeo.attributes.position;
     for (let i = 0; i < sp.count; i++) { const x = sp.getX(i), y = sp.getY(i) + scy; sp.setXYZ(i, x, y, front(x, y) + .004); }
     sgeo.computeVertexNormals();
-    const sticker = new THREE.Mesh(sgeo, own(new THREE.MeshPhysicalMaterial({ map: tex(stickerCanvas(sh / sw, logo)), roughness: .85, metalness: 0, polygonOffset: true, polygonOffsetFactor: -1 })));
+    paintMark = (m) => stickerCanvas(sh / sw, logo, m);
+    markMat = own(new THREE.MeshPhysicalMaterial({ map: tex(paintMark(mark)), roughness: .85, metalness: 0, polygonOffset: true, polygonOffsetFactor: -1 }));
+    const sticker = new THREE.Mesh(sgeo, markMat);
     sticker.receiveShadow = true;
     cg = cardGeo(sz.x * .62, sz.x * .05, BOX_H * .38, (x, y) => front(x, y) + .014);
     rig.add(bag, sticker);
   } else {
     const shellGeo = own(bagDeform(new THREE.BoxGeometry(BOX_W, BOX_H, BOX_D, 24, 48, 12).translate(0, BOX_H / 2, 0)));
     const film = (c: HTMLCanvasElement) => own(new THREE.MeshPhysicalMaterial({ map: tex(c), color: 0xffffff, metalness: 0, clearcoat: 0, roughness: .95, sheen: .15, sheenRoughness: .9, sheenColor: new THREE.Color(0xffffff) }));
-    const side = film(filmCanvas(480, 1620, "side", logo)), plain = film(filmCanvas(256, 256, "back", logo));
-    const outer = new THREE.Mesh(shellGeo, [side, side, plain, plain, film(filmCanvas(1024, 1620, "front", logo)), film(filmCanvas(1024, 1620, "back", logo))]);
+    const side = film(filmCanvas(480, 1620, "side", logo, mark)), plain = film(filmCanvas(256, 256, "back", logo, mark));
+    paintMark = (m) => filmCanvas(1024, 1620, "front", logo, m);
+    markMat = film(paintMark(mark));
+    const outer = new THREE.Mesh(shellGeo, [side, side, plain, plain, markMat, film(filmCanvas(1024, 1620, "back", logo, mark))]);
     outer.castShadow = true; outer.receiveShadow = true;
     cg = cardGeo(BOX_W * .72, BOX_W * .07, BOX_H * .38, (x, y) => bagSurfZ(x, y / BOX_H) + .008);
     rig.add(outer);
@@ -285,7 +292,8 @@ export async function mountBox(host: HTMLElement, opts: {
 
   let cardTex: THREE_NS.CanvasTexture | null = null, cardSeq = 0;
   const setCard = (d: BagCard) => {
-    const seq = ++cardSeq;
+    const seq = ++cardSeq, m = bagMark(d);
+    if (m !== mark) { mark = m; markMat.map?.dispose(); markMat.map = tex(paintMark(m)); markMat.needsUpdate = true; }
     return paintCard(d).then((c) => {
       if (dead || seq !== cardSeq) return;
       const t = new THREE.CanvasTexture(c); t.anisotropy = 8; t.colorSpace = THREE.SRGBColorSpace;
