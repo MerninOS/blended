@@ -1,14 +1,15 @@
 "use client";
 // Coffee Lab hero: the turnable One Two Coffee bag on the tan stage, fitted between
-// the title and the call to action (BoxHero.jsx). Its front reads `mark`: ORIGIN while the
-// blend being built has one coffee, BLENDED once it has more.
+// the title and the call to action (BoxHero.jsx). It wears the label of the blend being built
+// (reprinted, debounced, as the choices change), so its front reads ORIGIN for one coffee and
+// BLENDED for more.
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { disp, over } from "@/components/ui/primitives";
-import { BOX_D, BOX_H, BOX_W, mountBox, type BoxHandle } from "./box3d";
+import { BOX_D, BOX_H, BOX_W, mountBox, type BagCard, type BoxHandle } from "./box3d";
 
-export function BoxHero({ cta, mark }: { cta: { label: string; onClick: () => void }; mark: string }) {
-  const handle = useRef<BoxHandle | null>(null), firstMark = useRef(mark);
+export function BoxHero({ cta, card }: { cta: { label: string; onClick: () => void }; card?: BagCard }) {
+  const handle = useRef<BoxHandle | null>(null), first = useRef(card);
   const canvasHost = useRef<HTMLDivElement>(null), titleRef = useRef<HTMLDivElement>(null), cueRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
 
@@ -16,7 +17,7 @@ export function BoxHero({ cta, mark }: { cta: { label: string; onClick: () => vo
     const host = canvasHost.current; if (!host) return;
     let cleanup: (() => void) | null = null, cancelled = false;
     void mountBox(host, {
-      cam: [0, .5, 8], look: [0, 0, 0], baseRot: -.45, mark: firstMark.current,
+      cam: [0, .5, 8], look: [0, 0, 0], baseRot: -.45, card: first.current,
       onReady: () => setReady(true),
       // fit the bag into the gap between the title and the button
       layout: ({ three, camera, rig }) => {
@@ -29,10 +30,15 @@ export function BoxHero({ cta, mark }: { cta: { label: string; onClick: () => vo
         rig.scale.setScalar(sc);
         rig.position.y = (vh / 2 - (top + bot) / 2) * wpp - sc * BOX_H / 2;
       },
-    }).then((h) => { if (cancelled) h.dispose(); else { cleanup = h.dispose; handle.current = h; h.setMark(firstMark.current); } });
+    }).then((h) => { if (cancelled) h.dispose(); else { cleanup = h.dispose; handle.current = h; } });
     return () => { cancelled = true; handle.current = null; cleanup?.(); };
   }, []);
-  useEffect(() => { firstMark.current = mark; handle.current?.setMark(mark); }, [mark]);
+  const key = JSON.stringify(card ?? null);
+  useEffect(() => {
+    if (!card) return;
+    const t = setTimeout(() => handle.current?.setCard(card), 200);
+    return () => clearTimeout(t);
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps -- keyed on the card's content
 
   return (
     <section className="bx-hero" aria-label="Coffee Lab" style={{ position: "relative", background: "var(--bag-stage)" }}>
