@@ -107,7 +107,9 @@ async function paintCard(d: BagCard) {
 }
 
 // ---- the Meshy bag model (BoxHero.jsx bagLoadModel), with the drawn bag as the fallback ----
-export const BAG_MODEL_URL = "/models/coffee-bag.fbx";
+// A meshopt-compressed GLB holding only the bag's shape (scripts/bag-model.mjs builds it from
+// Meshy's FBX export): ~240 KB against the FBX's 2.8 MB, and it parses in a fraction of the time.
+export const BAG_MODEL_URL = "/models/coffee-bag.glb";
 let bagModel: Promise<THREE_NS.Group | null> | null = null, bagSettled = false;
 /**
  * Load (download + parse) the bag model once per page session; null when it's missing or
@@ -117,10 +119,11 @@ let bagModel: Promise<THREE_NS.Group | null> | null = null, bagSettled = false;
 export function loadBagModel(): Promise<THREE_NS.Group | null> {
   bagModel ??= (async () => {
     try {
-      const head = await fetch(BAG_MODEL_URL, { method: "HEAD" });
-      if (!head.ok) return null;
-      const { FBXLoader } = await import("three/examples/jsm/loaders/FBXLoader.js");
-      return await new FBXLoader().loadAsync(BAG_MODEL_URL);
+      const [{ GLTFLoader }, { MeshoptDecoder }] = await Promise.all([
+        import("three/examples/jsm/loaders/GLTFLoader.js"),
+        import("three/examples/jsm/libs/meshopt_decoder.module.js"),
+      ]);
+      return (await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(BAG_MODEL_URL)).scene;
     } catch (e) { console.warn("[bag] model unavailable, drawing the bag instead", e); return null; }
   })().finally(() => { bagSettled = true; });
   return bagModel;
@@ -254,7 +257,8 @@ export async function mountBox(host: HTMLElement, opts: {
   let mark = bagMark(opts.card ?? BAG_CARD_DEFAULT), markMat: THREE_NS.MeshPhysicalMaterial, paintMark: (m: string) => HTMLCanvasElement;
   if (model) {
     const bag = model.clone(true);
-    const paper = own(new THREE.MeshPhysicalMaterial({ color: 0xC9C1B5, roughness: .9, metalness: 0, sheen: .25, sheenRoughness: .8, sheenColor: new THREE.Color(0xffffff), side: THREE.DoubleSide }));
+    // the GLB carries no normals: flat shading faces it exactly as the FBX's per-face normals did
+    const paper = own(new THREE.MeshPhysicalMaterial({ color: 0xC9C1B5, roughness: .9, metalness: 0, sheen: .25, sheenRoughness: .8, sheenColor: new THREE.Color(0xffffff), side: THREE.DoubleSide, flatShading: true }));
     bag.traverse((o) => { const m = o as THREE_NS.Mesh; if (m.isMesh) { m.material = paper; m.castShadow = m.receiveShadow = true; } });
     // normalise: front facing +z, BOX_H tall, centred, standing on y = 0 (measured unparented)
     bag.updateMatrixWorld(true);

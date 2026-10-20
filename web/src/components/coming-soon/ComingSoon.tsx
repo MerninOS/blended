@@ -1,6 +1,7 @@
 "use client";
 // Coming soon (design: Coming Soon.html): email → optional SMS signup into the Klaviyo lists, and an
 // "Enter with password" panel that unlocks the rest of the site (see lib/site-gate.ts).
+import Image, { getImageProps } from "next/image";
 import { useRef, useState, type FormEvent } from "react";
 
 type Step = "email" | "phone" | "done" | "password";
@@ -81,10 +82,11 @@ export function ComingSoon({ image, video, gated }: { image: string; video: stri
 
   return (
     <div className="cs" data-screen-label="Coming soon">
+      {/* The backdrop goes through the image optimizer (the source is a full-size PNG); the
+          poster is the 1920px-wide rendition (2× of 960). */}
       {video
-        ? <video className="cs-fill" src={video} poster={image} autoPlay muted loop playsInline aria-hidden="true" />
-        // eslint-disable-next-line @next/next/no-img-element -- full-bleed backdrop
-        : <img className="cs-fill" src={image} alt="" />}
+        ? <video className="cs-fill" src={video} poster={getImageProps({ src: image, alt: "", width: 960, height: 540 }).props.src} autoPlay muted loop playsInline aria-hidden="true" />
+        : <Image className="cs-fill" src={image} alt="" fill priority sizes="100vw" />}
       <div className="cs-shade" />
       <header className="bh-head" data-overlay="">
         <div className="bh-in">

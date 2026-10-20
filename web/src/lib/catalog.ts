@@ -26,7 +26,7 @@ const LEGACY_GREEN = gql`
       nodes {
         id
         handle
-        fields { key value reference { ... on MediaImage { image { url(transform: { maxWidth: 480 }) } } } }
+        fields { key value reference { ... on MediaImage { image { url(transform: { maxWidth: 480, preferredContentType: WEBP }) } } } }
       }
     }
   }

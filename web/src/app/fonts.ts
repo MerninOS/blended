@@ -17,17 +17,19 @@ export const instrument = Instrument_Sans({
   display: "swap",
 });
 
-// Fallback for the logo face.
+// Fallback for the logo face, only fetched for a character Energy lacks: not preloaded.
 export const archivo = Archivo({
   subsets: ["latin"],
   weight: ["500", "600", "700", "800"],
   variable: "--nf-archivo",
   display: "swap",
+  preload: false,
 });
 
-// BLENDED logo + header face, from the packaging artwork.
+// BLENDED logo + header face, from the packaging artwork. Subset to Latin and
+// compressed to WOFF2 (252 KB TTF → 30 KB); the original TTF is in git history.
 export const energy = localFont({
-  src: "./fonts/EnergyGrotesk-UltraBold.ttf",
+  src: "./fonts/EnergyGrotesk-UltraBold.woff2",
   weight: "800",
   style: "normal",
   variable: "--nf-energy",
