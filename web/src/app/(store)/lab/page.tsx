@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { preload } from "react-dom";
 import { getCatalog } from "@/lib/catalog";
 import { CatalogProvider } from "@/components/store/catalog-context";
 import { ShopView } from "@/components/store/ShopView";
@@ -14,6 +15,9 @@ export const metadata: Metadata = {
 };
 
 export default async function LabPage() {
+  // Start the 3D bag (box3d.ts BAG_MODEL_URL) downloading with the page's HTML rather than
+  // after the scripts boot.
+  preload("/models/coffee-bag.glb", { as: "fetch", crossOrigin: "anonymous" });
   const [all, settings] = await Promise.all([getCatalog(), getSettings()]);
   // SMS exclusives switched off: those lots aren't offered at all (checkout refuses them too)
   const catalog = settings.smsExclusives ? all : { ...all, green: all.green.filter((l) => !isExclusive(l)) };

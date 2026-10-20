@@ -113,7 +113,7 @@ export type GreenNode = {
 export const GREEN_NODE = gql`
   fragment GreenNode on Product {
     id handle title status
-    media(first: 1) { nodes { id ... on MediaImage { image { url(transform: { maxWidth: 480 }) } } } }
+    media(first: 1) { nodes { id ... on MediaImage { image { url(transform: { maxWidth: 480, preferredContentType: WEBP }) } } } }
     variants(first: 1) { nodes { id inventoryQuantity inventoryItem { id } } }
     origin: metafield(namespace: "blended", key: "origin") { value }
     lot_code: metafield(namespace: "blended", key: "lot_code") { value }
