@@ -449,7 +449,7 @@ html, body { overflow-x: clip }
 .bh-head[data-open="true"] .bh-lines i:nth-child(2) { transform: rotate(-45deg) }
 .bh-scrim { position: fixed; inset: 0; background: rgba(36, 24, 18, .32); opacity: 0; pointer-events: none; transition: opacity 200ms var(--ease); z-index: -1 }
 .bh-head[data-open="true"] .bh-scrim { opacity: 1; pointer-events: auto }
-.bh-menu { position: absolute; top: calc(var(--bh-h) - 4px); right: max(clamp(12px, 3vw, 40px), calc((100vw - 1400px) / 2 + clamp(12px, 3vw, 40px))); width: min(440px, calc(100vw - 24px)); max-height: calc(100vh - var(--bh-h) - 12px); overflow: auto; overscroll-behavior: contain; background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-modal); padding: 20px; display: flex; flex-direction: column; gap: 16px; pointer-events: none; opacity: 0; transform: translateY(-6px); transition: opacity 180ms var(--ease), transform 180ms var(--ease), visibility 0s 180ms; visibility: hidden }
+.bh-menu { position: absolute; top: calc(var(--bh-h) - 4px); right: max(clamp(12px, 3vw, 40px), calc((100vw - 1400px) / 2 + clamp(12px, 3vw, 40px))); width: min(440px, calc(100vw - 24px)); max-height: calc(100vh - var(--bh-h) - 12px); max-height: calc(100dvh - var(--bh-h) - 12px); overflow: auto; overscroll-behavior: contain; background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-modal); padding: 20px; display: flex; flex-direction: column; gap: 16px; pointer-events: none; opacity: 0; transform: translateY(-6px); transition: opacity 180ms var(--ease), transform 180ms var(--ease), visibility 0s 180ms; visibility: hidden }
 .bh-head[data-open="true"] .bh-menu { pointer-events: auto; opacity: 1; transform: none; visibility: visible; transition: opacity 180ms var(--ease), transform 180ms var(--ease) }
 .bh-over { font-family: var(--font-mono); font-weight: 600; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-muted) }
 .bh-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px }
@@ -475,7 +475,8 @@ html, body { overflow-x: clip }
   .bh-logo .ot-logo { height: 34px }
   .bh-cta { height: 34px; padding: 0 13px; font-size: 12.5px }
   .bh-ic { width: 34px; height: 34px }
-  .bh-menu { left: 12px; right: 12px; width: auto; padding: 16px }
+  /* Room under the last link so it clears the browser's bottom toolbar and the home indicator. */
+  .bh-menu { left: 12px; right: 12px; width: auto; padding: 16px 16px calc(32px + env(safe-area-inset-bottom)) }
 }
 @media (max-width: 360px) { .bh-cta { display: none } }
 @media (prefers-reduced-motion: reduce) { .bh-head, .bh-menu, .bh-scrim, .bh-lines i { transition: none } }
