@@ -19,7 +19,7 @@ export const DEFAULT_STORY_COPY = {
   },
   story: {
     eyebrow: "Our story",
-    headline: "Mernin’\n*2024–25*",
+    headline: "Mernin’\n*2024–26*",
     caption: "Mernin' · March 2024",
     // The two photos sit between these paragraphs and the next ones.
     before: [
@@ -28,7 +28,7 @@ export const DEFAULT_STORY_COPY = {
     ],
     after: [
       "Over time, though, I lost sight of what I was building. There were stretches where I went months without a coffee sale, and times I didn't have any green coffee on hand because I was focused on the next video. I honestly couldn't have told you whether I was running a coffee company, an Instagram page, or trying to be an influencer. I was chasing the next viral post instead of building a business that would last.",
-      "It also bothered me that the videos were made to hold people's attention on their phones. Coffee had always been the opposite of that for me, a reason to slow down for a few minutes or sit across from someone. In May 2025 I shut the Mernin' site down.",
+      "It also bothered me that the videos were made to hold people's attention on their phones. Coffee had always been the opposite of that for me, a reason to slow down for a few minutes or sit across from someone. In May 2026 I shut the Mernin' site down.",
       "I still love coffee, and I still love the people I met because of it. One Two is my second attempt, built around what I learned the first time.",
     ],
   },
