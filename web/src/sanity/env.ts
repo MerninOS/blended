@@ -7,5 +7,7 @@ export const apiVersion = "2025-02-19";
 export const LANDING_ID = "landingPage";
 /** The one farms page document (words and photos around the farms on /farms). */
 export const FARMS_PAGE_ID = "farmsPage";
+/** The one Our story page document (every word and photo on /our-story). */
+export const STORY_PAGE_ID = "storyPage";
 /** The one site settings document (titles, description, share image). */
 export const SITE_ID = "siteSettings";
