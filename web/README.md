@@ -9,6 +9,7 @@ fulfillment and inventory.
 | `/` | **Landing** (Blended Landing v2): video hero, the Coffee Lab, the farms, cherry to cup, house blend, lineup. "Build your blend" deals a deck of sample blend cards, then opens the lab |
 | `/lab` | **Retail / Coffee Lab**: 3D bag hero, "Our coffees" or "Build your own blend", cart drawer, Shopify checkout. `#build`, `#coffees`, `?blend=lotA:70,lotB:30` deep links |
 | `/farms` | **Our Farms**: the producers behind the green lots in stock, grouped by country, with their processes. Edited in Sanity (/studio → Farms, Farms page) |
+| `/our-story` | **Our story** (One Two Our Story.html): from Mernin' to One Two, what the 1:2 means, and the Austin pop-ups. Every word and photo is edited in Sanity (/studio → Our story page) |
 | `/wholesale` | **Private label** for signed-in wholesale accounts: stocked coffee or custom blend, packaging, run size, card checkout |
 | `/admin/orders` | Orders board: to fulfil / roast list / all orders, order drawer with gram-level roast sheet, stage → fulfillment |
 | `/admin/green` | Green catalog: the lots customers can blend (photo, cupping scores, prices, stock, min grams, roast) |

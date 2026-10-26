@@ -2,7 +2,7 @@
 // The storefront header (design: shop/site-header.js): the One Two logo on the left and a
 // frosted action pill on the right (Build a blend, cart, menu). The menu is a hamburger at every
 // width and opens a panel of shop cards, the SMS-exclusives promo and a few links.
-// `overlay` lays it over the page's first section (the landing video, the Lab's bag stage, the farms hero).
+// `overlay` lays it over the page's first section (the landing video, the Lab's bag stage, the farms and story heroes).
 // Phones and tablets: it slides away while scrolling down and returns on the way up; on the Lab it
 // stays away the whole time the cup is pinned at the top. <html data-head-hidden> lets things
 // pinned under it (the Lab's cup, the shop toolbar) follow it up.
@@ -13,7 +13,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { cartStore, useCart } from "./cart-store";
 
-export type HeaderSection = "lab" | "coffees" | "merch" | "gear" | "wholesale" | "farmers" | null;
+export type HeaderSection = "lab" | "coffees" | "merch" | "gear" | "wholesale" | "farmers" | "story" | null;
 
 const CDN = "https://cdn.shopify.com/s/files/1/0880/3935/8739/files/";
 const CARDS: { k: HeaderSection; href: string; t: string; d: string; img: string }[] = [
@@ -25,6 +25,7 @@ const CARDS: { k: HeaderSection; href: string; t: string; d: string; img: string
 const ROWS: { k: HeaderSection; href: string; t: string }[] = [
   { k: "wholesale", href: "/wholesale", t: "Wholesale & private label" },
   { k: "farmers", href: "/farms", t: "Our farmers" },
+  { k: "story", href: "/our-story", t: "Our story" },
 ];
 
 const Bag = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 8h12l-1 12H7L6 8z" /><path d="M9 8V6a3 3 0 0 1 6 0v2" /></svg>;

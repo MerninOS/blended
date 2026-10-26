@@ -3,7 +3,7 @@ import "server-only";
 // failure (no document yet, network, a private dataset) falls back to the
 // defaults in code, so Sanity being down never takes a page with it.
 import { createClient } from "next-sanity";
-import { apiVersion, dataset, projectId, FARMS_PAGE_ID, LANDING_ID, SITE_ID } from "@/sanity/env";
+import { apiVersion, dataset, projectId, FARMS_PAGE_ID, LANDING_ID, SITE_ID, STORY_PAGE_ID } from "@/sanity/env";
 import { DEFAULT_SITE, type SiteSettings } from "@/lib/site-settings";
 import { mergeCopy } from "@/lib/landing-copy";
 
@@ -49,6 +49,26 @@ export async function getFarmsCms(): Promise<{ page: Record<string, unknown> | n
     return await client.fetch(FARMS_QUERY, { id: FARMS_PAGE_ID }, { next: { revalidate: 60, tags: [SANITY_TAG] } });
   } catch (e) {
     console.error("[sanity] farms:", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+const STORY_QUERY = `*[_id == $id][0]{
+  ...,
+  hero{ ..., image${IMG} },
+  story{ ..., image${IMG}, pairLeft${IMG}, pairRight${IMG} },
+  band{ ..., image${IMG} },
+  meaning{ ..., tableImage${IMG} },
+  different{ ..., image${IMG} },
+  closing{ ..., image${IMG} }
+}`;
+
+/** The Our story page document (null when there is none yet or Sanity can't be reached). */
+export async function getStoryCms(): Promise<Record<string, unknown> | null> {
+  try {
+    return await client.fetch(STORY_QUERY, { id: STORY_PAGE_ID }, { next: { revalidate: 60, tags: [SANITY_TAG] } });
+  } catch (e) {
+    console.error("[sanity] story page:", e instanceof Error ? e.message : e);
     return null;
   }
 }

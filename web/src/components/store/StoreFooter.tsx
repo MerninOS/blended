@@ -24,6 +24,7 @@ export function StoreFooter({ policies, newsletter }: { policies: ShopPolicy[]; 
           <Link href="/lab#build" style={link}>Build a blend</Link>
           <Link href="/collections/merch-and-gear" style={link}>Merch &amp; gear</Link>
           <Link href="/farms" style={link}>Our farms</Link>
+          <Link href="/our-story" style={link}>Our story</Link>
           <Link href="/wholesale" style={link}>Wholesale & private label</Link>
         </nav>
         <nav aria-label="Policies" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
