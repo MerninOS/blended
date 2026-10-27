@@ -43,6 +43,8 @@ Admin edits are kept in memory and checkout says it's in demo. Admin is open loc
    **Register webhooks**. You can also run it locally: `npm run setup:shopify` (add `-- --seed` for
    the samples, `-- --webhooks` for webhooks to `APP_URL`).
 4. Tag wholesale customers `wholesale`.
+   New green coffees can also come from a lot file: `npm run add:green -- scripts/green/<lot>.json`
+   (`--dry-run` prints the product without sending it). It reads `.env.local` if present, else the environment.
 5. Deploy (e.g. Vercel, project root `web/`) with the same env vars, plus `SESSION_SECRET` and `ADMIN_PASSWORD`.
 
 ## Coming soon mode

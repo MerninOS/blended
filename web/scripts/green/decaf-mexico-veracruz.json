@@ -1,0 +1,23 @@
+{
+  "id": "decaf-mexico-veracruz-green",
+  "name": "Decaf Mexico Veracruz",
+  "origin": "Mexico · Veracruz",
+  "lot": "GEN26MXDC",
+  "process": "Mountain Water decaf",
+  "roast": 3,
+  "price": 6.91,
+  "avail": 0,
+  "listed": false,
+  "tag": "Decaf",
+  "notes": { "cocoa": 7, "citrus": 6, "brownSugar": 5, "almond": 4, "floral": 3 },
+  "reviews": {
+    "count": 0,
+    "reviews": [],
+    "grader": {
+      "who": "Genuine Origin",
+      "role": "Importer cupping, May 2026",
+      "score": "84.25",
+      "note": "Cacao nibs, nougat, citrus, green apple, tea-like. Light body, medium acidity. Smallholder Tipica, Bourbon and Caturra from 1,200 m, washed and sun-dried, then decaffeinated with water only at Descamex."
+    }
+  }
+}
