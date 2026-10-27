@@ -6,8 +6,8 @@
   "process": "Mountain Water decaf",
   "roast": 3,
   "price": 6.91,
-  "avail": 0,
-  "listed": false,
+  "avail": 65,
+  "listed": true,
   "tag": "Decaf",
   "notes": { "cocoa": 7, "citrus": 6, "brownSugar": 5, "almond": 4, "floral": 3 },
   "reviews": {
