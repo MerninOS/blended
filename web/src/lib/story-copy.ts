@@ -23,8 +23,8 @@ export const DEFAULT_STORY_COPY = {
     caption: "Mernin' · March 2024",
     // The two photos sit between these paragraphs and the next ones.
     before: [
-      "One Two started with Mernin' Coffee. We launched Mernin' in March 2024 without any experience in the coffee industry. We didn't know how to source green coffee or what a good roast profile looked like, so we learned as we went and filmed most of it along the way.",
-      "Mernin' is where we fell in love with coffee. About 30,000 people followed along, and the coffees people liked most were the strange ones, like the co-ferments and the funkier lots we were nervous to put out. Two people told us they started their own coffee businesses after watching our videos about starting one as complete beginners. We're still proud of that.",
+      "One Two started with Mernin' Coffee, which we launched in March 2024 without any experience in the coffee industry. We didn't know how to source green coffee or what a good roast profile looked like, so we figured it out as we went and filmed most of it along the way.",
+      "Mernin' is where we fell in love with coffee, and it turned out a lot of people fell in love with us too. About 30,000 of them followed along, and the coffees they liked most were the strange ones, the co-ferments and funky lots we'd been nervous to put out. Two of them went on to start their own coffee businesses after watching our videos about starting one as complete beginners, and we're still proud of that.",
     ],
     after: [
       "Mernin' taught us most of what we know about coffee and a lot about the kind of company we want to run. In May 2026 we wrapped it up and started One Two to build on all of it, with our time going into the coffee itself: finding it, roasting it, and meeting the people who drink it.",
