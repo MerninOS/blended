@@ -1,6 +1,6 @@
-// The Our Story page (design: One Two Our Story.html): a full-screen photo hero, the Mernin' story
-// beside a sticky photo, a full-width photo, the dark "1:2" section on what the name means, what's
-// different this time, and a closing photo with the Austin pop-up invite. Every word and photo is
+// The Our Story page (design: One Two Our Story.html): a full-screen photo hero, where One Two came from
+// beside a sticky photo, a full-width photo, the dark "1:2" section on what the name means, where we're
+// headed now, and a closing photo with the Austin pop-up invite. Every word and photo is
 // edited in Sanity (/studio → Our story page).
 import Image from "next/image";
 import Link from "next/link";
