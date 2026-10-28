@@ -40,6 +40,13 @@ export const env = {
   // Landing page "Merch" / "Brew gear" tiles link here (default: our own collection pages)
   landingMerchUrl: v("LANDING_MERCH_URL") || "/collections/merch",
   landingGearUrl: v("LANDING_GEAR_URL") || "/collections/gear",
+  // Agents (lib/agents): Vercel Cron calls /api/agents/* with this as a bearer token
+  cronSecret: v("CRON_SECRET"),
+  supabaseUrl: v("SUPABASE_URL"),
+  supabaseServiceKey: v("SUPABASE_SERVICE_ROLE_KEY"),     // server only; agent tables have RLS with no policies
+  mercuryToken: v("MERCURY_API_TOKEN"),                    // read-only token; agents never move money
+  notionToken: v("NOTION_TOKEN"),                          // internal integration shared with the brief's parent page only
+  notionBriefParent: v("NOTION_BRIEF_PARENT_ID"),          // page the morning briefs are created under
   isProd: process.env.NODE_ENV === "production",
 };
 
