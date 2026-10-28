@@ -9,7 +9,7 @@ import type { Button } from "@/lib/landing-copy";
 export const DEFAULT_STORY_COPY = {
   seo: {
     title: "Our story",
-    description: "One Two Coffee started as Mernin' Coffee in 2024. What happened, what I learned, and why the name is a ratio.",
+    description: "One Two Coffee grew out of Mernin' Coffee. Where we started, what the 1:2 means, and where we're headed.",
   },
   hero: {
     eyebrow: "Our story",
@@ -23,13 +23,11 @@ export const DEFAULT_STORY_COPY = {
     caption: "Mernin' · March 2024",
     // The two photos sit between these paragraphs and the next ones.
     before: [
-      "I started Mernin' Coffee in March 2024 with no experience in the coffee industry. I didn't know how to source green coffee or what a good roast profile looked like. I decided to bet on myself and figure it out, and I filmed most of it along the way.",
-      "Some of it worked. About 30,000 people ended up following the account, and the coffees that sold best were the strange ones, like the co-ferments and the funkier lots I was nervous to put out. Two people reached out to tell me they'd started their own coffee businesses after watching my videos about starting one as a complete beginner. Out of everything that came from Mernin', that's what I'm proudest of.",
+      "One Two started with Mernin' Coffee. We launched Mernin' in March 2024 without any experience in the coffee industry. We didn't know how to source green coffee or what a good roast profile looked like, so we learned as we went and filmed most of it along the way.",
+      "Mernin' is where we fell in love with coffee. About 30,000 people followed along, and the coffees people liked most were the strange ones, like the co-ferments and the funkier lots we were nervous to put out. Two people told us they started their own coffee businesses after watching our videos about starting one as complete beginners. We're still proud of that.",
     ],
     after: [
-      "Over time, though, I lost sight of what I was building. There were stretches where I went months without a coffee sale, and times I didn't have any green coffee on hand because I was focused on the next video. I honestly couldn't have told you whether I was running a coffee company, an Instagram page, or trying to be an influencer. I was chasing the next viral post instead of building a business that would last.",
-      "It also bothered me that the videos were made to hold people's attention on their phones. Coffee had always been the opposite of that for me, a reason to slow down for a few minutes or sit across from someone. In May 2026 I shut the Mernin' site down.",
-      "I still love coffee, and I still love the people I met because of it. One Two is my second attempt, built around what I learned the first time.",
+      "Mernin' taught us most of what we know about coffee and a lot about the kind of company we want to run. In May 2026 we wrapped it up and started One Two to build on all of it, with our time going into the coffee itself: finding it, roasting it, and meeting the people who drink it.",
     ],
   },
   meaning: {
@@ -40,15 +38,15 @@ export const DEFAULT_STORY_COPY = {
     barIn: "1 g in",
     barOut: "2 g out",
     tableTitle: "The table",
-    tableBody: "The name also stands for one cup of coffee between two people. Most of the best things that came out of Mernin' happened in person, at pop-ups and over coffee with people I'd first met online.",
+    tableBody: "The name also stands for one cup of coffee between two people. We want One Two to be something you share, whether that's at one of our pop-ups in Austin or over a blend you worked out with a friend.",
   },
   different: {
-    eyebrow: "What I'm doing differently",
+    eyebrow: "Where we're headed",
     headline: "Coffee *first.*",
     body: [
-      "I'm keeping the focus on coffee. Mernin' tried to be a lot of things at once, and One Two is a coffee company.",
-      "When I post, it'll be about the coffees we're selling, where they came from, or where our next pop-up in Austin is. Those were always the posts that felt most like me, and they're the ones that got people to show up in person.",
-      "I'll keep sharing what I learn, including the mistakes, because that's what helped those two people get started. If you're thinking about starting something in an industry you know nothing about, I was in the same spot in 2024.",
+      "One Two is a coffee company first. We look for unusual coffees, like co-ferments and experimental lots, and sell them so you can blend them however you like.",
+      "When we post, it'll be about the coffees we're selling, the farms they come from, and where our next pop-up in Austin is. We'd like to meet as many of you in person as we can.",
+      "We'll keep sharing what we learn along the way, including the mistakes. If you're thinking about starting something of your own, we hope it helps.",
     ],
   },
   closing: {

@@ -57,7 +57,7 @@ export const storyPage = defineType({
       text("tableBody", "Right column text", 5),
       photo("tableImage", "Right column photo", "16:10: a pop-up."),
     ], "The dark section with the big 1:2."),
-    section("different", "What I'm doing differently", [
+    section("different", "Where we're headed", [
       text("eyebrow", "Eyebrow"),
       text("headline", "Headline", 2, HEADLINE),
       paragraphs("body", "Paragraphs"),
