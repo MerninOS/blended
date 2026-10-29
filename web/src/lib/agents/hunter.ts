@@ -29,8 +29,10 @@ Skip chains and franchises, places that already roast their own coffee, anything
 and every business in the "already in the pipeline" list.
 
 How to work:
-- Search the web, then read each business's own site. Keep going until you have
-  ${PER_RUN} good fits or have run out of searches.
+- Run a few searches first and build a shortlist of about ${PER_RUN * 3} candidates from the
+  results. Then read at most two pages per candidate (home page, plus about or contact),
+  and drop the poor fits. Return ${PER_RUN} leads; fewer only if you truly run out.
+- If a place has no website, use its Instagram or Google Business profile URL as website.
 - Only use an email address that appears on the business's own website or official
   profile. Never guess one from a pattern. If there is none, leave email null and say
   how to reach them in contact_route (contact form URL, Instagram handle, phone).
@@ -86,8 +88,17 @@ interface Lead {
   contact_route: string | null; fit_score: number; fit_reason: string; sources: string[]; subject: string; body: string;
 }
 
+// Profiles on these hosts belong to different businesses, so the profile path is part of the key.
+const SHARED_HOSTS = new Set(["instagram.com", "facebook.com", "linktr.ee", "yelp.com", "google.com", "maps.google.com", "tiktok.com", "x.com", "twitter.com", "square.site", "toasttab.com"]);
+/** Dedupe key for a lead's website: the host without www., plus the profile path on shared hosts. */
 export const domainOf = (url: string) => {
-  try { return new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`).hostname.toLowerCase().replace(/^www\./, ""); } catch { return null; }
+  try {
+    const u = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`);
+    const host = u.hostname.toLowerCase().replace(/^www\./, "");
+    if (!SHARED_HOSTS.has(host)) return host;
+    const path = u.pathname.split("/").filter(Boolean).slice(0, 2).join("/").toLowerCase();
+    return path ? `${host}/${path}` : null;
+  } catch { return null; }
 };
 const EMAIL = /^[^\s@<>()",;]+@[^\s@<>()",;]+\.[a-z]{2,}$/i;
 
@@ -125,8 +136,8 @@ async function hunt(facts: unknown, known: string[]) {
       output_config: { effort: "medium" },
       system: SOP,
       tools: [
-        { type: "web_search_20260209", name: "web_search", max_uses: 8, user_location: { type: "approximate", city: "Austin", region: "Texas", country: "US", timezone: "America/Chicago" } },
-        { type: "web_fetch_20260209", name: "web_fetch", max_uses: 10 },
+        { type: "web_search_20260209", name: "web_search", max_uses: 10, user_location: { type: "approximate", city: "Austin", region: "Texas", country: "US", timezone: "America/Chicago" } },
+        { type: "web_fetch_20260209", name: "web_fetch", max_uses: 20 },
         RECORD,
       ],
       messages,
@@ -202,7 +213,7 @@ export async function runHunter(runId?: string): Promise<RunResult> {
   const drafted = rows.filter((r) => r.draftId).length;
   return {
     status: "ok",
-    summary: `${rows.length} new leads${gmail ? `, ${drafted} Gmail drafts` : ""}: ${url}`,
+    summary: `${rows.length} new leads${leads.length > rows.length ? ` (${leads.length} found, ${leads.length - rows.length} already known or unusable)` : ""}${gmail ? `, ${drafted} Gmail drafts` : ""}, ${usage.searches} searches: ${url}`,
     tokensIn: usage.in, tokensOut: usage.out,
     costUsd: Number((usage.in * PRICE.in + usage.out * PRICE.out + usage.searches * PRICE.search).toFixed(4)),
   };
