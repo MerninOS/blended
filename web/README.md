@@ -169,7 +169,7 @@ Report-only agents that run on Vercel Cron (`vercel.json`) and log every run to 
 | `/api/agents/brief` | weekdays 12:45 (6:45 AM CST) | Chief of Staff morning brief → a Notion page. Numbers come from code; Claude writes only the Watch list and today's focus |
 
 If the Claude API can't be reached (no key, no credits), the brief still posts, with the Watch list and focus
-worked out by fixed rules. Cash counts only the Mercury accounts listed in `MERCURY_ACCOUNT_IDS`.
+worked out by fixed rules. Cash counts the Mercury accounts in `MERCURY_ACCOUNT_IDS`: `all` (every non-credit account the token sees) or a comma-separated list of IDs.
 
 Both need `Authorization: Bearer $CRON_SECRET` (Vercel Cron sends it); add `?trigger=manual` when
 running one by hand. Each agent has a daily model budget in `agents.daily_budget_usd`; a run over it
