@@ -175,4 +175,4 @@ worked out by fixed rules. Cash counts the Mercury accounts in `MERCURY_ACCOUNT_
 Both need `Authorization: Bearer $CRON_SECRET` (Vercel Cron sends it); add `?trigger=manual` when
 running one by hand. Each agent has a daily model budget in `agents.daily_budget_usd`; a run over it
 is logged as skipped. No agent writes to Shopify or Mercury or sends anything to a customer: the Hunter only creates Gmail drafts, which Zak sends himself.
-The Hunter's schedule is Feb 31, a date that never comes, so it stays listed in Vercel's Cron Jobs with a Run button but never runs on its own; each run costs about $1 of Claude credit. Vercel Cron runs in UTC, so both shift an hour later in local time during daylight saving.
+The Hunter is scheduled for Feb 29 (Vercel rejects dates that never come) and the route skips that leap-day firing, so it stays listed in Vercel's Cron Jobs with a Run button but never runs on its own; each run costs about $1 of Claude credit. Vercel Cron runs in UTC, so both shift an hour later in local time during daylight saving.
