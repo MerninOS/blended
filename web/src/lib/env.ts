@@ -51,6 +51,11 @@ export const env = {
   mercuryAccountIds: (v("MERCURY_ACCOUNT_IDS") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
   notionToken: v("NOTION_TOKEN"),                          // internal integration shared with the brief's parent page only
   notionBriefParent: v("NOTION_BRIEF_PARENT_ID"),          // page the morning briefs are created under
+  // Gmail OAuth client + refresh token for the mailbox outreach drafts land in (gmail.compose scope;
+  // agents only create drafts). Blank = drafts go to the Notion lead list only.
+  gmailClientId: v("GMAIL_CLIENT_ID"),
+  gmailClientSecret: v("GMAIL_CLIENT_SECRET"),
+  gmailRefreshToken: v("GMAIL_REFRESH_TOKEN"),
   isProd: process.env.NODE_ENV === "production",
 };
 
