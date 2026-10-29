@@ -61,14 +61,18 @@ async function ordersOn(date: string) {
   return out.filter((o) => !o.cancelledAt);
 }
 
-/** Available balance across the business's Mercury accounts (MERCURY_ACCOUNT_IDS); null when not set up. */
+/** Available balance across the Mercury accounts MERCURY_ACCOUNT_IDS names ("all" = every non-credit account); null when not set up. */
 export async function mercuryCash(): Promise<number | null> {
-  if (!env.mercuryToken || !env.mercuryAccountIds.length) return null;
+  const ids = env.mercuryAccountIds;
+  if (!env.mercuryToken || !ids.length) return null;
   const res = await fetch("https://api.mercury.com/api/v1/accounts", { headers: { Authorization: `Bearer ${env.mercuryToken}`, Accept: "application/json" }, cache: "no-store" });
   if (!res.ok) throw new Error(`Mercury ${res.status}`);
-  const j = await res.json() as { accounts: { id: string; availableBalance: number }[] };
-  const ours = j.accounts.filter((a) => env.mercuryAccountIds.includes(a.id));
-  if (ours.length !== env.mercuryAccountIds.length) throw new Error("Mercury: an account in MERCURY_ACCOUNT_IDS was not found");
+  const j = await res.json() as { accounts: { id: string; availableBalance: number; status: string; kind?: string; isCredit?: boolean }[] };
+  const all = ids.length === 1 && ids[0].toLowerCase() === "all";
+  const ours = all
+    ? j.accounts.filter((a) => a.status !== "archived" && a.status !== "deleted" && !a.isCredit && a.kind !== "creditCard")
+    : j.accounts.filter((a) => ids.includes(a.id));
+  if (!all && ours.length !== ids.length) throw new Error("Mercury: an account in MERCURY_ACCOUNT_IDS was not found");
   return round2(ours.reduce((s, a) => s + Number(a.availableBalance || 0), 0));
 }
 
