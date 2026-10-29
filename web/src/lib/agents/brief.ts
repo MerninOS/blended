@@ -4,12 +4,12 @@ import "server-only";
 // one recommended focus. The brief lands as a Notion page.
 import Anthropic from "@anthropic-ai/sdk";
 import { G_PER_LB } from "@/lib/domain/coffee";
-import { env } from "@/lib/env";
 import { getInventoryLots } from "@/lib/catalog";
 import { greenLedger } from "@/lib/green-ledger";
 import { getBoardOrders } from "@/lib/orders";
 import { chicagoDate } from "@/lib/agents/cfo";
 import { db, type RunResult } from "@/lib/agents/runs";
+import { dayTitle, h2, li, notionPage, p, type Block } from "@/lib/agents/notion";
 
 const MODEL = "claude-sonnet-5-5";
 const PRICE = { in: 2 / 1e6, out: 10 / 1e6 }; // $/token, keep in step with MODEL
@@ -112,13 +112,6 @@ export function rulesJudgment(f: Facts): Judgment {
   return { watch, focus };
 }
 
-// ---------- Notion ----------
-type Block = Record<string, unknown>;
-const rt = (content: string) => [{ type: "text", text: { content: content.slice(0, 2000) } }];
-const h2 = (t: string): Block => ({ object: "block", type: "heading_2", heading_2: { rich_text: rt(t) } });
-const li = (t: string): Block => ({ object: "block", type: "bulleted_list_item", bulleted_list_item: { rich_text: rt(t) } });
-const p = (t: string): Block => ({ object: "block", type: "paragraph", paragraph: { rich_text: rt(t) } });
-
 export function briefBlocks(f: Facts, j: Judgment): Block[] {
   const y = f.yesterday;
   const ran = f.agentRuns.map((r) => `${r.agent_id}: ${r.status}${r.summary ? `. ${r.summary}` : ""}${r.error ? `. ${r.error}` : ""}`);
@@ -140,18 +133,6 @@ export function briefBlocks(f: Facts, j: Judgment): Block[] {
   ];
 }
 
-async function notionPage(title: string, children: Block[]) {
-  if (!env.notionToken || !env.notionBriefParent) throw new Error("NOTION_TOKEN and NOTION_BRIEF_PARENT_ID must be set");
-  const res = await fetch("https://api.notion.com/v1/pages", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${env.notionToken}`, "Notion-Version": "2022-06-28", "Content-Type": "application/json" },
-    body: JSON.stringify({ parent: { page_id: env.notionBriefParent }, properties: { title: { title: rt(title) } }, children }),
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error(`Notion ${res.status}: ${await res.text().catch(() => "")}`);
-  return (await res.json() as { url: string }).url;
-}
-
 export async function runBrief(): Promise<RunResult> {
   const f = await facts();
   let judgment: Judgment, usage: Anthropic.Beta.BetaUsage | null = null, fallback = "";
@@ -163,8 +144,7 @@ export async function runBrief(): Promise<RunResult> {
     judgment = rulesJudgment(f);
     fallback = ` (model unavailable, rules used: ${e.message.slice(0, 120)})`;
   }
-  const day = new Date(`${f.today}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
-  const url = await notionPage(`Morning brief · ${day}`, briefBlocks(f, judgment));
+  const url = await notionPage(`Morning brief · ${dayTitle(f.today)}`, briefBlocks(f, judgment));
   const tokensIn = usage ? usage.input_tokens + (usage.cache_read_input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0) : 0;
   const tokensOut = usage?.output_tokens ?? 0;
   return {
