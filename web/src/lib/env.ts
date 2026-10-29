@@ -45,6 +45,9 @@ export const env = {
   supabaseUrl: v("SUPABASE_URL"),
   supabaseServiceKey: v("SUPABASE_SERVICE_ROLE_KEY"),     // server only; agent tables have RLS with no policies
   mercuryToken: v("MERCURY_API_TOKEN"),                    // read-only token; agents never move money
+  // Comma-separated Mercury account IDs that belong to the business. Only these count as cash;
+  // blank = cash is not reported (a token can see every account in the Mercury org, personal ones too).
+  mercuryAccountIds: (v("MERCURY_ACCOUNT_IDS") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
   notionToken: v("NOTION_TOKEN"),                          // internal integration shared with the brief's parent page only
   notionBriefParent: v("NOTION_BRIEF_PARENT_ID"),          // page the morning briefs are created under
   isProd: process.env.NODE_ENV === "production",
