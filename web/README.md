@@ -167,7 +167,7 @@ Report-only agents that run on Vercel Cron (`vercel.json`) and log every run to 
 | --- | --- | --- |
 | `/api/agents/cfo` | daily 11:30 (5:30 AM CST) | Yesterday's revenue, orders, AOV, repeat rate, green cost and margin from Shopify, cash from Mercury → `kpi_snapshots`. Plain code, no model |
 | `/api/agents/brief` | weekdays 12:45 (6:45 AM CST) | Chief of Staff morning brief → a Notion page. Numbers come from code; Claude writes only the Watch list and today's focus |
-| `/api/agents/hunter` | Tue + Thu 14:00 (8 AM CST) | Wholesale Hunter: Claude searches the web for a few new wholesale/private label prospects in Austin, Lakeway and Bee Cave, scores fit, writes a first-touch email → `wholesale_leads`, Gmail drafts (if `GMAIL_*` is set) and a Notion page. Never sends |
+| `/api/agents/hunter` | manual only (Run in Vercel → Settings → Cron Jobs) | Wholesale Hunter: Claude searches the web for a few new wholesale/private label prospects in Austin, Lakeway and Bee Cave, scores fit, writes a first-touch email → `wholesale_leads`, Gmail drafts (if `GMAIL_*` is set) and a Notion page. Never sends |
 
 If the Claude API can't be reached (no key, no credits), the brief still posts, with the Watch list and focus
 worked out by fixed rules. Cash counts the Mercury accounts in `MERCURY_ACCOUNT_IDS`: `all` (every non-credit account the token sees) or a comma-separated list of IDs.
@@ -175,4 +175,4 @@ worked out by fixed rules. Cash counts the Mercury accounts in `MERCURY_ACCOUNT_
 Both need `Authorization: Bearer $CRON_SECRET` (Vercel Cron sends it); add `?trigger=manual` when
 running one by hand. Each agent has a daily model budget in `agents.daily_budget_usd`; a run over it
 is logged as skipped. No agent writes to Shopify or Mercury or sends anything to a customer: the Hunter only creates Gmail drafts, which Zak sends himself.
-Vercel Cron runs in UTC, so both shift an hour later in local time during daylight saving.
+The Hunter is scheduled for Feb 29 (Vercel rejects dates that never come) and the route skips that leap-day firing, so it stays listed in Vercel's Cron Jobs with a Run button but never runs on its own; each run costs about $1 of Claude credit. Vercel Cron runs in UTC, so both shift an hour later in local time during daylight saving.
