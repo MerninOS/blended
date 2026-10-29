@@ -157,3 +157,18 @@ npm run check        # tsc + eslint + every GraphQL document validated against S
 npm run schemas      # (once) download the Admin 2026-07 / Storefront / Customer Account schemas
 npm run build
 ```
+
+## Agents
+
+Report-only agents that run on Vercel Cron (`vercel.json`) and log every run to Supabase
+(`supabase/migrations`, applied with `supabase db push` or pasted into the SQL editor).
+
+| Route | Schedule (UTC) | What it does |
+| --- | --- | --- |
+| `/api/agents/cfo` | daily 11:30 (5:30 AM CST) | Yesterday's revenue, orders, AOV, repeat rate, green cost and margin from Shopify, cash from Mercury → `kpi_snapshots`. Plain code, no model |
+| `/api/agents/brief` | weekdays 12:45 (6:45 AM CST) | Chief of Staff morning brief → a Notion page. Numbers come from code; Claude writes only the Watch list and today's focus |
+
+Both need `Authorization: Bearer $CRON_SECRET` (Vercel Cron sends it); add `?trigger=manual` when
+running one by hand. Each agent has a daily model budget in `agents.daily_budget_usd`; a run over it
+is logged as skipped. Neither agent writes to Shopify, Mercury or any customer-facing system.
+Vercel Cron runs in UTC, so both shift an hour later in local time during daylight saving.
