@@ -95,6 +95,23 @@ async function judge(f: Facts) {
   return { judgment: JSON.parse(text.text) as Judgment, usage: res.usage };
 }
 
+/** The same two sections from fixed rules, for when the model can't be reached (no key, no credits, outage). */
+export function rulesJudgment(f: Facts): Judgment {
+  const low = [...f.lowGreen].sort((a, b) => (a.daysOfCover ?? 0) - (b.daysOfCover ?? 0));
+  const watch = [
+    ...low.map((l) => `${l.lot} has about ${l.daysOfCover} days of green left (${l.onHandLb} lb).`),
+    ...(f.openOrders.qcHold.length ? [`${f.openOrders.qcHold.length} order(s) on QC hold: ${f.openOrders.qcHold.join(", ")}.`] : []),
+    ...(f.neverDeducted.length ? [`Green was never deducted for ${f.neverDeducted.join(", ")}.`] : []),
+    ...f.agentRuns.filter((r) => r.status === "failed").map((r) => `The ${r.agent_id} run failed: ${r.error ?? "no error recorded"}.`),
+  ].slice(0, 5);
+  const focus = low.length
+    ? { action: `Reorder ${low[0].lot}`, reason: `It runs out first, in about ${low[0].daysOfCover} days.` }
+    : f.openOrders.paid
+      ? { action: `Roast the ${f.openOrders.paid} paid order(s)`, reason: "They are waiting on a machine." }
+      : { action: "Work the wholesale pipeline", reason: "No orders or stock need you this morning." };
+  return { watch, focus };
+}
+
 // ---------- Notion ----------
 type Block = Record<string, unknown>;
 const rt = (content: string) => [{ type: "text", text: { content: content.slice(0, 2000) } }];
@@ -137,14 +154,23 @@ async function notionPage(title: string, children: Block[]) {
 
 export async function runBrief(): Promise<RunResult> {
   const f = await facts();
-  const { judgment, usage } = await judge(f);
+  let judgment: Judgment, usage: Anthropic.Beta.BetaUsage | null = null, fallback = "";
+  try {
+    ({ judgment, usage } = await judge(f));
+  } catch (e) {
+    // the numbers still go out; only the two judgment sections fall back to rules
+    if (!(e instanceof Anthropic.APIError) && !(e instanceof Anthropic.AnthropicError)) throw e;
+    judgment = rulesJudgment(f);
+    fallback = ` (model unavailable, rules used: ${e.message.slice(0, 120)})`;
+  }
   const day = new Date(`${f.today}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
   const url = await notionPage(`Morning brief · ${day}`, briefBlocks(f, judgment));
-  const tokensIn = usage.input_tokens + (usage.cache_read_input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0);
+  const tokensIn = usage ? usage.input_tokens + (usage.cache_read_input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0) : 0;
+  const tokensOut = usage?.output_tokens ?? 0;
   return {
     status: "ok",
-    summary: `Brief posted: ${url}. Focus: ${judgment.focus.action}`,
-    tokensIn, tokensOut: usage.output_tokens,
-    costUsd: Number((tokensIn * PRICE.in + usage.output_tokens * PRICE.out).toFixed(4)),
+    summary: `Brief posted: ${url}. Focus: ${judgment.focus.action}${fallback}`,
+    tokensIn, tokensOut,
+    costUsd: Number((tokensIn * PRICE.in + tokensOut * PRICE.out).toFixed(4)),
   };
 }
