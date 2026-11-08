@@ -40,22 +40,6 @@ export const env = {
   // Landing page "Merch" / "Brew gear" tiles link here (default: our own collection pages)
   landingMerchUrl: v("LANDING_MERCH_URL") || "/collections/merch",
   landingGearUrl: v("LANDING_GEAR_URL") || "/collections/gear",
-  // Agents (lib/agents): Vercel Cron calls /api/agents/* with this as a bearer token
-  cronSecret: v("CRON_SECRET"),
-  supabaseUrl: v("SUPABASE_URL"),
-  supabaseServiceKey: v("SUPABASE_SERVICE_ROLE_KEY"),     // server only; agent tables have RLS with no policies
-  mercuryToken: v("MERCURY_API_TOKEN"),                    // read-only token; agents never move money
-  // Which Mercury accounts count as cash: "all" (every account the token's org has, credit cards
-  // excluded; new accounts are picked up on their own) or comma-separated account IDs.
-  // Blank = cash is not reported.
-  mercuryAccountIds: (v("MERCURY_ACCOUNT_IDS") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
-  notionToken: v("NOTION_TOKEN"),                          // internal integration shared with the brief's parent page only
-  notionBriefParent: v("NOTION_BRIEF_PARENT_ID"),          // page the morning briefs are created under
-  // Gmail OAuth client + refresh token for the mailbox outreach drafts land in (gmail.compose scope;
-  // agents only create drafts). Blank = drafts go to the Notion lead list only.
-  gmailClientId: v("GMAIL_CLIENT_ID"),
-  gmailClientSecret: v("GMAIL_CLIENT_SECRET"),
-  gmailRefreshToken: v("GMAIL_REFRESH_TOKEN"),
   isProd: process.env.NODE_ENV === "production",
 };
 
