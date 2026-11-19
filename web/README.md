@@ -173,12 +173,17 @@ gram stock on green lots, the `blended.*` lot and coffee metafields (`green_pric
 
 ### The coffee server for the agents (`/api/agents-mcp`)
 
-The agents read green lots, green use, days of cover and reorder amounts from this store through a
+The agents read green lots, green use, days of cover, reorder amounts, a day's green cost and open
+orders by stage from this store through a
 small MCP server here (`src/app/api/agents-mcp/route.ts`, rules and math in `src/lib/agents-mcp/rules.ts`).
 OPERATOR adds it on Connections as a custom server, signed in with a key.
 
 - **Env**: `AGENTS_MCP_KEY`, a random string of at least 32 characters. Without it the route answers 404.
-- Four tools, all reads, whole-number inputs only: `green_lots`, `green_use`, `green_cover`, `reorder_amount`.
-  Every number is worked out in code here, from `getInventoryLots` and `greenLedger`. It has no write path.
+- Six tools, all reads, whole-number inputs only: `green_lots`, `green_use`, `green_cover`, `reorder_amount`,
+  `green_cost` (one Chicago day, `days_ago` 1 = yesterday) and `orders_by_stage` (paid, roasting, packing,
+  QC hold). Every number is worked out in code here, from `getInventoryLots`, `greenLedger` and a tags-only
+  orders read (`src/lib/agents-mcp/stages.ts`). It has no write path.
 - `green_cover` returns `numbers.lowest_days_of_cover`, which the "Lowest days of green cover" goal reads.
+  `green_cost` returns `numbers.green_cost_usd`, which OPERATOR's daily numbers use as cost of goods.
+- The green ledger reads up to 1,000 orders in its window (10 pages of 100), for the admin and this server.
 - Tests: `npm run check:agents-mcp` (part of `npm run check`).

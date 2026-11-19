@@ -1,13 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getInventoryLots } from "@/lib/catalog";
 import { greenLedger } from "@/lib/green-ledger";
-import { PROTOCOL, TOOLS, greenCover, greenLots, greenUse, inputsOf, isTool, keyOk, reorderAmount } from "@/lib/agents-mcp/rules";
+import { PROTOCOL, TOOLS, chicagoDaysAgo, greenCost, greenCover, greenLots, greenUse, inputsOf, isTool, keyOk, reorderAmount, stageCounts } from "@/lib/agents-mcp/rules";
+import { stageOrders } from "@/lib/agents-mcp/stages";
 
 // One Two's coffee server for its agents on OPERATOR (lib/agents-mcp/rules.ts). OPERATOR adds it
 // on Connections as a custom server, signed in with a key (AGENTS_MCP_KEY). It speaks MCP over
-// Streamable HTTP (JSON replies, no sessions). Four tools, all reads: green lots, green use, days of
-// cover and reorder amounts, every number worked out in code here from the storefront's own green
-// lots and green ledger. Nothing here writes to Shopify. With no key set, the route doesn't exist.
+// Streamable HTTP (JSON replies, no sessions). Six tools, all reads: green lots, green use, days of
+// cover, reorder amounts, a day's green cost and open orders by stage, every number worked out in
+// code here from the storefront's own green lots, green ledger and order tags. Nothing here writes to
+// Shopify. With no key set, the route doesn't exist.
 
 const key = () => process.env.AGENTS_MCP_KEY?.trim() || undefined;
 const noStore = { "Cache-Control": "no-store" };
@@ -16,8 +18,11 @@ const toolText = (id: unknown, value: unknown, isError = false) =>
   rpc(id, { result: { ...(isError ? { isError: true } : { structuredContent: value }), content: [{ type: "text", text: isError ? String(value) : JSON.stringify(value) }] } });
 
 async function run(tool: string, args: Record<string, number>) {
+  if (tool === "orders_by_stage") return stageCounts(await stageOrders());
   const lots = await getInventoryLots();
   if (tool === "green_lots") return greenLots(lots);
+  // a day's cost: read two days more than asked, so the whole Chicago day is inside the window
+  if (tool === "green_cost") return greenCost(lots, await greenLedger(args.days_ago + 2), chicagoDaysAgo(new Date(), args.days_ago));
   const rows = await greenLedger(args.days);
   if (tool === "green_use") return greenUse(lots, rows, args.days);
   if (tool === "green_cover") return greenCover(lots, rows, args.days);
