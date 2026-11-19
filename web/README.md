@@ -153,7 +153,7 @@ The lineup, house blend and intro cards come from the live green catalog.
 ## Checks
 
 ```bash
-npm run check        # tsc + eslint + every GraphQL document validated against Shopify's schemas
+npm run check        # tsc + eslint + every GraphQL document validated against Shopify's schemas + the agents server's tests
 npm run schemas      # (once) download the Admin 2026-07 / Storefront / Customer Account schemas
 npm run build
 ```
@@ -170,3 +170,15 @@ gram stock on green lots, the `blended.*` lot and coffee metafields (`green_pric
 `retail_price`, `roast_level`, `subtitle`, `kind`, `recipe`), the `blended.settings` shop metafield's
 `roastLoss`, the `_blend` line property, the `blended.green_usage` order metafield, and the
 `channel:*`, `stage:*`, `green:*` and `qc-hold` order tags.
+
+### The coffee server for the agents (`/api/agents-mcp`)
+
+The agents read green lots, green use, days of cover and reorder amounts from this store through a
+small MCP server here (`src/app/api/agents-mcp/route.ts`, rules and math in `src/lib/agents-mcp/rules.ts`).
+OPERATOR adds it on Connections as a custom server, signed in with a key.
+
+- **Env**: `AGENTS_MCP_KEY`, a random string of at least 32 characters. Without it the route answers 404.
+- Four tools, all reads, whole-number inputs only: `green_lots`, `green_use`, `green_cover`, `reorder_amount`.
+  Every number is worked out in code here, from `getInventoryLots` and `greenLedger`. It has no write path.
+- `green_cover` returns `numbers.lowest_days_of_cover`, which the "Lowest days of green cover" goal reads.
+- Tests: `npm run check:agents-mcp` (part of `npm run check`).

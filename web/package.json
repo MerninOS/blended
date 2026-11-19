@@ -14,7 +14,8 @@
     "validate:graphql": "node scripts/validate-graphql.mjs",
     "setup:shopify": "node --env-file=.env.local scripts/setup-shopify.ts",
     "seed:sanity": "node --env-file=.env.local scripts/seed-sanity-farms.ts",
-    "check": "npm run typecheck && npm run lint && npm run validate:graphql"
+    "check:agents-mcp": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-agents-mcp.mts",
+    "check": "npm run typecheck && npm run lint && npm run validate:graphql && npm run check:agents-mcp"
   },
   "dependencies": {
     "@sanity/client": "^8.9.0",
