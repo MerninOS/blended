@@ -103,44 +103,58 @@ export async function restockOrder(gid: string) {
 
 // ---------- audit ----------
 const RECENT = gql`
-  query GreenRecentOrders($query: String!) {
-    orders(first: 100, sortKey: CREATED_AT, reverse: true, query: $query) {
+  query GreenRecentOrders($query: String!, $after: String) {
+    orders(first: 100, after: $after, sortKey: CREATED_AT, reverse: true, query: $query) {
       nodes {
         id name createdAt tags cancelledAt displayFulfillmentStatus
         usage: metafield(namespace: "blended", key: "green_usage") { value }
         lineItems(first: 100) { nodes { quantity sku variant { id } customAttributes { key value } } }
       }
+      pageInfo { hasNextPage endCursor }
     }
   }
 `;
+/** At most this many pages of 100 orders (1,000 orders) in one ledger read. */
+const MAX_PAGES = 10;
 export interface LedgerRow {
   id: string; name: string; createdAt: string; channel: "Retail" | "Wholesale" | "Other";
   state: "deducted" | "restocked" | "missing" | "unlinked";
   lots: { id: string; name: string; g: number }[];
   unlinked: string[];
+  /** Cancelled after its green was deducted and not put back (it had already shipped). */
+  cancelled: boolean;
 }
 
 /** Recent orders with coffee: what each took, and any that never had green deducted. */
 export async function greenLedger(days = 30): Promise<LedgerRow[]> {
   const since = new Date(Date.now() - days * 864e5).toISOString().slice(0, 10);
-  const [r, ctx] = await Promise.all([
-    admin<{ orders: { nodes: (OrderNode & { createdAt: string })[] } }>(RECENT, { variables: { query: `created_at:>=${since}` } }),
-    context(),
-  ]);
+  type Node = OrderNode & { createdAt: string };
+  type R = { orders: { nodes: Node[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } } };
+  const ordersSince = async () => {
+    const out: Node[] = [];
+    let after: string | null = null, pages = 0;
+    do {
+      const r: R = await admin<R>(RECENT, { variables: { query: `created_at:>=${since}`, after } });
+      out.push(...r.orders.nodes);
+      after = r.orders.pageInfo.hasNextPage ? r.orders.pageInfo.endCursor : null;
+    } while (after && ++pages < MAX_PAGES);
+    return out;
+  };
+  const [orders, ctx] = await Promise.all([ordersSince(), context()]);
   const rows: LedgerRow[] = [];
-  for (const o of r.orders.nodes) {
+  for (const o of orders) {
     const channel = isWholesale(o.tags) ? "Wholesale" : o.tags.includes("channel:retail") ? "Retail" : "Other";
     let rec: GreenRecord | null = null;
     try { rec = o.usage?.value ? JSON.parse(o.usage.value) : null; } catch { rec = null; }
     if (o.tags.includes(TAG_DEDUCTED)) {
       const lots = rec?.lots ?? usageOf(linesOf(o), o.tags, ctx).lots;
-      rows.push({ id: o.id, name: o.name, createdAt: o.createdAt, channel, state: o.tags.includes(TAG_RESTOCKED) ? "restocked" : "deducted", lots, unlinked: rec?.unlinked ?? [] });
+      rows.push({ id: o.id, name: o.name, createdAt: o.createdAt, channel, state: o.tags.includes(TAG_RESTOCKED) ? "restocked" : "deducted", lots, unlinked: rec?.unlinked ?? [], cancelled: !!o.cancelledAt });
       continue;
     }
     if (o.cancelledAt) continue;
     const u = usageOf(linesOf(o), o.tags, ctx);
-    if (u.usage.size) rows.push({ id: o.id, name: o.name, createdAt: o.createdAt, channel, state: "missing", lots: u.lots, unlinked: u.unlinked });
-    else if (u.unlinked.length) rows.push({ id: o.id, name: o.name, createdAt: o.createdAt, channel, state: "unlinked", lots: [], unlinked: u.unlinked });
+    if (u.usage.size) rows.push({ id: o.id, name: o.name, createdAt: o.createdAt, channel, state: "missing", lots: u.lots, unlinked: u.unlinked, cancelled: false });
+    else if (u.unlinked.length) rows.push({ id: o.id, name: o.name, createdAt: o.createdAt, channel, state: "unlinked", lots: [], unlinked: u.unlinked, cancelled: false });
   }
   return rows;
 }
