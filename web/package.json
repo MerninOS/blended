@@ -15,7 +15,8 @@
     "setup:shopify": "node --env-file=.env.local scripts/setup-shopify.ts",
     "seed:sanity": "node --env-file=.env.local scripts/seed-sanity-farms.ts",
     "check:agents-mcp": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-agents-mcp.mts",
-    "check": "npm run typecheck && npm run lint && npm run validate:graphql && npm run check:agents-mcp"
+    "check:shopify-throttle": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-shopify-throttle.mts",
+    "check": "npm run typecheck && npm run lint && npm run validate:graphql && npm run check:agents-mcp && npm run check:shopify-throttle"
   },
   "dependencies": {
     "@sanity/client": "^8.9.0",
