@@ -1,13 +1,19 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import { env } from "@/lib/env";
+import { isThrottled, waitFromCost, waitFromRetryAfter, withThrottleRetry, type QueryCost } from "./throttle";
 
 /** Identity tag so scripts/validate-graphql.mjs can find and check every document. */
 export const gql = String.raw;
 
 export class ShopifyError extends Error {
+  /** Set when Shopify refused the request for rate limiting: how long to wait before trying again. */
+  retryAfterMs?: number;
   constructor(message: string, public details?: unknown, public status?: number) { super(message); }
 }
+
+const throttled = (message: string, details: unknown, retryAfterMs: number, status?: number) =>
+  Object.assign(new ShopifyError(message, details, status), { retryAfterMs });
 
 type FetchOpts = { variables?: Record<string, unknown>; tags?: string[]; revalidate?: number | false; cache?: RequestCache; buyerIp?: string | null };
 
@@ -20,10 +26,12 @@ async function post<T>(url: string, headers: Record<string, string>, query: stri
   if (o.tags || o.revalidate !== undefined) init.next = { tags: o.tags, revalidate: o.revalidate };
   else init.cache = o.cache ?? "no-store";
   const res = await fetch(url, init);
+  if (res.status === 429) throw throttled("Shopify 429 Too Many Requests", await res.text().catch(() => null), waitFromRetryAfter(res.headers.get("retry-after")), 429);
   if (!res.ok) throw new ShopifyError(`Shopify ${res.status} ${res.statusText}`, await res.text().catch(() => null), res.status);
-  const json = await res.json() as { data?: T; errors?: unknown };
+  const json = await res.json() as { data?: T; errors?: unknown; extensions?: { cost?: QueryCost } };
   if (json.errors) {
     const msg = Array.isArray(json.errors) ? json.errors.map((e: { message?: string }) => e.message).filter(Boolean).join("; ") : "";
+    if (isThrottled(json.errors)) throw throttled(`Shopify GraphQL error${msg ? `: ${msg}` : ""}`, json.errors, waitFromCost(json.extensions?.cost));
     throw new ShopifyError(`Shopify GraphQL error${msg ? `: ${msg}` : ""}`, json.errors);
   }
   return json.data as T;
@@ -71,17 +79,24 @@ async function adminToken(fresh = false): Promise<string> {
   return t.token;
 }
 
+// A throttled request never ran, so it is retried after the wait Shopify's cost data
+// gives (see throttle.ts). Webhook bursts (every inventory change runs a green sync)
+// used to fail here with "Throttled" and leave Shopify's coffee counts stale.
+const retryThrottled = <T>(attempt: () => Promise<T>) =>
+  withThrottleRetry(attempt, (e) => (e instanceof ShopifyError ? e.retryAfterMs : null));
+
 export async function admin<T>(query: string, o: FetchOpts = {}): Promise<T> {
   const url = `https://${env.storeDomain}/admin/api/${env.apiVersion}/graphql.json`;
   try {
-    return await post<T>(url, { "X-Shopify-Access-Token": await adminToken() }, query, o);
+    return await retryThrottled(async () => post<T>(url, { "X-Shopify-Access-Token": await adminToken() }, query, o));
   } catch (e) {
     // A cached token can go stale before it expires: it keeps the scopes it was issued
     // with (new scopes → "access denied") and dies if the app is reinstalled (401).
     // Either way, get a fresh token and try once more.
     const stale = e instanceof ShopifyError && (e.status === 401 || /access denied/i.test(e.message));
     if (env.adminToken || !stale) throw e;
-    return post<T>(url, { "X-Shopify-Access-Token": await adminToken(true) }, query, { ...o, cache: "no-store", tags: undefined, revalidate: undefined });
+    const token = await adminToken(true);
+    return retryThrottled(() => post<T>(url, { "X-Shopify-Access-Token": token }, query, { ...o, cache: "no-store", tags: undefined, revalidate: undefined }));
   }
 }
 
