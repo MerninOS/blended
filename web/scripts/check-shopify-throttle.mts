@@ -102,6 +102,6 @@ const adminFn = client.slice(client.indexOf("export async function admin<T>"), c
 assert.equal(adminFn.match(/retryThrottled\(/g)?.length, 2, "both admin() requests retry throttles");
 assert.ok(!/retryThrottled/.test(client.slice(client.indexOf("export function storefront"), client.indexOf("// ---------- Admin API"))), "shopper-facing Storefront calls never wait");
 // still exactly one fresh-token retry for a stale token
-assert.equal(adminFn.match(/adminToken\(true\)/g)?.length, 1);
+assert.equal(adminFn.match(/adminToken\(used\)/g)?.length, 1);
 
 console.log("shopify throttle: ok");
