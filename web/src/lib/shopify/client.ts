@@ -1,6 +1,7 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import { env } from "@/lib/env";
+import { CURRENT_KEY, createAdminTokenSource, type AdminToken } from "./admin-token";
 import { isThrottled, waitFromCost, waitFromRetryAfter, withThrottleRetry, type QueryCost } from "./throttle";
 
 /** Identity tag so scripts/validate-graphql.mjs can find and check every document. */
@@ -48,8 +49,7 @@ export function storefront<T>(query: string, o: FetchOpts = {}) {
 // ---------- Admin API ----------
 // Either a static token (legacy custom app) or Dev Dashboard app credentials
 // exchanged with the client-credentials grant (tokens are short lived).
-let cached: { token: string; exp: number } | null = null;
-async function exchangeToken(): Promise<{ token: string; exp: number }> {
+async function exchangeToken(): Promise<AdminToken> {
   if (!env.storeDomain || !env.adminClientId || !env.adminClientSecret) throw new ShopifyError("Admin API not configured");
   const res = await fetch(`https://${env.storeDomain}/admin/oauth/access_token`, {
     method: "POST",
@@ -65,18 +65,15 @@ async function exchangeToken(): Promise<{ token: string; exp: number }> {
   const j = await res.json() as { access_token: string; expires_in?: number };
   return { token: j.access_token, exp: Date.now() + (j.expires_in ?? 3600) * 1000 };
 }
-// A no-store fetch during a background ISR regeneration makes Next abandon it
-// ("static to dynamic"), so cached pages like /lab would never refresh after a deploy.
-// Fetches inside unstable_cache don't count against the page, so the exchange goes
-// through it; 50 min is well inside the token's lifetime.
-const sharedToken = unstable_cache(exchangeToken, ["shopify-admin-token"], { revalidate: 3000 });
-async function adminToken(fresh = false): Promise<string> {
+// Every exchange goes through unstable_cache so it never makes Next abandon a
+// background ISR regeneration (see admin-token.ts). The normal entry keeps its old
+// key; 50 min is well inside the token's lifetime.
+const exchangeCached = (key: string) =>
+  unstable_cache(exchangeToken, key === CURRENT_KEY ? ["shopify-admin-token"] : ["shopify-admin-token", key], { revalidate: 3000 })();
+const adminTokens = createAdminTokenSource({ exchange: exchangeCached, exchangeDirect: exchangeToken });
+async function adminToken(rejected?: string): Promise<string> {
   if (env.adminToken) return env.adminToken;
-  if (!fresh && cached && cached.exp > Date.now() + 60_000) return cached.token;
-  let t = fresh ? await exchangeToken() : await sharedToken();
-  if (t.exp <= Date.now() + 60_000) t = await exchangeToken();
-  cached = t;
-  return t.token;
+  return adminTokens(rejected);
 }
 
 // A throttled request never ran, so it is retried after the wait Shopify's cost data
@@ -87,15 +84,16 @@ const retryThrottled = <T>(attempt: () => Promise<T>) =>
 
 export async function admin<T>(query: string, o: FetchOpts = {}): Promise<T> {
   const url = `https://${env.storeDomain}/admin/api/${env.apiVersion}/graphql.json`;
+  let used: string | undefined;
   try {
-    return await retryThrottled(async () => post<T>(url, { "X-Shopify-Access-Token": await adminToken() }, query, o));
+    return await retryThrottled(async () => post<T>(url, { "X-Shopify-Access-Token": (used = await adminToken()) }, query, o));
   } catch (e) {
     // A cached token can go stale before it expires: it keeps the scopes it was issued
     // with (new scopes → "access denied") and dies if the app is reinstalled (401).
     // Either way, get a fresh token and try once more.
     const stale = e instanceof ShopifyError && (e.status === 401 || /access denied/i.test(e.message));
-    if (env.adminToken || !stale) throw e;
-    const token = await adminToken(true);
+    if (env.adminToken || !stale || !used) throw e;
+    const token = await adminToken(used);
     return retryThrottled(() => post<T>(url, { "X-Shopify-Access-Token": token }, query, { ...o, cache: "no-store", tags: undefined, revalidate: undefined }));
   }
 }
